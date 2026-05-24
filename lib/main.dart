@@ -1163,10 +1163,10 @@ class _HomeScreenState extends State<HomeScreen> {
   StateSetter? _bottomSheetStateSetter;
 
   // Trackpad Settings
-  double _sensitivity = 3.0;
+  double _sensitivity = 10.0;
   bool _mouseAcceleration = false; // Mouse acceleration disabled by default
-  bool _trackpadOnLeft = true; // Trackpad configuration parameter
-  KeyboardKind _keyboardKind = KeyboardKind.tenkeyless; // Default TKL style
+  bool _trackpadOnLeft = false; // Trackpad configuration parameter
+  KeyboardKind _keyboardKind = KeyboardKind.seventyFive;
 
   // Fraction accumulators for precision control
   double _fractionalDx = 0.0;
@@ -3065,8 +3065,8 @@ class _HomeScreenState extends State<HomeScreen> {
                           ),
                           child: Slider(
                             value: _sensitivity,
-                            min: 0.5,
-                            max: 6.0,
+                            min: 1,
+                            max: 30,
                             onChanged: (val) {
                               setState(() {
                                 _sensitivity = val;
