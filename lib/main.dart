@@ -185,7 +185,13 @@ class _HomeScreenState extends State<HomeScreen> {
       ],
       // Row 5
       [
-        const KeyInfo(label: "Shift", scancode: 0, isModifier: true, modifierMask: 0x02, flex: 2.2),
+        const KeyInfo(
+          label: "Shift",
+          scancode: 0,
+          isModifier: true,
+          modifierMask: 0x02,
+          flex: 2.2,
+        ),
         const KeyInfo(label: "Z", scancode: 0x1D, flex: 1.0),
         const KeyInfo(label: "X", scancode: 0x1B, flex: 1.0),
         const KeyInfo(label: "C", scancode: 0x06, flex: 1.0),
@@ -196,21 +202,57 @@ class _HomeScreenState extends State<HomeScreen> {
         const KeyInfo(label: ",", scancode: 0x36, flex: 1.0),
         const KeyInfo(label: ".", scancode: 0x37, flex: 1.0),
         const KeyInfo(label: "/", scancode: 0x38, flex: 1.0),
-        const KeyInfo(label: "Shift", scancode: 0, isModifier: true, modifierMask: 0x20, flex: 2.8),
+        const KeyInfo(
+          label: "Shift",
+          scancode: 0,
+          isModifier: true,
+          modifierMask: 0x20,
+          flex: 2.8,
+        ),
         const KeyInfo(label: "", scancode: 0, isSpacer: true, flex: 1.3),
         const KeyInfo(label: "▲", scancode: 0x52, flex: 1.0),
         const KeyInfo(label: "", scancode: 0, isSpacer: true, flex: 1.3),
       ],
       // Row 6
       [
-        const KeyInfo(label: "Ctrl", scancode: 0, isModifier: true, modifierMask: 0x01, flex: 1.25),
-        const KeyInfo(label: "Win", scancode: 0, isModifier: true, modifierMask: 0x08, flex: 1.25),
-        const KeyInfo(label: "Alt", scancode: 0, isModifier: true, modifierMask: 0x04, flex: 1.25),
+        const KeyInfo(
+          label: "Ctrl",
+          scancode: 0,
+          isModifier: true,
+          modifierMask: 0x01,
+          flex: 1.25,
+        ),
+        const KeyInfo(
+          label: "Win",
+          scancode: 0,
+          isModifier: true,
+          modifierMask: 0x08,
+          flex: 1.25,
+        ),
+        const KeyInfo(
+          label: "Alt",
+          scancode: 0,
+          isModifier: true,
+          modifierMask: 0x04,
+          flex: 1.25,
+        ),
         const KeyInfo(label: "Space", scancode: 0x2C, flex: 6.0),
-        const KeyInfo(label: "Alt", scancode: 0, isModifier: true, modifierMask: 0x40, flex: 1.25),
+        const KeyInfo(
+          label: "Alt",
+          scancode: 0,
+          isModifier: true,
+          modifierMask: 0x40,
+          flex: 1.25,
+        ),
         const KeyInfo(label: "Fn", scancode: -1, flex: 1.25),
         const KeyInfo(label: "App", scancode: 0x65, flex: 1.25),
-        const KeyInfo(label: "Ctrl", scancode: 0, isModifier: true, modifierMask: 0x10, flex: 1.5),
+        const KeyInfo(
+          label: "Ctrl",
+          scancode: 0,
+          isModifier: true,
+          modifierMask: 0x10,
+          flex: 1.5,
+        ),
         const KeyInfo(label: "", scancode: 0, isSpacer: true, flex: 0.3),
         const KeyInfo(label: "◀", scancode: 0x50, flex: 1.0),
         const KeyInfo(label: "▼", scancode: 0x51, flex: 1.0),
@@ -325,7 +367,13 @@ class _HomeScreenState extends State<HomeScreen> {
       ],
       // Row 5 (Shift + arrows + KP 0)
       [
-        const KeyInfo(label: "Shift", scancode: 0, isModifier: true, modifierMask: 0x02, flex: 2.2),
+        const KeyInfo(
+          label: "Shift",
+          scancode: 0,
+          isModifier: true,
+          modifierMask: 0x02,
+          flex: 2.2,
+        ),
         const KeyInfo(label: "Z", scancode: 0x1D, flex: 1.0),
         const KeyInfo(label: "X", scancode: 0x1B, flex: 1.0),
         const KeyInfo(label: "C", scancode: 0x06, flex: 1.0),
@@ -336,7 +384,13 @@ class _HomeScreenState extends State<HomeScreen> {
         const KeyInfo(label: ",", scancode: 0x36, flex: 1.0),
         const KeyInfo(label: ".", scancode: 0x37, flex: 1.0),
         const KeyInfo(label: "/", scancode: 0x38, flex: 1.0),
-        const KeyInfo(label: "Shift", scancode: 0, isModifier: true, modifierMask: 0x20, flex: 2.8),
+        const KeyInfo(
+          label: "Shift",
+          scancode: 0,
+          isModifier: true,
+          modifierMask: 0x20,
+          flex: 2.8,
+        ),
         const KeyInfo(label: "", scancode: 0, isSpacer: true, flex: 1.3),
         const KeyInfo(label: "▲", scancode: 0x52, flex: 1.0),
         const KeyInfo(label: "", scancode: 0, isSpacer: true, flex: 1.3),
@@ -346,14 +400,44 @@ class _HomeScreenState extends State<HomeScreen> {
       ],
       // Row 6 (Ctrl/Alt/Space + arrows)
       [
-        const KeyInfo(label: "Ctrl", scancode: 0, isModifier: true, modifierMask: 0x01, flex: 1.25),
-        const KeyInfo(label: "Win", scancode: 0, isModifier: true, modifierMask: 0x08, flex: 1.25),
-        const KeyInfo(label: "Alt", scancode: 0, isModifier: true, modifierMask: 0x04, flex: 1.25),
+        const KeyInfo(
+          label: "Ctrl",
+          scancode: 0,
+          isModifier: true,
+          modifierMask: 0x01,
+          flex: 1.25,
+        ),
+        const KeyInfo(
+          label: "Win",
+          scancode: 0,
+          isModifier: true,
+          modifierMask: 0x08,
+          flex: 1.25,
+        ),
+        const KeyInfo(
+          label: "Alt",
+          scancode: 0,
+          isModifier: true,
+          modifierMask: 0x04,
+          flex: 1.25,
+        ),
         const KeyInfo(label: "Space", scancode: 0x2C, flex: 6.0),
-        const KeyInfo(label: "Alt", scancode: 0, isModifier: true, modifierMask: 0x40, flex: 1.25),
+        const KeyInfo(
+          label: "Alt",
+          scancode: 0,
+          isModifier: true,
+          modifierMask: 0x40,
+          flex: 1.25,
+        ),
         const KeyInfo(label: "Fn", scancode: -1, flex: 1.25),
         const KeyInfo(label: "App", scancode: 0x65, flex: 1.25),
-        const KeyInfo(label: "Ctrl", scancode: 0, isModifier: true, modifierMask: 0x10, flex: 1.5),
+        const KeyInfo(
+          label: "Ctrl",
+          scancode: 0,
+          isModifier: true,
+          modifierMask: 0x10,
+          flex: 1.5,
+        ),
         const KeyInfo(label: "", scancode: 0, isSpacer: true, flex: 0.3),
         const KeyInfo(label: "◀", scancode: 0x50, flex: 1.0),
         const KeyInfo(label: "▼", scancode: 0x51, flex: 1.0),
@@ -456,7 +540,13 @@ class _HomeScreenState extends State<HomeScreen> {
       ],
       // Row 5 (Shift + Up + End + KP 0 + KP .)
       [
-        const KeyInfo(label: "Shift", scancode: 0, isModifier: true, modifierMask: 0x02, flex: 2.0),
+        const KeyInfo(
+          label: "Shift",
+          scancode: 0,
+          isModifier: true,
+          modifierMask: 0x02,
+          flex: 2.0,
+        ),
         const KeyInfo(label: "Z", scancode: 0x1D, flex: 1.0),
         const KeyInfo(label: "X", scancode: 0x1B, flex: 1.0),
         const KeyInfo(label: "C", scancode: 0x06, flex: 1.0),
@@ -467,7 +557,13 @@ class _HomeScreenState extends State<HomeScreen> {
         const KeyInfo(label: ",", scancode: 0x36, flex: 1.0),
         const KeyInfo(label: ".", scancode: 0x37, flex: 1.0),
         const KeyInfo(label: "/", scancode: 0x38, flex: 1.0),
-        const KeyInfo(label: "Shift", scancode: 0, isModifier: true, modifierMask: 0x20, flex: 3.0),
+        const KeyInfo(
+          label: "Shift",
+          scancode: 0,
+          isModifier: true,
+          modifierMask: 0x20,
+          flex: 3.0,
+        ),
         const KeyInfo(label: "▲", scancode: 0x52, flex: 1.0),
         const KeyInfo(label: "End", scancode: 0x4D, flex: 1.0),
         const KeyInfo(label: "KP 0", scancode: 0x62, flex: 2.0),
@@ -475,13 +571,43 @@ class _HomeScreenState extends State<HomeScreen> {
       ],
       // Row 6 (Spacebar row + arrows + KP 0 / KP Ent)
       [
-        const KeyInfo(label: "Ctrl", scancode: 0, isModifier: true, modifierMask: 0x01, flex: 1.25),
-        const KeyInfo(label: "Win", scancode: 0, isModifier: true, modifierMask: 0x08, flex: 1.25),
-        const KeyInfo(label: "Alt", scancode: 0, isModifier: true, modifierMask: 0x04, flex: 1.25),
+        const KeyInfo(
+          label: "Ctrl",
+          scancode: 0,
+          isModifier: true,
+          modifierMask: 0x01,
+          flex: 1.25,
+        ),
+        const KeyInfo(
+          label: "Win",
+          scancode: 0,
+          isModifier: true,
+          modifierMask: 0x08,
+          flex: 1.25,
+        ),
+        const KeyInfo(
+          label: "Alt",
+          scancode: 0,
+          isModifier: true,
+          modifierMask: 0x04,
+          flex: 1.25,
+        ),
         const KeyInfo(label: "Space", scancode: 0x2C, flex: 5.5),
-        const KeyInfo(label: "Alt", scancode: 0, isModifier: true, modifierMask: 0x40, flex: 1.25),
+        const KeyInfo(
+          label: "Alt",
+          scancode: 0,
+          isModifier: true,
+          modifierMask: 0x40,
+          flex: 1.25,
+        ),
         const KeyInfo(label: "Fn", scancode: -1, flex: 1.25),
-        const KeyInfo(label: "Ctrl", scancode: 0, isModifier: true, modifierMask: 0x10, flex: 1.25),
+        const KeyInfo(
+          label: "Ctrl",
+          scancode: 0,
+          isModifier: true,
+          modifierMask: 0x10,
+          flex: 1.25,
+        ),
         const KeyInfo(label: "◀", scancode: 0x50, flex: 1.0),
         const KeyInfo(label: "▼", scancode: 0x51, flex: 1.0),
         const KeyInfo(label: "▶", scancode: 0x4F, flex: 1.0),
@@ -569,7 +695,13 @@ class _HomeScreenState extends State<HomeScreen> {
       ],
       // Row 5 (Shift + Up + End)
       [
-        const KeyInfo(label: "Shift", scancode: 0, isModifier: true, modifierMask: 0x02, flex: 2.0),
+        const KeyInfo(
+          label: "Shift",
+          scancode: 0,
+          isModifier: true,
+          modifierMask: 0x02,
+          flex: 2.0,
+        ),
         const KeyInfo(label: "Z", scancode: 0x1D, flex: 1.0),
         const KeyInfo(label: "X", scancode: 0x1B, flex: 1.0),
         const KeyInfo(label: "C", scancode: 0x06, flex: 1.0),
@@ -580,19 +712,55 @@ class _HomeScreenState extends State<HomeScreen> {
         const KeyInfo(label: ",", scancode: 0x36, flex: 1.0),
         const KeyInfo(label: ".", scancode: 0x37, flex: 1.0),
         const KeyInfo(label: "/", scancode: 0x38, flex: 1.0),
-        const KeyInfo(label: "Shift", scancode: 0, isModifier: true, modifierMask: 0x20, flex: 2.0),
+        const KeyInfo(
+          label: "Shift",
+          scancode: 0,
+          isModifier: true,
+          modifierMask: 0x20,
+          flex: 2.0,
+        ),
         const KeyInfo(label: "▲", scancode: 0x52, flex: 1.0),
         const KeyInfo(label: "End", scancode: 0x4D, flex: 1.0),
       ],
       // Row 6 (Spacebar row + Left/Down/Right)
       [
-        const KeyInfo(label: "Ctrl", scancode: 0, isModifier: true, modifierMask: 0x01, flex: 1.25),
-        const KeyInfo(label: "Win", scancode: 0, isModifier: true, modifierMask: 0x08, flex: 1.25),
-        const KeyInfo(label: "Alt", scancode: 0, isModifier: true, modifierMask: 0x04, flex: 1.25),
+        const KeyInfo(
+          label: "Ctrl",
+          scancode: 0,
+          isModifier: true,
+          modifierMask: 0x01,
+          flex: 1.25,
+        ),
+        const KeyInfo(
+          label: "Win",
+          scancode: 0,
+          isModifier: true,
+          modifierMask: 0x08,
+          flex: 1.25,
+        ),
+        const KeyInfo(
+          label: "Alt",
+          scancode: 0,
+          isModifier: true,
+          modifierMask: 0x04,
+          flex: 1.25,
+        ),
         const KeyInfo(label: "Space", scancode: 0x2C, flex: 5.5),
-        const KeyInfo(label: "Alt", scancode: 0, isModifier: true, modifierMask: 0x40, flex: 1.25),
+        const KeyInfo(
+          label: "Alt",
+          scancode: 0,
+          isModifier: true,
+          modifierMask: 0x40,
+          flex: 1.25,
+        ),
         const KeyInfo(label: "Fn", scancode: -1, flex: 1.25),
-        const KeyInfo(label: "Ctrl", scancode: 0, isModifier: true, modifierMask: 0x10, flex: 1.25),
+        const KeyInfo(
+          label: "Ctrl",
+          scancode: 0,
+          isModifier: true,
+          modifierMask: 0x10,
+          flex: 1.25,
+        ),
         const KeyInfo(label: "◀", scancode: 0x50, flex: 1.0),
         const KeyInfo(label: "▼", scancode: 0x51, flex: 1.0),
         const KeyInfo(label: "▶", scancode: 0x4F, flex: 1.0),
@@ -658,7 +826,13 @@ class _HomeScreenState extends State<HomeScreen> {
       ],
       // Row 4 (Shift + Up + End)
       [
-        const KeyInfo(label: "Shift", scancode: 0, isModifier: true, modifierMask: 0x02, flex: 2.0),
+        const KeyInfo(
+          label: "Shift",
+          scancode: 0,
+          isModifier: true,
+          modifierMask: 0x02,
+          flex: 2.0,
+        ),
         const KeyInfo(label: "Z", scancode: 0x1D, flex: 1.0),
         const KeyInfo(label: "X", scancode: 0x1B, flex: 1.0),
         const KeyInfo(label: "C", scancode: 0x06, flex: 1.0),
@@ -669,19 +843,55 @@ class _HomeScreenState extends State<HomeScreen> {
         const KeyInfo(label: ",", scancode: 0x36, flex: 1.0),
         const KeyInfo(label: ".", scancode: 0x37, flex: 1.0),
         const KeyInfo(label: "/", scancode: 0x38, flex: 1.0),
-        const KeyInfo(label: "Shift", scancode: 0, isModifier: true, modifierMask: 0x20, flex: 2.0),
+        const KeyInfo(
+          label: "Shift",
+          scancode: 0,
+          isModifier: true,
+          modifierMask: 0x20,
+          flex: 2.0,
+        ),
         const KeyInfo(label: "▲", scancode: 0x52, flex: 1.0),
         const KeyInfo(label: "End", scancode: 0x4D, flex: 1.0),
       ],
       // Row 5 (Spacebar row + Left/Down/Right)
       [
-        const KeyInfo(label: "Ctrl", scancode: 0, isModifier: true, modifierMask: 0x01, flex: 1.25),
-        const KeyInfo(label: "Win", scancode: 0, isModifier: true, modifierMask: 0x08, flex: 1.25),
-        const KeyInfo(label: "Alt", scancode: 0, isModifier: true, modifierMask: 0x04, flex: 1.25),
+        const KeyInfo(
+          label: "Ctrl",
+          scancode: 0,
+          isModifier: true,
+          modifierMask: 0x01,
+          flex: 1.25,
+        ),
+        const KeyInfo(
+          label: "Win",
+          scancode: 0,
+          isModifier: true,
+          modifierMask: 0x08,
+          flex: 1.25,
+        ),
+        const KeyInfo(
+          label: "Alt",
+          scancode: 0,
+          isModifier: true,
+          modifierMask: 0x04,
+          flex: 1.25,
+        ),
         const KeyInfo(label: "Space", scancode: 0x2C, flex: 5.5),
-        const KeyInfo(label: "Alt", scancode: 0, isModifier: true, modifierMask: 0x40, flex: 1.25),
+        const KeyInfo(
+          label: "Alt",
+          scancode: 0,
+          isModifier: true,
+          modifierMask: 0x40,
+          flex: 1.25,
+        ),
         const KeyInfo(label: "Fn", scancode: -1, flex: 1.25),
-        const KeyInfo(label: "Ctrl", scancode: 0, isModifier: true, modifierMask: 0x10, flex: 1.25),
+        const KeyInfo(
+          label: "Ctrl",
+          scancode: 0,
+          isModifier: true,
+          modifierMask: 0x10,
+          flex: 1.25,
+        ),
         const KeyInfo(label: "◀", scancode: 0x50, flex: 1.0),
         const KeyInfo(label: "▼", scancode: 0x51, flex: 1.0),
         const KeyInfo(label: "▶", scancode: 0x4F, flex: 1.0),
@@ -694,20 +904,92 @@ class _HomeScreenState extends State<HomeScreen> {
     return [
       // Row 1
       [
-        const KeyInfo(label: "`", fnLabel: "Esc", scancode: 0x35, fnScancode: 0x29, flex: 1.2),
-        const KeyInfo(label: "1", fnLabel: "F1", scancode: 0x1E, fnScancode: 0x3A),
-        const KeyInfo(label: "2", fnLabel: "F2", scancode: 0x1F, fnScancode: 0x3B),
-        const KeyInfo(label: "3", fnLabel: "F3", scancode: 0x20, fnScancode: 0x3C),
-        const KeyInfo(label: "4", fnLabel: "F4", scancode: 0x21, fnScancode: 0x3D),
-        const KeyInfo(label: "5", fnLabel: "F5", scancode: 0x22, fnScancode: 0x3E),
-        const KeyInfo(label: "6", fnLabel: "F6", scancode: 0x23, fnScancode: 0x3F),
-        const KeyInfo(label: "7", fnLabel: "F7", scancode: 0x24, fnScancode: 0x40),
-        const KeyInfo(label: "8", fnLabel: "F8", scancode: 0x25, fnScancode: 0x41),
-        const KeyInfo(label: "9", fnLabel: "F9", scancode: 0x26, fnScancode: 0x42),
-        const KeyInfo(label: "0", fnLabel: "F10", scancode: 0x27, fnScancode: 0x43),
-        const KeyInfo(label: "-", fnLabel: "F11", scancode: 0x2D, fnScancode: 0x44),
-        const KeyInfo(label: "=", fnLabel: "F12", scancode: 0x2E, fnScancode: 0x45),
-        const KeyInfo(label: "Back", fnLabel: "Del", scancode: 0x2A, fnScancode: 0x4C, flex: 1.8),
+        const KeyInfo(
+          label: "`",
+          fnLabel: "Esc",
+          scancode: 0x35,
+          fnScancode: 0x29,
+          flex: 1.2,
+        ),
+        const KeyInfo(
+          label: "1",
+          fnLabel: "F1",
+          scancode: 0x1E,
+          fnScancode: 0x3A,
+        ),
+        const KeyInfo(
+          label: "2",
+          fnLabel: "F2",
+          scancode: 0x1F,
+          fnScancode: 0x3B,
+        ),
+        const KeyInfo(
+          label: "3",
+          fnLabel: "F3",
+          scancode: 0x20,
+          fnScancode: 0x3C,
+        ),
+        const KeyInfo(
+          label: "4",
+          fnLabel: "F4",
+          scancode: 0x21,
+          fnScancode: 0x3D,
+        ),
+        const KeyInfo(
+          label: "5",
+          fnLabel: "F5",
+          scancode: 0x22,
+          fnScancode: 0x3E,
+        ),
+        const KeyInfo(
+          label: "6",
+          fnLabel: "F6",
+          scancode: 0x23,
+          fnScancode: 0x3F,
+        ),
+        const KeyInfo(
+          label: "7",
+          fnLabel: "F7",
+          scancode: 0x24,
+          fnScancode: 0x40,
+        ),
+        const KeyInfo(
+          label: "8",
+          fnLabel: "F8",
+          scancode: 0x25,
+          fnScancode: 0x41,
+        ),
+        const KeyInfo(
+          label: "9",
+          fnLabel: "F9",
+          scancode: 0x26,
+          fnScancode: 0x42,
+        ),
+        const KeyInfo(
+          label: "0",
+          fnLabel: "F10",
+          scancode: 0x27,
+          fnScancode: 0x43,
+        ),
+        const KeyInfo(
+          label: "-",
+          fnLabel: "F11",
+          scancode: 0x2D,
+          fnScancode: 0x44,
+        ),
+        const KeyInfo(
+          label: "=",
+          fnLabel: "F12",
+          scancode: 0x2E,
+          fnScancode: 0x45,
+        ),
+        const KeyInfo(
+          label: "Back",
+          fnLabel: "Del",
+          scancode: 0x2A,
+          fnScancode: 0x4C,
+          flex: 1.8,
+        ),
       ],
       // Row 2
       [
@@ -718,10 +1000,30 @@ class _HomeScreenState extends State<HomeScreen> {
         const KeyInfo(label: "R", scancode: 0x15),
         const KeyInfo(label: "T", scancode: 0x17),
         const KeyInfo(label: "Y", scancode: 0x1C),
-        const KeyInfo(label: "U", fnLabel: "Home", scancode: 0x18, fnScancode: 0x4A),
-        const KeyInfo(label: "I", fnLabel: "▲", scancode: 0x0C, fnScancode: 0x52),
-        const KeyInfo(label: "O", fnLabel: "End", scancode: 0x12, fnScancode: 0x4D),
-        const KeyInfo(label: "P", fnLabel: "PgUp", scancode: 0x13, fnScancode: 0x4B),
+        const KeyInfo(
+          label: "U",
+          fnLabel: "Home",
+          scancode: 0x18,
+          fnScancode: 0x4A,
+        ),
+        const KeyInfo(
+          label: "I",
+          fnLabel: "▲",
+          scancode: 0x0C,
+          fnScancode: 0x52,
+        ),
+        const KeyInfo(
+          label: "O",
+          fnLabel: "End",
+          scancode: 0x12,
+          fnScancode: 0x4D,
+        ),
+        const KeyInfo(
+          label: "P",
+          fnLabel: "PgUp",
+          scancode: 0x13,
+          fnScancode: 0x4B,
+        ),
         const KeyInfo(label: "[", scancode: 0x2F),
         const KeyInfo(label: "]", scancode: 0x30),
         const KeyInfo(label: "\\", scancode: 0x31, flex: 1.5),
@@ -735,16 +1037,42 @@ class _HomeScreenState extends State<HomeScreen> {
         const KeyInfo(label: "F", scancode: 0x09),
         const KeyInfo(label: "G", scancode: 0x0A),
         const KeyInfo(label: "H", scancode: 0x0B),
-        const KeyInfo(label: "J", fnLabel: "◀", scancode: 0x0D, fnScancode: 0x50),
-        const KeyInfo(label: "K", fnLabel: "▼", scancode: 0x0E, fnScancode: 0x51),
-        const KeyInfo(label: "L", fnLabel: "▶", scancode: 0x0F, fnScancode: 0x4F),
-        const KeyInfo(label: ";", fnLabel: "PgDn", scancode: 0x33, fnScancode: 0x4E),
+        const KeyInfo(
+          label: "J",
+          fnLabel: "◀",
+          scancode: 0x0D,
+          fnScancode: 0x50,
+        ),
+        const KeyInfo(
+          label: "K",
+          fnLabel: "▼",
+          scancode: 0x0E,
+          fnScancode: 0x51,
+        ),
+        const KeyInfo(
+          label: "L",
+          fnLabel: "▶",
+          scancode: 0x0F,
+          fnScancode: 0x4F,
+        ),
+        const KeyInfo(
+          label: ";",
+          fnLabel: "PgDn",
+          scancode: 0x33,
+          fnScancode: 0x4E,
+        ),
         const KeyInfo(label: "'", scancode: 0x34),
         const KeyInfo(label: "Enter", scancode: 0x28, flex: 2.2),
       ],
       // Row 4
       [
-        const KeyInfo(label: "Shift", scancode: 0, isModifier: true, modifierMask: 0x02, flex: 2.2),
+        const KeyInfo(
+          label: "Shift",
+          scancode: 0,
+          isModifier: true,
+          modifierMask: 0x02,
+          flex: 2.2,
+        ),
         const KeyInfo(label: "Z", scancode: 0x1D),
         const KeyInfo(label: "X", scancode: 0x1B),
         const KeyInfo(label: "C", scancode: 0x06),
@@ -755,17 +1083,53 @@ class _HomeScreenState extends State<HomeScreen> {
         const KeyInfo(label: ",", scancode: 0x36),
         const KeyInfo(label: ".", scancode: 0x37),
         const KeyInfo(label: "/", scancode: 0x38),
-        const KeyInfo(label: "Shift", scancode: 0, isModifier: true, modifierMask: 0x20, flex: 2.8),
+        const KeyInfo(
+          label: "Shift",
+          scancode: 0,
+          isModifier: true,
+          modifierMask: 0x20,
+          flex: 2.8,
+        ),
       ],
       // Row 5
       [
-        const KeyInfo(label: "Ctrl", scancode: 0, isModifier: true, modifierMask: 0x01, flex: 1.5),
-        const KeyInfo(label: "Win", scancode: 0, isModifier: true, modifierMask: 0x08, flex: 1.5),
-        const KeyInfo(label: "Alt", scancode: 0, isModifier: true, modifierMask: 0x04, flex: 1.5),
+        const KeyInfo(
+          label: "Ctrl",
+          scancode: 0,
+          isModifier: true,
+          modifierMask: 0x01,
+          flex: 1.5,
+        ),
+        const KeyInfo(
+          label: "Win",
+          scancode: 0,
+          isModifier: true,
+          modifierMask: 0x08,
+          flex: 1.5,
+        ),
+        const KeyInfo(
+          label: "Alt",
+          scancode: 0,
+          isModifier: true,
+          modifierMask: 0x04,
+          flex: 1.5,
+        ),
         const KeyInfo(label: "Space", scancode: 0x2C, flex: 6.0),
-        const KeyInfo(label: "Alt", scancode: 0, isModifier: true, modifierMask: 0x40, flex: 1.5),
+        const KeyInfo(
+          label: "Alt",
+          scancode: 0,
+          isModifier: true,
+          modifierMask: 0x40,
+          flex: 1.5,
+        ),
         const KeyInfo(label: "Fn", scancode: -1, flex: 1.5),
-        const KeyInfo(label: "Ctrl", scancode: 0, isModifier: true, modifierMask: 0x10, flex: 1.5),
+        const KeyInfo(
+          label: "Ctrl",
+          scancode: 0,
+          isModifier: true,
+          modifierMask: 0x10,
+          flex: 1.5,
+        ),
       ],
     ];
   }
@@ -801,7 +1165,7 @@ class _HomeScreenState extends State<HomeScreen> {
   // Trackpad Settings
   double _sensitivity = 3.0;
   bool _mouseAcceleration = false; // Mouse acceleration disabled by default
-  bool _trackpadOnLeft = true;     // Trackpad configuration parameter
+  bool _trackpadOnLeft = true; // Trackpad configuration parameter
   KeyboardKind _keyboardKind = KeyboardKind.tenkeyless; // Default TKL style
 
   // Fraction accumulators for precision control
@@ -869,7 +1233,8 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<void> _checkSupportAndPermissions() async {
     try {
-      final supported = await _channel.invokeMethod<bool>('isSupported') ?? false;
+      final supported =
+          await _channel.invokeMethod<bool>('isSupported') ?? false;
       setState(() {
         _isSupported = supported;
       });
@@ -888,13 +1253,16 @@ class _HomeScreenState extends State<HomeScreen> {
       bool granted = false;
 
       if (sdkVersion >= 31) {
-        PermissionStatus connectStatus = await Permission.bluetoothConnect.status;
-        PermissionStatus advertiseStatus = await Permission.bluetoothAdvertise.status;
+        PermissionStatus connectStatus =
+            await Permission.bluetoothConnect.status;
+        PermissionStatus advertiseStatus =
+            await Permission.bluetoothAdvertise.status;
         PermissionStatus scanStatus = await Permission.bluetoothScan.status;
 
-        granted = connectStatus.isGranted && 
-                  advertiseStatus.isGranted && 
-                  scanStatus.isGranted;
+        granted =
+            connectStatus.isGranted &&
+            advertiseStatus.isGranted &&
+            scanStatus.isGranted;
 
         if (!granted) {
           Map<Permission, PermissionStatus> statuses = await [
@@ -903,9 +1271,10 @@ class _HomeScreenState extends State<HomeScreen> {
             Permission.bluetoothScan,
           ].request();
 
-          granted = (statuses[Permission.bluetoothConnect]?.isGranted ?? false) &&
-                    (statuses[Permission.bluetoothAdvertise]?.isGranted ?? false) &&
-                    (statuses[Permission.bluetoothScan]?.isGranted ?? false);
+          granted =
+              (statuses[Permission.bluetoothConnect]?.isGranted ?? false) &&
+              (statuses[Permission.bluetoothAdvertise]?.isGranted ?? false) &&
+              (statuses[Permission.bluetoothScan]?.isGranted ?? false);
         }
       } else {
         // Under Android 12 (API level 30 and lower), Location runtime is needed for BT scanning/discovery
@@ -942,7 +1311,9 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<void> _loadConnectionState() async {
     try {
-      final result = await _channel.invokeMapMethod<String, dynamic>('getConnectionState');
+      final result = await _channel.invokeMapMethod<String, dynamic>(
+        'getConnectionState',
+      );
       if (result != null) {
         setState(() {
           _isConnected = result['connected'] as bool? ?? false;
@@ -969,10 +1340,14 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<void> _fetchPairedDevices() async {
     try {
-      final List<dynamic>? devices = await _channel.invokeMethod('getPairedDevices');
+      final List<dynamic>? devices = await _channel.invokeMethod(
+        'getPairedDevices',
+      );
       if (devices != null) {
         setState(() {
-          _pairedDevices = devices.map((d) => Map<String, String>.from(d as Map)).toList();
+          _pairedDevices = devices
+              .map((d) => Map<String, String>.from(d as Map))
+              .toList();
         });
         if (_bottomSheetStateSetter != null) {
           _bottomSheetStateSetter!(() {});
@@ -993,7 +1368,11 @@ class _HomeScreenState extends State<HomeScreen> {
     }
 
     try {
-      final success = await _channel.invokeMethod<bool>('connectDevice', {'address': address}) ?? false;
+      final success =
+          await _channel.invokeMethod<bool>('connectDevice', {
+            'address': address,
+          }) ??
+          false;
       if (!success) {
         setState(() {
           _isConnecting = false;
@@ -1051,7 +1430,8 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<void> _disconnectDevice() async {
     try {
-      final success = await _channel.invokeMethod<bool>('disconnectDevice') ?? false;
+      final success =
+          await _channel.invokeMethod<bool>('disconnectDevice') ?? false;
       if (success) {
         setState(() {
           _isConnected = false;
@@ -1081,7 +1461,10 @@ class _HomeScreenState extends State<HomeScreen> {
             _bottomSheetStateSetter = setModalState;
 
             return Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 16.0),
+              padding: const EdgeInsets.symmetric(
+                horizontal: 20.0,
+                vertical: 16.0,
+              ),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -1098,14 +1481,18 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                   ),
                   const SizedBox(height: 16),
-                  
+
                   // Header
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       const Row(
                         children: [
-                          Icon(Icons.bluetooth, color: Color(0xFF00E5FF), size: 24),
+                          Icon(
+                            Icons.bluetooth,
+                            color: Color(0xFF00E5FF),
+                            size: 24,
+                          ),
                           SizedBox(width: 10),
                           Text(
                             "Bluetooth Connections",
@@ -1119,7 +1506,11 @@ class _HomeScreenState extends State<HomeScreen> {
                         ],
                       ),
                       IconButton(
-                        icon: const Icon(Icons.refresh, color: Colors.white54, size: 20),
+                        icon: const Icon(
+                          Icons.refresh,
+                          color: Colors.white54,
+                          size: 20,
+                        ),
                         onPressed: () async {
                           await _fetchPairedDevices();
                         },
@@ -1135,7 +1526,9 @@ class _HomeScreenState extends State<HomeScreen> {
                       color: const Color(0xFF0C0C12),
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
-                        color: _isConnected ? const Color(0x200DF5E3) : const Color(0x08FFFFFF),
+                        color: _isConnected
+                            ? const Color(0x200DF5E3)
+                            : const Color(0x08FFFFFF),
                       ),
                     ),
                     child: Row(
@@ -1144,7 +1537,9 @@ class _HomeScreenState extends State<HomeScreen> {
                           width: 8,
                           height: 8,
                           decoration: BoxDecoration(
-                            color: _isConnected ? const Color(0xFF0DF5E3) : Colors.redAccent,
+                            color: _isConnected
+                                ? const Color(0xFF0DF5E3)
+                                : Colors.redAccent,
                             shape: BoxShape.circle,
                           ),
                         ),
@@ -1157,7 +1552,9 @@ class _HomeScreenState extends State<HomeScreen> {
                             style: TextStyle(
                               fontSize: 13,
                               fontWeight: FontWeight.w700,
-                              color: _isConnected ? const Color(0xFF0DF5E3) : Colors.white70,
+                              color: _isConnected
+                                  ? const Color(0xFF0DF5E3)
+                                  : Colors.white70,
                             ),
                           ),
                         ),
@@ -1168,11 +1565,20 @@ class _HomeScreenState extends State<HomeScreen> {
                             },
                             style: TextButton.styleFrom(
                               foregroundColor: Colors.redAccent,
-                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 6,
+                              ),
                               minimumSize: Size.zero,
                               tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                             ),
-                            child: const Text("Disconnect", style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                            child: const Text(
+                              "Disconnect",
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
                           ),
                       ],
                     ),
@@ -1199,7 +1605,10 @@ class _HomeScreenState extends State<HomeScreen> {
                             child: const Text(
                               "No paired devices found.\nMake sure your phone is paired to your computer.",
                               textAlign: TextAlign.center,
-                              style: TextStyle(color: Colors.white30, fontSize: 13),
+                              style: TextStyle(
+                                color: Colors.white30,
+                                fontSize: 13,
+                              ),
                             ),
                           )
                         : ListView.builder(
@@ -1209,11 +1618,17 @@ class _HomeScreenState extends State<HomeScreen> {
                               final device = _pairedDevices[index];
                               final name = device['name'] ?? "Unknown Device";
                               final address = device['address'] ?? "";
-                              final isConnectingThis = _isConnecting && _connectingAddress == address;
-                              final isConnectedThis = _isConnected && _connectedDeviceAddress == address;
+                              final isConnectingThis =
+                                  _isConnecting &&
+                                  _connectingAddress == address;
+                              final isConnectedThis =
+                                  _isConnected &&
+                                  _connectedDeviceAddress == address;
 
                               return Padding(
-                                padding: const EdgeInsets.symmetric(vertical: 4.0),
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 4.0,
+                                ),
                                 child: Container(
                                   decoration: BoxDecoration(
                                     color: const Color(0xFF1B1B26),
@@ -1226,7 +1641,10 @@ class _HomeScreenState extends State<HomeScreen> {
                                     ),
                                   ),
                                   child: ListTile(
-                                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                                    contentPadding: const EdgeInsets.symmetric(
+                                      horizontal: 16,
+                                      vertical: 4,
+                                    ),
                                     title: Text(
                                       name,
                                       style: const TextStyle(
@@ -1248,34 +1666,51 @@ class _HomeScreenState extends State<HomeScreen> {
                                             height: 20,
                                             child: CircularProgressIndicator(
                                               strokeWidth: 2,
-                                              valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF00E5FF)),
+                                              valueColor:
+                                                  AlwaysStoppedAnimation<Color>(
+                                                    Color(0xFF00E5FF),
+                                                  ),
                                             ),
                                           )
                                         : isConnectedThis
-                                            ? const Icon(Icons.check_circle, color: Color(0xFF0DF5E3), size: 22)
-                                            : ElevatedButton(
-                                                onPressed: _isConnecting
-                                                    ? null
-                                                    : () async {
-                                                        await _connectToDevice(address, name);
-                                                      },
-                                                style: ElevatedButton.styleFrom(
-                                                  backgroundColor: const Color(0xFF00E5FF),
-                                                  foregroundColor: Colors.black,
-                                                  minimumSize: Size.zero,
-                                                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                                                  shape: RoundedRectangleBorder(
-                                                    borderRadius: BorderRadius.circular(8),
-                                                  ),
-                                                ),
-                                                child: const Text(
-                                                  "Connect",
-                                                  style: TextStyle(
-                                                    fontSize: 12,
-                                                    fontWeight: FontWeight.w900,
-                                                  ),
-                                                ),
+                                        ? const Icon(
+                                            Icons.check_circle,
+                                            color: Color(0xFF0DF5E3),
+                                            size: 22,
+                                          )
+                                        : ElevatedButton(
+                                            onPressed: _isConnecting
+                                                ? null
+                                                : () async {
+                                                    await _connectToDevice(
+                                                      address,
+                                                      name,
+                                                    );
+                                                  },
+                                            style: ElevatedButton.styleFrom(
+                                              backgroundColor: const Color(
+                                                0xFF00E5FF,
                                               ),
+                                              foregroundColor: Colors.black,
+                                              minimumSize: Size.zero,
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                    horizontal: 14,
+                                                    vertical: 8,
+                                                  ),
+                                              shape: RoundedRectangleBorder(
+                                                borderRadius:
+                                                    BorderRadius.circular(8),
+                                              ),
+                                            ),
+                                            child: const Text(
+                                              "Connect",
+                                              style: TextStyle(
+                                                fontSize: 12,
+                                                fontWeight: FontWeight.w900,
+                                              ),
+                                            ),
+                                          ),
                                   ),
                                 ),
                               );
@@ -1284,7 +1719,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
 
                   const SizedBox(height: 16),
-                  
+
                   // Pair new device button (opens native settings)
                   ElevatedButton.icon(
                     onPressed: () {
@@ -1299,7 +1734,10 @@ class _HomeScreenState extends State<HomeScreen> {
                       padding: const EdgeInsets.symmetric(vertical: 14),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
-                        side: const BorderSide(color: Color(0x18FFFFFF), width: 1),
+                        side: const BorderSide(
+                          color: Color(0x18FFFFFF),
+                          width: 1,
+                        ),
                       ),
                     ),
                   ),
@@ -1339,7 +1777,10 @@ class _HomeScreenState extends State<HomeScreen> {
     intDy = intDy.clamp(-127, 127);
     intWheel = intWheel.clamp(-127, 127);
 
-    if (intDx != 0 || intDy != 0 || intWheel != 0 || buttons != _lastButtonsState) {
+    if (intDx != 0 ||
+        intDy != 0 ||
+        intWheel != 0 ||
+        buttons != _lastButtonsState) {
       _lastButtonsState = buttons;
       try {
         await _channel.invokeMethod('sendMouseReport', {
@@ -1359,7 +1800,7 @@ class _HomeScreenState extends State<HomeScreen> {
     List<int> bytes = List.filled(8, 0);
     bytes[0] = _modifiersBitmask;
     bytes[1] = 0; // Reserved byte (constant padding)
-    
+
     int idx = 2;
     for (int scancode in _activeScancodes) {
       if (idx < 8) {
@@ -1367,7 +1808,7 @@ class _HomeScreenState extends State<HomeScreen> {
         idx++;
       }
     }
-    
+
     try {
       await _channel.invokeMethod('sendKeyboardReport', {'bytes': bytes});
     } on PlatformException catch (e) {
@@ -1417,7 +1858,9 @@ class _HomeScreenState extends State<HomeScreen> {
     }
 
     // Resolve translated scancode depending on Fn active state
-    int scancode = (_fnActive && key.fnScancode != null) ? key.fnScancode! : key.scancode;
+    int scancode = (_fnActive && key.fnScancode != null)
+        ? key.fnScancode!
+        : key.scancode;
 
     if (_holdLockActive) {
       // HoldLock active: Toggle state
@@ -1480,13 +1923,21 @@ class _HomeScreenState extends State<HomeScreen> {
             const SizedBox(height: 24),
             const Text(
               "Unsupported Device",
-              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white),
+              style: TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
             ),
             const SizedBox(height: 16),
             const Text(
               "CouchMouse requires Android 9 (API Level 28) or higher for native Bluetooth HID Device Emulation.\n\nYour device's Android version does not support this profile.",
               textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 16, color: Colors.white54, height: 1.5),
+              style: TextStyle(
+                fontSize: 16,
+                color: Colors.white54,
+                height: 1.5,
+              ),
             ),
           ],
         ),
@@ -1501,17 +1952,29 @@ class _HomeScreenState extends State<HomeScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.bluetooth_searching, size: 80, color: Color(0xFF00E5FF)),
+            const Icon(
+              Icons.bluetooth_searching,
+              size: 80,
+              color: Color(0xFF00E5FF),
+            ),
             const SizedBox(height: 24),
             const Text(
               "Bluetooth Access Required",
-              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white),
+              style: TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
             ),
             const SizedBox(height: 16),
             const Text(
               "CouchMouse emulates a standard Bluetooth mouse and keyboard. To register this hardware profile, the app requires Bluetooth permission to advertise to hosts.",
               textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 16, color: Colors.white70, height: 1.5),
+              style: TextStyle(
+                fontSize: 16,
+                color: Colors.white70,
+                height: 1.5,
+              ),
             ),
             const SizedBox(height: 32),
             ElevatedButton.icon(
@@ -1521,8 +1984,14 @@ class _HomeScreenState extends State<HomeScreen> {
               style: ElevatedButton.styleFrom(
                 foregroundColor: Colors.black,
                 backgroundColor: const Color(0xFF00E5FF),
-                padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
-                textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 32,
+                  vertical: 16,
+                ),
+                textStyle: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
@@ -1582,7 +2051,9 @@ class _HomeScreenState extends State<HomeScreen> {
             color: const Color(0xFF13131B),
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
-              color: _isConnected ? const Color(0x330DF5E3) : const Color(0x1AFFFFFF),
+              color: _isConnected
+                  ? const Color(0x330DF5E3)
+                  : const Color(0x1AFFFFFF),
               width: 1.5,
             ),
             boxShadow: [
@@ -1608,7 +2079,9 @@ class _HomeScreenState extends State<HomeScreen> {
                       style: TextStyle(
                         fontSize: compact ? 15 : 18,
                         fontWeight: FontWeight.bold,
-                        color: _isConnected ? const Color(0xFF0DF5E3) : Colors.white,
+                        color: _isConnected
+                            ? const Color(0xFF0DF5E3)
+                            : Colors.white,
                       ),
                     ),
                     const SizedBox(height: 2),
@@ -1691,7 +2164,12 @@ class _HomeScreenState extends State<HomeScreen> {
               double dy = details.focalPointDelta.dy;
               double wheelDelta = -dy * 0.25;
               if (wheelDelta != 0) {
-                _sendReport(buttons: _lastButtonsState, dx: 0, dy: 0, wheel: wheelDelta);
+                _sendReport(
+                  buttons: _lastButtonsState,
+                  dx: 0,
+                  dy: 0,
+                  wheel: wheelDelta,
+                );
               }
             }
           },
@@ -1725,7 +2203,9 @@ class _HomeScreenState extends State<HomeScreen> {
                 Icon(
                   Icons.touch_app_outlined,
                   size: height < 200 ? 32 : 48,
-                  color: _touchPos != null ? const Color(0xFF00E5FF) : Colors.white12,
+                  color: _touchPos != null
+                      ? const Color(0xFF00E5FF)
+                      : Colors.white12,
                 ),
                 const SizedBox(height: 12),
                 Text(
@@ -1743,10 +2223,12 @@ class _HomeScreenState extends State<HomeScreen> {
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       fontSize: height < 200 ? 11 : 12,
-                      color: _touchPos != null ? Colors.white60 : Colors.white24,
+                      color: _touchPos != null
+                          ? Colors.white60
+                          : Colors.white24,
                     ),
                   ),
-                ]
+                ],
               ],
             ),
           ),
@@ -1798,7 +2280,9 @@ class _HomeScreenState extends State<HomeScreen> {
                           radius: 1.0,
                         )
                       : null,
-                  color: _leftActive ? const Color(0x0A00E5FF) : Colors.transparent,
+                  color: _leftActive
+                      ? const Color(0x0A00E5FF)
+                      : Colors.transparent,
                   borderRadius: const BorderRadius.only(
                     topLeft: Radius.circular(20),
                     bottomLeft: Radius.circular(20),
@@ -1813,14 +2297,18 @@ class _HomeScreenState extends State<HomeScreen> {
                     children: [
                       Icon(
                         Icons.mouse,
-                        color: _leftActive ? const Color(0xFF00E5FF) : Colors.white38,
+                        color: _leftActive
+                            ? const Color(0xFF00E5FF)
+                            : Colors.white38,
                         size: height < 70 ? 20 : 28,
                       ),
                       const SizedBox(height: 4),
                       Text(
                         "LEFT CLICK",
                         style: TextStyle(
-                          color: _leftActive ? const Color(0xFF00E5FF) : Colors.white70,
+                          color: _leftActive
+                              ? const Color(0xFF00E5FF)
+                              : Colors.white70,
                           fontWeight: FontWeight.bold,
                           fontSize: fontSize,
                           letterSpacing: 1.2,
@@ -1832,10 +2320,7 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
           ),
-          Container(
-            width: 1.5,
-            color: const Color(0x11FFFFFF),
-          ),
+          Container(width: 1.5, color: const Color(0x11FFFFFF)),
           Expanded(
             child: GestureDetector(
               behavior: HitTestBehavior.opaque,
@@ -1860,7 +2345,9 @@ class _HomeScreenState extends State<HomeScreen> {
                           radius: 1.0,
                         )
                       : null,
-                  color: _rightActive ? const Color(0x0A0DF5E3) : Colors.transparent,
+                  color: _rightActive
+                      ? const Color(0x0A0DF5E3)
+                      : Colors.transparent,
                   borderRadius: const BorderRadius.only(
                     topRight: Radius.circular(20),
                     bottomRight: Radius.circular(20),
@@ -1875,14 +2362,18 @@ class _HomeScreenState extends State<HomeScreen> {
                     children: [
                       Icon(
                         Icons.mouse_outlined,
-                        color: _rightActive ? const Color(0xFF0DF5E3) : Colors.white38,
+                        color: _rightActive
+                            ? const Color(0xFF0DF5E3)
+                            : Colors.white38,
                         size: height < 70 ? 20 : 28,
                       ),
                       const SizedBox(height: 4),
                       Text(
                         "RIGHT CLICK",
                         style: TextStyle(
-                          color: _rightActive ? const Color(0xFF0DF5E3) : Colors.white70,
+                          color: _rightActive
+                              ? const Color(0xFF0DF5E3)
+                              : Colors.white70,
                           fontWeight: FontWeight.bold,
                           fontSize: fontSize,
                           letterSpacing: 1.2,
@@ -1924,12 +2415,19 @@ class _HomeScreenState extends State<HomeScreen> {
                 },
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 150),
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 6,
+                  ),
                   decoration: BoxDecoration(
-                    color: _holdLockActive ? const Color(0x20FFCA28) : const Color(0xFF1B1B27),
+                    color: _holdLockActive
+                        ? const Color(0x20FFCA28)
+                        : const Color(0xFF1B1B27),
                     borderRadius: BorderRadius.circular(8),
                     border: Border.all(
-                      color: _holdLockActive ? const Color(0xFFFFCA28) : const Color(0x18FFFFFF),
+                      color: _holdLockActive
+                          ? const Color(0xFFFFCA28)
+                          : const Color(0x18FFFFFF),
                       width: 1,
                     ),
                   ),
@@ -1938,7 +2436,9 @@ class _HomeScreenState extends State<HomeScreen> {
                       Icon(
                         _holdLockActive ? Icons.lock : Icons.lock_open,
                         size: 13,
-                        color: _holdLockActive ? const Color(0xFFFFCA28) : Colors.white54,
+                        color: _holdLockActive
+                            ? const Color(0xFFFFCA28)
+                            : Colors.white54,
                       ),
                       const SizedBox(width: 6),
                       Text(
@@ -1946,7 +2446,9 @@ class _HomeScreenState extends State<HomeScreen> {
                         style: TextStyle(
                           fontSize: 11,
                           fontWeight: FontWeight.bold,
-                          color: _holdLockActive ? const Color(0xFFFFCA28) : Colors.white70,
+                          color: _holdLockActive
+                              ? const Color(0xFFFFCA28)
+                              : Colors.white70,
                         ),
                       ),
                     ],
@@ -1958,11 +2460,17 @@ class _HomeScreenState extends State<HomeScreen> {
               GestureDetector(
                 onTap: _resetHidState,
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 6,
+                  ),
                   decoration: BoxDecoration(
                     color: const Color(0xFF1B1B27),
                     borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: const Color(0x18FFFFFF), width: 1),
+                    border: Border.all(
+                      color: const Color(0x18FFFFFF),
+                      width: 1,
+                    ),
                   ),
                   child: const Row(
                     children: [
@@ -1970,7 +2478,11 @@ class _HomeScreenState extends State<HomeScreen> {
                       SizedBox(width: 6),
                       Text(
                         "Reset",
-                        style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.white70),
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white70,
+                        ),
                       ),
                     ],
                   ),
@@ -2019,18 +2531,26 @@ class _HomeScreenState extends State<HomeScreen> {
 
                 if (key.isModifier) {
                   isActive = (_modifiersBitmask & key.modifierMask) != 0;
-                  glowColor = const Color(0xFFE040FB); // Magenta glow for sticky modifiers
+                  glowColor = const Color(
+                    0xFFE040FB,
+                  ); // Magenta glow for sticky modifiers
                 } else if (key.scancode == -1) {
                   isActive = _fnActive;
                   glowColor = const Color(0xFF00E5FF);
                 } else {
-                  int scancode = (_fnActive && key.fnScancode != null) ? key.fnScancode! : key.scancode;
+                  int scancode = (_fnActive && key.fnScancode != null)
+                      ? key.fnScancode!
+                      : key.scancode;
                   isActive = _activeScancodes.contains(scancode);
-                  glowColor = _holdLockActive ? const Color(0xFFFFCA28) : const Color(0xFF0DF5E3);
+                  glowColor = _holdLockActive
+                      ? const Color(0xFFFFCA28)
+                      : const Color(0xFF0DF5E3);
                 }
 
                 // Determine display label
-                String label = (_fnActive && key.fnLabel != null) ? key.fnLabel! : key.label;
+                String label = (_fnActive && key.fnLabel != null)
+                    ? key.fnLabel!
+                    : key.label;
 
                 return Expanded(
                   flex: (key.flex * 10).toInt(),
@@ -2043,12 +2563,16 @@ class _HomeScreenState extends State<HomeScreen> {
                         duration: const Duration(milliseconds: 100),
                         height: rowHeight,
                         decoration: BoxDecoration(
-                          color: isActive ? glowColor.withValues(alpha: 0.12) : const Color(0xFF14141E),
+                          color: isActive
+                              ? glowColor.withValues(alpha: 0.12)
+                              : const Color(0xFF14141E),
                           borderRadius: BorderRadius.circular(compact ? 6 : 8),
                           border: Border.all(
                             color: isActive
                                 ? glowColor
-                                : Colors.white.withValues(alpha: compact ? 0.05 : 0.08),
+                                : Colors.white.withValues(
+                                    alpha: compact ? 0.05 : 0.08,
+                                  ),
                             width: isActive ? 1.5 : 1.0,
                           ),
                           boxShadow: [
@@ -2066,7 +2590,9 @@ class _HomeScreenState extends State<HomeScreen> {
                           style: TextStyle(
                             fontSize: keyFontSize,
                             fontWeight: FontWeight.bold,
-                            color: isActive ? glowColor : Colors.white.withValues(alpha: 0.85),
+                            color: isActive
+                                ? glowColor
+                                : Colors.white.withValues(alpha: 0.85),
                           ),
                         ),
                       ),
@@ -2092,7 +2618,10 @@ class _HomeScreenState extends State<HomeScreen> {
             padding: const EdgeInsets.symmetric(horizontal: 16.0),
             child: LayoutBuilder(
               builder: (context, constraints) {
-                return _buildTrackpad(height: constraints.maxHeight, borderOpacity: 0.1);
+                return _buildTrackpad(
+                  height: constraints.maxHeight,
+                  borderOpacity: 0.1,
+                );
               },
             ),
           ),
@@ -2110,14 +2639,22 @@ class _HomeScreenState extends State<HomeScreen> {
     final trackpadColumn = Expanded(
       flex: 4,
       child: Padding(
-        padding: EdgeInsets.fromLTRB(_trackpadOnLeft ? 12 : 8, 8, _trackpadOnLeft ? 8 : 12, 8),
+        padding: EdgeInsets.fromLTRB(
+          _trackpadOnLeft ? 12 : 8,
+          8,
+          _trackpadOnLeft ? 8 : 12,
+          8,
+        ),
         child: Column(
           children: [
             _buildConnectionDashboard(compact: true),
             Expanded(
               child: LayoutBuilder(
                 builder: (context, constraints) {
-                  return _buildTrackpad(height: constraints.maxHeight, borderOpacity: 0.08);
+                  return _buildTrackpad(
+                    height: constraints.maxHeight,
+                    borderOpacity: 0.08,
+                  );
                 },
               ),
             ),
@@ -2137,7 +2674,12 @@ class _HomeScreenState extends State<HomeScreen> {
     final keyboardColumn = Expanded(
       flex: 6,
       child: Padding(
-        padding: EdgeInsets.fromLTRB(_trackpadOnLeft ? 8 : 12, 8, _trackpadOnLeft ? 12 : 8, 8),
+        padding: EdgeInsets.fromLTRB(
+          _trackpadOnLeft ? 8 : 12,
+          8,
+          _trackpadOnLeft ? 12 : 8,
+          8,
+        ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
@@ -2178,7 +2720,12 @@ class _HomeScreenState extends State<HomeScreen> {
               const SizedBox(width: 8),
               const Text(
                 "CouchMouse",
-                style: TextStyle(fontWeight: FontWeight.w900, fontSize: 13, color: Colors.white, letterSpacing: 0.5),
+                style: TextStyle(
+                  fontWeight: FontWeight.w900,
+                  fontSize: 13,
+                  color: Colors.white,
+                  letterSpacing: 0.5,
+                ),
               ),
               const SizedBox(width: 12),
               // HoldLock Button
@@ -2194,12 +2741,19 @@ class _HomeScreenState extends State<HomeScreen> {
                 },
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 150),
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
-                    color: _holdLockActive ? const Color(0x20FFCA28) : const Color(0xFF1B1B27),
+                    color: _holdLockActive
+                        ? const Color(0x20FFCA28)
+                        : const Color(0xFF1B1B27),
                     borderRadius: BorderRadius.circular(6),
                     border: Border.all(
-                      color: _holdLockActive ? const Color(0xFFFFCA28) : const Color(0x18FFFFFF),
+                      color: _holdLockActive
+                          ? const Color(0xFFFFCA28)
+                          : const Color(0x18FFFFFF),
                       width: 1,
                     ),
                   ),
@@ -2208,7 +2762,9 @@ class _HomeScreenState extends State<HomeScreen> {
                       Icon(
                         _holdLockActive ? Icons.lock : Icons.lock_open,
                         size: 11,
-                        color: _holdLockActive ? const Color(0xFFFFCA28) : Colors.white54,
+                        color: _holdLockActive
+                            ? const Color(0xFFFFCA28)
+                            : Colors.white54,
                       ),
                       const SizedBox(width: 4),
                       Text(
@@ -2216,7 +2772,9 @@ class _HomeScreenState extends State<HomeScreen> {
                         style: TextStyle(
                           fontSize: 10,
                           fontWeight: FontWeight.bold,
-                          color: _holdLockActive ? const Color(0xFFFFCA28) : Colors.white70,
+                          color: _holdLockActive
+                              ? const Color(0xFFFFCA28)
+                              : Colors.white70,
                         ),
                       ),
                     ],
@@ -2228,11 +2786,17 @@ class _HomeScreenState extends State<HomeScreen> {
               GestureDetector(
                 onTap: _resetHidState,
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
                     color: const Color(0xFF1B1B27),
                     borderRadius: BorderRadius.circular(6),
-                    border: Border.all(color: const Color(0x18FFFFFF), width: 1),
+                    border: Border.all(
+                      color: const Color(0x18FFFFFF),
+                      width: 1,
+                    ),
                   ),
                   child: const Row(
                     children: [
@@ -2240,7 +2804,11 @@ class _HomeScreenState extends State<HomeScreen> {
                       SizedBox(width: 4),
                       Text(
                         "Reset",
-                        style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.white70),
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white70,
+                        ),
                       ),
                     ],
                   ),
@@ -2268,10 +2836,16 @@ class _HomeScreenState extends State<HomeScreen> {
                 style: ElevatedButton.styleFrom(
                   foregroundColor: Colors.white,
                   backgroundColor: const Color(0xFFE53935),
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 6,
+                  ),
                   minimumSize: Size.zero,
                   tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                  textStyle: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
+                  textStyle: const TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold,
+                  ),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(6),
                   ),
@@ -2305,21 +2879,18 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     if (!_isSupported) {
-      return Scaffold(
-        body: SafeArea(child: _buildUnsupportedView()),
-      );
+      return Scaffold(body: SafeArea(child: _buildUnsupportedView()));
     }
 
     if (!_permissionsGranted) {
-      return Scaffold(
-        body: SafeArea(child: _buildPermissionsView()),
-      );
+      return Scaffold(body: SafeArea(child: _buildPermissionsView()));
     }
 
     return OrientationBuilder(
       builder: (context, orientation) {
         // If Forced Landscape Keyboard is enabled, override everything with the full keyboard layout
-        bool showFullKeyboard = _forcedLandscapeKeyboard && orientation == Orientation.landscape;
+        bool showFullKeyboard =
+            _forcedLandscapeKeyboard && orientation == Orientation.landscape;
 
         return Scaffold(
           appBar: showFullKeyboard
@@ -2336,7 +2907,9 @@ class _HomeScreenState extends State<HomeScreen> {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Icon(
-                        orientation == Orientation.portrait ? Icons.mouse : Icons.keyboard,
+                        orientation == Orientation.portrait
+                            ? Icons.mouse
+                            : Icons.keyboard,
                         color: const Color(0xFF00E5FF),
                       ),
                       const SizedBox(width: 12),
@@ -2357,7 +2930,10 @@ class _HomeScreenState extends State<HomeScreen> {
                     // Only show forced landscape lock button if currently in portrait
                     if (orientation == Orientation.portrait)
                       IconButton(
-                        icon: const Icon(Icons.keyboard, color: Color(0xFF0DF5E3)),
+                        icon: const Icon(
+                          Icons.keyboard,
+                          color: Color(0xFF0DF5E3),
+                        ),
                         onPressed: _toggleForcedLandscapeKeyboard,
                         tooltip: "Full Keyboard Mode",
                       ),
@@ -2369,8 +2945,8 @@ class _HomeScreenState extends State<HomeScreen> {
             child: showFullKeyboard
                 ? _buildForcedLandscapeKeyboardLayout()
                 : (orientation == Orientation.portrait
-                    ? _buildPortraitLayout()
-                    : _buildSplitLandscapeLayout()),
+                      ? _buildPortraitLayout()
+                      : _buildSplitLandscapeLayout()),
           ),
         );
       },
@@ -2404,7 +2980,11 @@ class _HomeScreenState extends State<HomeScreen> {
                         color: const Color(0x1A00E5FF),
                         borderRadius: BorderRadius.circular(12),
                       ),
-                      child: const Icon(Icons.mouse, color: Color(0xFF00E5FF), size: 30),
+                      child: const Icon(
+                        Icons.mouse,
+                        color: Color(0xFF00E5FF),
+                        size: 30,
+                      ),
                     ),
                     const SizedBox(width: 12),
                     const Text(
@@ -2434,23 +3014,45 @@ class _HomeScreenState extends State<HomeScreen> {
                   padding: EdgeInsets.symmetric(horizontal: 8, vertical: 6),
                   child: Text(
                     "MOUSE CONTROLS",
-                    style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.white38, letterSpacing: 1.0),
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white38,
+                      letterSpacing: 1.0,
+                    ),
                   ),
                 ),
                 // Sensitivity control
                 Card(
                   color: const Color(0xFF1B1B26),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 12,
+                    ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            const Text("Sensitivity", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                            Text("${_sensitivity.toStringAsFixed(1)}x", style: const TextStyle(color: Color(0xFF00E5FF), fontWeight: FontWeight.bold)),
+                            const Text(
+                              "Sensitivity",
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 14,
+                              ),
+                            ),
+                            Text(
+                              "${_sensitivity.toStringAsFixed(1)}x",
+                              style: const TextStyle(
+                                color: Color(0xFF00E5FF),
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
                           ],
                         ),
                         SliderTheme(
@@ -2480,11 +3082,22 @@ class _HomeScreenState extends State<HomeScreen> {
                 // Mouse Acceleration Toggle
                 Card(
                   color: const Color(0xFF1B1B26),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                   child: SwitchListTile(
                     activeThumbColor: const Color(0xFF0DF5E3),
-                    title: const Text("Mouse Acceleration", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                    subtitle: const Text("Increases cursor speed with rapid swipes", style: TextStyle(fontSize: 12, color: Colors.white54)),
+                    title: const Text(
+                      "Mouse Acceleration",
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                      ),
+                    ),
+                    subtitle: const Text(
+                      "Increases cursor speed with rapid swipes",
+                      style: TextStyle(fontSize: 12, color: Colors.white54),
+                    ),
                     value: _mouseAcceleration,
                     onChanged: (val) {
                       setState(() {
@@ -2497,11 +3110,22 @@ class _HomeScreenState extends State<HomeScreen> {
                 // Trackpad Orientation swap configuration
                 Card(
                   color: const Color(0xFF1B1B26),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                   child: SwitchListTile(
                     activeThumbColor: const Color(0xFF0DF5E3),
-                    title: const Text("Trackpad Left-Side", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                    subtitle: const Text("Place trackpad on Left in Landscape mode", style: TextStyle(fontSize: 12, color: Colors.white54)),
+                    title: const Text(
+                      "Trackpad Left-Side",
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                      ),
+                    ),
+                    subtitle: const Text(
+                      "Place trackpad on Left in Landscape mode",
+                      style: TextStyle(fontSize: 12, color: Colors.white54),
+                    ),
                     value: _trackpadOnLeft,
                     onChanged: (val) {
                       setState(() {
@@ -2515,19 +3139,35 @@ class _HomeScreenState extends State<HomeScreen> {
                   padding: EdgeInsets.symmetric(horizontal: 8, vertical: 6),
                   child: Text(
                     "KEYBOARD SETTINGS",
-                    style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.white38, letterSpacing: 1.0),
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white38,
+                      letterSpacing: 1.0,
+                    ),
                   ),
                 ),
                 // Keyboard layout style dropdown
                 Card(
                   color: const Color(0xFF1B1B26),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 12,
+                    ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text("Layout Style", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                        const Text(
+                          "Layout Style",
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14,
+                          ),
+                        ),
                         const SizedBox(height: 8),
                         DropdownButtonFormField<KeyboardKind>(
                           initialValue: _keyboardKind,
@@ -2536,7 +3176,10 @@ class _HomeScreenState extends State<HomeScreen> {
                             border: InputBorder.none,
                             contentPadding: EdgeInsets.zero,
                           ),
-                          style: const TextStyle(color: Colors.white, fontSize: 14),
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 14,
+                          ),
                           onChanged: (val) {
                             if (val != null) {
                               setState(() {
@@ -2563,16 +3206,26 @@ class _HomeScreenState extends State<HomeScreen> {
                   padding: EdgeInsets.symmetric(horizontal: 8, vertical: 6),
                   child: Text(
                     "UTILITIES",
-                    style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.white38, letterSpacing: 1.0),
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white38,
+                      letterSpacing: 1.0,
+                    ),
                   ),
                 ),
                 // HoldLock Toggle (Drawer duplicate)
                 ListTile(
                   leading: Icon(
                     _holdLockActive ? Icons.lock : Icons.lock_open,
-                    color: _holdLockActive ? const Color(0xFFFFCA28) : Colors.white60,
+                    color: _holdLockActive
+                        ? const Color(0xFFFFCA28)
+                        : Colors.white60,
                   ),
-                  title: const Text("HoldLock Mode", style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+                  title: const Text(
+                    "HoldLock Mode",
+                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                  ),
                   trailing: Switch(
                     activeThumbColor: const Color(0xFFFFCA28),
                     value: _holdLockActive,
@@ -2590,7 +3243,14 @@ class _HomeScreenState extends State<HomeScreen> {
                 // Reset State Utility
                 ListTile(
                   leading: const Icon(Icons.refresh, color: Colors.redAccent),
-                  title: const Text("Reset HID Profile State", style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.redAccent)),
+                  title: const Text(
+                    "Reset HID Profile State",
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.redAccent,
+                    ),
+                  ),
                   onTap: () {
                     _resetHidState();
                     Navigator.pop(context);
@@ -2608,7 +3268,12 @@ class _HomeScreenState extends State<HomeScreen> {
                   padding: EdgeInsets.symmetric(horizontal: 8, vertical: 6),
                   child: Text(
                     "CONNECTION INSTRUCTIONS",
-                    style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.white38, letterSpacing: 1.0),
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white38,
+                      letterSpacing: 1.0,
+                    ),
                   ),
                 ),
                 const Padding(
@@ -2618,7 +3283,11 @@ class _HomeScreenState extends State<HomeScreen> {
                     "2. Tap the Bluetooth settings icon in the top header card to view your phone's system Bluetooth menu.\n"
                     "3. Ensure Bluetooth is ON and pair with 'CouchMouse' from the list.\n"
                     "4. Once paired, CouchMouse acts as a physical peripheral device.",
-                    style: TextStyle(fontSize: 12, color: Colors.white54, height: 1.5),
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.white54,
+                      height: 1.5,
+                    ),
                   ),
                 ),
               ],
