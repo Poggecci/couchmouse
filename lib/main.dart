@@ -2,9 +2,13 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'settings_providers.dart';
 
-void main() {
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  final prefs = await SharedPreferences.getInstance();
   // Start the application allowing all orientations (fluid auto-rotation support)
   SystemChrome.setPreferredOrientations([
     DeviceOrientation.portraitUp,
@@ -12,7 +16,14 @@ void main() {
     DeviceOrientation.landscapeLeft,
     DeviceOrientation.landscapeRight,
   ]);
-  runApp(const CouchMouseApp());
+  runApp(
+    ProviderScope(
+      overrides: [
+        sharedPreferencesProvider.overrideWithValue(prefs),
+      ],
+      child: const CouchMouseApp(),
+    ),
+  );
 }
 
 class CouchMouseApp extends StatelessWidget {
@@ -88,14 +99,14 @@ class KeyInfo {
   });
 }
 
-class HomeScreen extends StatefulWidget {
+class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
 
   @override
-  State<HomeScreen> createState() => _HomeScreenState();
+  ConsumerState<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class _HomeScreenState extends ConsumerState<HomeScreen> {
   static const _channel = MethodChannel('com.example.couchmouse/hid');
 
   // Key mappings for TKL layout
@@ -1299,10 +1310,12 @@ class _HomeScreenState extends State<HomeScreen> {
           final connected = call.arguments['connected'] as bool;
           final deviceName = call.arguments['deviceName'] as String?;
           final deviceAddress = call.arguments['deviceAddress'] as String?;
+          ref.read(connectionStateProvider.notifier).updateConnectionState(
+            isConnected: connected,
+            connectedDeviceName: deviceName,
+            connectedDeviceAddress: deviceAddress,
+          );
           setState(() {
-            _isConnected = connected;
-            _connectedDeviceName = deviceName;
-            _connectedDeviceAddress = deviceAddress;
             if (connected) {
               _isConnecting = false;
               _connectingAddress = null;
@@ -1409,10 +1422,12 @@ class _HomeScreenState extends State<HomeScreen> {
         'getConnectionState',
       );
       if (result != null) {
+        ref.read(connectionStateProvider.notifier).updateConnectionState(
+          isConnected: result['connected'] as bool? ?? false,
+          connectedDeviceName: result['deviceName'] as String?,
+          connectedDeviceAddress: result['deviceAddress'] as String?,
+        );
         setState(() {
-          _isConnected = result['connected'] as bool? ?? false;
-          _connectedDeviceName = result['deviceName'] as String?;
-          _connectedDeviceAddress = result['deviceAddress'] as String?;
           _isRegistered = result['registered'] as bool? ?? false;
         });
         if (_bottomSheetStateSetter != null) {
@@ -1527,11 +1542,11 @@ class _HomeScreenState extends State<HomeScreen> {
       final success =
           await _channel.invokeMethod<bool>('disconnectDevice') ?? false;
       if (success) {
-        setState(() {
-          _isConnected = false;
-          _connectedDeviceName = null;
-          _connectedDeviceAddress = null;
-        });
+        ref.read(connectionStateProvider.notifier).updateConnectionState(
+          isConnected: false,
+          connectedDeviceName: null,
+          connectedDeviceAddress: null,
+        );
         if (_bottomSheetStateSetter != null) {
           _bottomSheetStateSetter!(() {});
         }
@@ -1551,305 +1566,313 @@ class _HomeScreenState extends State<HomeScreen> {
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       builder: (BuildContext context) {
-        return StatefulBuilder(
-          builder: (BuildContext context, StateSetter setModalState) {
-            _bottomSheetStateSetter = setModalState;
-            final isLandscape =
-                MediaQuery.of(context).orientation == Orientation.landscape;
+        return Consumer(
+          builder: (BuildContext context, WidgetRef ref, Widget? child) {
+            return StatefulBuilder(
+              builder: (BuildContext context, StateSetter setModalState) {
+                _bottomSheetStateSetter = setModalState;
+                final connection = ref.watch(connectionStateProvider);
+                final isConnected = connection.isConnected;
+                final connectedDeviceName = connection.connectedDeviceName;
+                final connectedDeviceAddress = connection.connectedDeviceAddress;
+                final isLandscape =
+                    MediaQuery.of(context).orientation == Orientation.landscape;
 
-            return Container(
-              constraints: BoxConstraints(
-                maxHeight: MediaQuery.of(context).size.height * 0.9,
-              ),
-              child: Padding(
-                padding: EdgeInsets.symmetric(
-                  horizontal: 20.0,
-                  vertical: isLandscape ? 8.0 : 16.0,
-                ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    // Grabber handle
-                    Center(
-                      child: Container(
-                        width: 40,
-                        height: 4,
-                        decoration: BoxDecoration(
-                          color: Colors.white24,
-                          borderRadius: BorderRadius.circular(2),
-                        ),
-                      ),
+                return Container(
+                  constraints: BoxConstraints(
+                    maxHeight: MediaQuery.of(context).size.height * 0.9,
+                  ),
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: 20.0,
+                      vertical: isLandscape ? 8.0 : 16.0,
                     ),
-                    SizedBox(height: isLandscape ? 8 : 16),
-
-                    // Header
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        const Row(
-                          children: [
-                            Icon(
-                              Icons.bluetooth,
-                              color: Color(0xFF00E5FF),
-                              size: 24,
+                        // Grabber handle
+                        Center(
+                          child: Container(
+                            width: 40,
+                            height: 4,
+                            decoration: BoxDecoration(
+                              color: Colors.white24,
+                              borderRadius: BorderRadius.circular(2),
                             ),
-                            SizedBox(width: 10),
-                            Text(
-                              "Bluetooth Connections",
-                              style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.w900,
-                                color: Colors.white,
-                                letterSpacing: 0.5,
+                          ),
+                        ),
+                        SizedBox(height: isLandscape ? 8 : 16),
+
+                        // Header
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Row(
+                              children: [
+                                Icon(
+                                  Icons.bluetooth,
+                                  color: Color(0xFF00E5FF),
+                                  size: 24,
+                                ),
+                                SizedBox(width: 10),
+                                Text(
+                                  "Bluetooth Connections",
+                                  style: TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.w900,
+                                    color: Colors.white,
+                                    letterSpacing: 0.5,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            IconButton(
+                              icon: const Icon(
+                                Icons.refresh,
+                                color: Colors.white54,
+                                size: 20,
                               ),
+                              onPressed: () async {
+                                await _fetchPairedDevices();
+                              },
                             ),
                           ],
                         ),
-                        IconButton(
-                          icon: const Icon(
-                            Icons.refresh,
-                            color: Colors.white54,
-                            size: 20,
-                          ),
-                          onPressed: () async {
-                            await _fetchPairedDevices();
-                          },
+                        Divider(
+                          color: const Color(0x18FFFFFF),
+                          height: isLandscape ? 12 : 24,
                         ),
+
+                        // Connection status card
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF0C0C12),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: isConnected
+                                  ? const Color(0x200DF5E3)
+                                  : const Color(0x08FFFFFF),
+                            ),
+                          ),
+                          child: Row(
+                            children: [
+                              Container(
+                                width: 8,
+                                height: 8,
+                                decoration: BoxDecoration(
+                                  color: isConnected
+                                      ? const Color(0xFF0DF5E3)
+                                      : Colors.redAccent,
+                                  shape: BoxShape.circle,
+                                ),
+                              ),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Text(
+                                  isConnected
+                                      ? "Connected: ${connectedDeviceName ?? 'Host Laptop'}"
+                                      : "Disconnected",
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w700,
+                                    color: isConnected
+                                        ? const Color(0xFF0DF5E3)
+                                        : Colors.white70,
+                                  ),
+                                ),
+                              ),
+                              if (isConnected)
+                                TextButton(
+                                  onPressed: () async {
+                                    await _disconnectDevice();
+                                  },
+                                  style: TextButton.styleFrom(
+                                    foregroundColor: Colors.redAccent,
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 12,
+                                      vertical: 6,
+                                    ),
+                                    minimumSize: Size.zero,
+                                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                  ),
+                                  child: const Text(
+                                    "Disconnect",
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ),
+                        SizedBox(height: isLandscape ? 8 : 16),
+
+                        const Text(
+                          "PAIRED DEVICES",
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white30,
+                            letterSpacing: 1.0,
+                          ),
+                        ),
+                        SizedBox(height: isLandscape ? 4 : 8),
+
+                        // Paired devices list
+                        Flexible(
+                          child: _pairedDevices.isEmpty
+                              ? Container(
+                                  padding: const EdgeInsets.symmetric(vertical: 24),
+                                  alignment: Alignment.center,
+                                  child: const Text(
+                                    "No paired devices found.\nMake sure your phone is paired to your computer.",
+                                    textAlign: TextAlign.center,
+                                    style: TextStyle(
+                                      color: Colors.white30,
+                                      fontSize: 13,
+                                    ),
+                                  ),
+                                )
+                              : ListView.builder(
+                                  shrinkWrap: true,
+                                  itemCount: _pairedDevices.length,
+                                  itemBuilder: (context, index) {
+                                    final device = _pairedDevices[index];
+                                    final name = device['name'] ?? "Unknown Device";
+                                    final address = device['address'] ?? "";
+                                    final isConnectingThis =
+                                        _isConnecting &&
+                                        _connectingAddress == address;
+                                    final isConnectedThis =
+                                        isConnected &&
+                                        connectedDeviceAddress == address;
+
+                                    return Padding(
+                                      padding: const EdgeInsets.symmetric(
+                                        vertical: 4.0,
+                                      ),
+                                      child: Container(
+                                        decoration: BoxDecoration(
+                                          color: const Color(0xFF1B1B26),
+                                          borderRadius: BorderRadius.circular(12),
+                                          border: Border.all(
+                                            color: isConnectedThis
+                                                ? const Color(0xFF00E5FF)
+                                                : Colors.transparent,
+                                            width: 1,
+                                          ),
+                                        ),
+                                        child: ListTile(
+                                          contentPadding: EdgeInsets.symmetric(
+                                            horizontal: 16,
+                                            vertical: isLandscape ? 0 : 4,
+                                          ),
+                                          title: Text(
+                                            name,
+                                            style: const TextStyle(
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 14,
+                                              color: Colors.white,
+                                            ),
+                                          ),
+                                          subtitle: Text(
+                                            address,
+                                            style: const TextStyle(
+                                              fontSize: 11,
+                                              color: Colors.white30,
+                                            ),
+                                          ),
+                                          trailing: isConnectingThis
+                                              ? const SizedBox(
+                                                  width: 20,
+                                                  height: 20,
+                                                  child: CircularProgressIndicator(
+                                                    strokeWidth: 2,
+                                                    valueColor:
+                                                        AlwaysStoppedAnimation<
+                                                          Color
+                                                        >(Color(0xFF00E5FF)),
+                                                  ),
+                                                )
+                                              : isConnectedThis
+                                              ? const Icon(
+                                                  Icons.check_circle,
+                                                  color: Color(0xFF0DF5E3),
+                                                  size: 22,
+                                                )
+                                              : ElevatedButton(
+                                                  onPressed: _isConnecting
+                                                      ? null
+                                                      : () async {
+                                                          await _connectToDevice(
+                                                            address,
+                                                            name,
+                                                          );
+                                                        },
+                                                  style: ElevatedButton.styleFrom(
+                                                    backgroundColor: const Color(
+                                                      0xFF00E5FF,
+                                                    ),
+                                                    foregroundColor: Colors.black,
+                                                    minimumSize: Size.zero,
+                                                    padding:
+                                                        const EdgeInsets.symmetric(
+                                                          horizontal: 14,
+                                                          vertical: 8,
+                                                        ),
+                                                    shape: RoundedRectangleBorder(
+                                                      borderRadius:
+                                                          BorderRadius.circular(8),
+                                                    ),
+                                                  ),
+                                                  child: const Text(
+                                                    "Connect",
+                                                    style: TextStyle(
+                                                      fontSize: 12,
+                                                      fontWeight: FontWeight.w900,
+                                                    ),
+                                                  ),
+                                                ),
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                ),
+                        ),
+                        SizedBox(height: isLandscape ? 8 : 16),
+
+                        // Pair new device button (opens native settings)
+                        ElevatedButton.icon(
+                          onPressed: () {
+                            Navigator.pop(context);
+                            _openBluetoothSettings();
+                          },
+                          icon: const Icon(Icons.add, size: 18),
+                          label: const Text("Pair New Device"),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF1B1B27),
+                            foregroundColor: Colors.white,
+                            padding: EdgeInsets.symmetric(
+                              vertical: isLandscape ? 8 : 14,
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              side: const BorderSide(
+                                color: Color(0x18FFFFFF),
+                                width: 1,
+                              ),
+                            ),
+                          ),
+                        ),
+                        SizedBox(height: isLandscape ? 4 : 10),
                       ],
                     ),
-                    Divider(
-                      color: const Color(0x18FFFFFF),
-                      height: isLandscape ? 12 : 24,
-                    ),
-
-                    // Connection status card
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF0C0C12),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: _isConnected
-                              ? const Color(0x200DF5E3)
-                              : const Color(0x08FFFFFF),
-                        ),
-                      ),
-                      child: Row(
-                        children: [
-                          Container(
-                            width: 8,
-                            height: 8,
-                            decoration: BoxDecoration(
-                              color: _isConnected
-                                  ? const Color(0xFF0DF5E3)
-                                  : Colors.redAccent,
-                              shape: BoxShape.circle,
-                            ),
-                          ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: Text(
-                              _isConnected
-                                  ? "Connected: ${_connectedDeviceName ?? 'Host Laptop'}"
-                                  : "Disconnected",
-                              style: TextStyle(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w700,
-                                color: _isConnected
-                                    ? const Color(0xFF0DF5E3)
-                                    : Colors.white70,
-                              ),
-                            ),
-                          ),
-                          if (_isConnected)
-                            TextButton(
-                              onPressed: () async {
-                                await _disconnectDevice();
-                              },
-                              style: TextButton.styleFrom(
-                                foregroundColor: Colors.redAccent,
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 12,
-                                  vertical: 6,
-                                ),
-                                minimumSize: Size.zero,
-                                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                              ),
-                              child: const Text(
-                                "Disconnect",
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ),
-                        ],
-                      ),
-                    ),
-                    SizedBox(height: isLandscape ? 8 : 16),
-
-                    const Text(
-                      "PAIRED DEVICES",
-                      style: TextStyle(
-                        fontSize: 10,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white30,
-                        letterSpacing: 1.0,
-                      ),
-                    ),
-                    SizedBox(height: isLandscape ? 4 : 8),
-
-                    // Paired devices list
-                    Flexible(
-                      child: _pairedDevices.isEmpty
-                          ? Container(
-                              padding: const EdgeInsets.symmetric(vertical: 24),
-                              alignment: Alignment.center,
-                              child: const Text(
-                                "No paired devices found.\nMake sure your phone is paired to your computer.",
-                                textAlign: TextAlign.center,
-                                style: TextStyle(
-                                  color: Colors.white30,
-                                  fontSize: 13,
-                                ),
-                              ),
-                            )
-                          : ListView.builder(
-                              shrinkWrap: true,
-                              itemCount: _pairedDevices.length,
-                              itemBuilder: (context, index) {
-                                final device = _pairedDevices[index];
-                                final name = device['name'] ?? "Unknown Device";
-                                final address = device['address'] ?? "";
-                                final isConnectingThis =
-                                    _isConnecting &&
-                                    _connectingAddress == address;
-                                final isConnectedThis =
-                                    _isConnected &&
-                                    _connectedDeviceAddress == address;
-
-                                return Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                    vertical: 4.0,
-                                  ),
-                                  child: Container(
-                                    decoration: BoxDecoration(
-                                      color: const Color(0xFF1B1B26),
-                                      borderRadius: BorderRadius.circular(12),
-                                      border: Border.all(
-                                        color: isConnectedThis
-                                            ? const Color(0xFF00E5FF)
-                                            : Colors.transparent,
-                                        width: 1,
-                                      ),
-                                    ),
-                                    child: ListTile(
-                                      contentPadding: EdgeInsets.symmetric(
-                                        horizontal: 16,
-                                        vertical: isLandscape ? 0 : 4,
-                                      ),
-                                      title: Text(
-                                        name,
-                                        style: const TextStyle(
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 14,
-                                          color: Colors.white,
-                                        ),
-                                      ),
-                                      subtitle: Text(
-                                        address,
-                                        style: const TextStyle(
-                                          fontSize: 11,
-                                          color: Colors.white30,
-                                        ),
-                                      ),
-                                      trailing: isConnectingThis
-                                          ? const SizedBox(
-                                              width: 20,
-                                              height: 20,
-                                              child: CircularProgressIndicator(
-                                                strokeWidth: 2,
-                                                valueColor:
-                                                    AlwaysStoppedAnimation<
-                                                      Color
-                                                    >(Color(0xFF00E5FF)),
-                                              ),
-                                            )
-                                          : isConnectedThis
-                                          ? const Icon(
-                                              Icons.check_circle,
-                                              color: Color(0xFF0DF5E3),
-                                              size: 22,
-                                            )
-                                          : ElevatedButton(
-                                              onPressed: _isConnecting
-                                                  ? null
-                                                  : () async {
-                                                      await _connectToDevice(
-                                                        address,
-                                                        name,
-                                                      );
-                                                    },
-                                              style: ElevatedButton.styleFrom(
-                                                backgroundColor: const Color(
-                                                  0xFF00E5FF,
-                                                ),
-                                                foregroundColor: Colors.black,
-                                                minimumSize: Size.zero,
-                                                padding:
-                                                    const EdgeInsets.symmetric(
-                                                      horizontal: 14,
-                                                      vertical: 8,
-                                                    ),
-                                                shape: RoundedRectangleBorder(
-                                                  borderRadius:
-                                                      BorderRadius.circular(8),
-                                                ),
-                                              ),
-                                              child: const Text(
-                                                "Connect",
-                                                style: TextStyle(
-                                                  fontSize: 12,
-                                                  fontWeight: FontWeight.w900,
-                                                ),
-                                              ),
-                                            ),
-                                    ),
-                                  ),
-                                );
-                              },
-                            ),
-                    ),
-                    SizedBox(height: isLandscape ? 8 : 16),
-
-                    // Pair new device button (opens native settings)
-                    ElevatedButton.icon(
-                      onPressed: () {
-                        Navigator.pop(context);
-                        _openBluetoothSettings();
-                      },
-                      icon: const Icon(Icons.add, size: 18),
-                      label: const Text("Pair New Device"),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF1B1B27),
-                        foregroundColor: Colors.white,
-                        padding: EdgeInsets.symmetric(
-                          vertical: isLandscape ? 8 : 14,
-                        ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          side: const BorderSide(
-                            color: Color(0x18FFFFFF),
-                            width: 1,
-                          ),
-                        ),
-                      ),
-                    ),
-                    SizedBox(height: isLandscape ? 4 : 10),
-                  ],
-                ),
-              ),
+                  ),
+                );
+              },
             );
           },
         );
@@ -3190,6 +3213,17 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final connection = ref.watch(connectionStateProvider);
+    final settings = ref.watch(settingsProvider);
+
+    _isConnected = connection.isConnected;
+    _connectedDeviceName = connection.connectedDeviceName;
+    _connectedDeviceAddress = connection.connectedDeviceAddress;
+    _sensitivity = settings.sensitivity;
+    _mouseAcceleration = settings.mouseAcceleration;
+    _trackpadOnLeft = settings.trackpadOnLeft;
+    _keyboardKind = settings.keyboardKind;
+
     if (!_isSupported) {
       return Scaffold(body: SafeArea(child: _buildUnsupportedView()));
     }
@@ -3398,9 +3432,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             min: 1,
                             max: 30,
                             onChanged: (val) {
-                              setState(() {
-                                _sensitivity = val;
-                              });
+                              ref.read(settingsProvider.notifier).updateSensitivity(val);
                             },
                           ),
                         ),
@@ -3430,9 +3462,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                     value: _mouseAcceleration,
                     onChanged: (val) {
-                      setState(() {
-                        _mouseAcceleration = val;
-                      });
+                      ref.read(settingsProvider.notifier).updateMouseAcceleration(val);
                     },
                   ),
                 ),
@@ -3458,9 +3488,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                     value: _trackpadOnLeft,
                     onChanged: (val) {
-                      setState(() {
-                        _trackpadOnLeft = val;
-                      });
+                      ref.read(settingsProvider.notifier).updateTrackpadOnLeft(val);
                     },
                   ),
                 ),
@@ -3512,12 +3540,10 @@ class _HomeScreenState extends State<HomeScreen> {
                           ),
                           onChanged: (val) {
                             if (val != null) {
-                              setState(() {
-                                _keyboardKind = val;
-                                // Clear active key codes to prevent sticking
-                                _activeScancodes.clear();
-                                _sendKeyboardReport();
-                              });
+                              ref.read(settingsProvider.notifier).updateKeyboardKind(val);
+                              // Clear active key codes to prevent sticking
+                              _activeScancodes.clear();
+                              _sendKeyboardReport();
                             }
                           },
                           items: KeyboardKind.values.map((kind) {
@@ -3591,6 +3617,42 @@ class _HomeScreenState extends State<HomeScreen> {
                         duration: Duration(seconds: 1),
                       ),
                     );
+                  },
+                ),
+                // Reset Application Settings
+                ListTile(
+                  leading: const Icon(Icons.delete_sweep, color: Colors.redAccent),
+                  title: const Text(
+                    "Reset Application Settings",
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.redAccent,
+                    ),
+                  ),
+                  subtitle: Text(
+                    _isConnected && _connectedDeviceAddress != null
+                        ? "Reset settings for this device to global defaults"
+                        : "Reset global settings to defaults",
+                    style: const TextStyle(fontSize: 12, color: Colors.white54),
+                  ),
+                  onTap: () async {
+                    final address = _connectedDeviceAddress;
+                    await ref.read(settingsProvider.notifier).resetSettings();
+                    if (mounted) {
+                      Navigator.pop(context);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            _isConnected && address != null
+                                ? "Cleared settings for this device."
+                                : "Reset global settings to defaults.",
+                          ),
+                          backgroundColor: const Color(0xFF13131B),
+                          duration: const Duration(seconds: 2),
+                        ),
+                      );
+                    }
                   },
                 ),
                 const Divider(color: Color(0x18FFFFFF), height: 32),
