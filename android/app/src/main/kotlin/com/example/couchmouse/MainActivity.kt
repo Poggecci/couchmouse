@@ -21,10 +21,8 @@ class MainActivity : FlutterActivity() {
     private var bluetoothHidDevice: BluetoothHidDevice? = null
     private var hostDevice: BluetoothDevice? = null
 
-    // Register standard Report IDs
-    private val REPORT_ID_KEYBOARD = 1
-    private val REPORT_ID_MOUSE = 2
-
+    // Register 0 as our standard Input Report ID
+    private val REPORT_ID = 0
     private var isRegistered = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -72,10 +70,10 @@ class MainActivity : FlutterActivity() {
 
         val sdpSettings = BluetoothHidDeviceAppSdpSettings(
             "CouchMouse",
-            "Virtual Combo Controller",
+            "Virtual Trackpad Controller",
             "CouchMouseDev",
-            0xC0.toByte(), // Subclass descriptor code representing a Combo Keyboard/Mouse
-            HidDescriptors.COMPOSITE_DESCRIPTOR
+            0x80.toByte(), // Subclass descriptor code representing a Standard Mouse
+            HidDescriptors.MOUSE_DESCRIPTOR
         )
 
         val executor = Executors.newSingleThreadExecutor()
@@ -193,30 +191,7 @@ class MainActivity : FlutterActivity() {
                     val dy = call.argument<Double>("dy")?.toInt() ?: 0
                     val wheel = call.argument<Int>("wheel") ?: 0
 
-                    val success = sendMouseReport(buttons, dx, dy, wheel)
-                    if (success) {
-                        result.success(null)
-                    } else {
-                        result.error("UNAVAILABLE", "No Bluetooth device currently connected.", null)
-                    }
-                }
-                "sendKeyboardReport" -> {
-                    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.P) {
-                        result.error("UNSUPPORTED", "Bluetooth HID requires Android 9+", null)
-                        return@setMethodCallHandler
-                    }
-                    val reportList = call.argument<List<Int>>("report")
-                    if (reportList == null || reportList.size != 8) {
-                        result.error("INVALID_ARGUMENT", "Keyboard report must be 8 bytes", null)
-                        return@setMethodCallHandler
-                    }
-
-                    val reportBytes = ByteArray(8)
-                    for (i in 0 until 8) {
-                        reportBytes[i] = reportList[i].toByte()
-                    }
-
-                    val success = sendKeyboardReport(reportBytes)
+                    val success = sendReport(buttons, dx, dy, wheel)
                     if (success) {
                         result.success(null)
                     } else {
@@ -231,7 +206,7 @@ class MainActivity : FlutterActivity() {
     }
 
     @SuppressLint("MissingPermission")
-    private fun sendMouseReport(buttons: Int, dx: Int, dy: Int, wheel: Int): Boolean {
+    private fun sendReport(buttons: Int, dx: Int, dy: Int, wheel: Int): Boolean {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.P) return false
 
         val device = hostDevice
@@ -240,7 +215,7 @@ class MainActivity : FlutterActivity() {
             return false
         }
 
-        // Map inputs into the defined standard 4-byte Mouse report (ID 2)
+        // Map inputs into the defined standard 4-byte Mouse report
         val report = byteArrayOf(
             buttons.toByte(),                  // Byte 0: Button States
             dx.coerceIn(-127, 127).toByte(),   // Byte 1: Signed relative X coordinate
@@ -248,20 +223,7 @@ class MainActivity : FlutterActivity() {
             wheel.coerceIn(-127, 127).toByte() // Byte 3: Relative scroll wheel
         )
 
-        return hid.sendReport(device, REPORT_ID_MOUSE, report)
-    }
-
-    @SuppressLint("MissingPermission")
-    private fun sendKeyboardReport(report: ByteArray): Boolean {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.P) return false
-
-        val device = hostDevice
-        val hid = bluetoothHidDevice
-        if (device == null || hid == null) {
-            return false
-        }
-
-        return hid.sendReport(device, REPORT_ID_KEYBOARD, report)
+        return hid.sendReport(device, REPORT_ID, report)
     }
 
     override fun onDestroy() {
