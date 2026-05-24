@@ -1188,14 +1188,73 @@ class _HomeScreenState extends State<HomeScreen> {
   bool _fnActive = false;
   bool _holdLockActive = false;
 
-  // Layout Management: Forced Landscape Full-Screen Keyboard state
-  bool _forcedLandscapeKeyboard = false;
+  // Layout Management: Unified Keyboard Mode state
+  bool _keyboardMode = false;
+  late final FocusNode _builtInKeyboardFocusNode;
+  late final TextEditingController _builtInKeyboardController;
+  bool _builtInKeyboardActive = false;
+  Future<void> _keystrokeQueue = Future.value();
+
+  // Character-to-scancode mapping tables
+  static const Map<String, int> _charToScancode = {
+    'a': 0x04, 'b': 0x05, 'c': 0x06, 'd': 0x07, 'e': 0x08, 'f': 0x09,
+    'g': 0x0A, 'h': 0x0B, 'i': 0x0C, 'j': 0x0D, 'k': 0x0E, 'l': 0x0F,
+    'm': 0x10, 'n': 0x11, 'o': 0x12, 'p': 0x13, 'q': 0x14, 'r': 0x15,
+    's': 0x16, 't': 0x17, 'u': 0x18, 'v': 0x19, 'w': 0x1A, 'x': 0x1B,
+    'y': 0x1C, 'z': 0x1D,
+    '1': 0x1E, '2': 0x1F, '3': 0x20, '4': 0x21, '5': 0x22,
+    '6': 0x23, '7': 0x24, '8': 0x25, '9': 0x26, '0': 0x27,
+    '\n': 0x28, // Enter
+    '\r': 0x28, // Carriage return
+    '\t': 0x2B, // Tab
+    ' ': 0x2C,  // Space
+    '-': 0x2D,  // Minus
+    '=': 0x2E,  // Equals
+    '[': 0x2F,  // Left Bracket
+    ']': 0x30,  // Right Bracket
+    '\\': 0x31, // Backslash
+    ';': 0x33,  // Semicolon
+    "'": 0x34,  // Apostrophe
+    '`': 0x35,  // Grave Accent
+    ',': 0x36,  // Comma
+    '.': 0x37,  // Period
+    '/': 0x38,  // Slash
+  };
+
+  static const Map<String, int> _shiftCharToScancode = {
+    'A': 0x04, 'B': 0x05, 'C': 0x06, 'D': 0x07, 'E': 0x08, 'F': 0x09,
+    'G': 0x0A, 'H': 0x0B, 'I': 0x0C, 'J': 0x0D, 'K': 0x0E, 'L': 0x0F,
+    'M': 0x10, 'N': 0x11, 'O': 0x12, 'P': 0x13, 'Q': 0x14, 'R': 0x15,
+    'S': 0x16, 'T': 0x17, 'U': 0x18, 'V': 0x19, 'W': 0x1A, 'X': 0x1B,
+    'Y': 0x1C, 'Z': 0x1D,
+    '!': 0x1E, '@': 0x1F, '#': 0x20, '\$': 0x21, '%': 0x22,
+    '^': 0x23, '&': 0x24, '*': 0x25, '(': 0x26, ')': 0x27,
+    '_': 0x2D, '+': 0x2E,
+    '{': 0x2F, '}': 0x30, '|': 0x31,
+    ':': 0x33, '"': 0x34,
+    '~': 0x35,
+    '<': 0x36, '>': 0x37, '?': 0x38,
+  };
 
   @override
   void initState() {
     super.initState();
+    _builtInKeyboardFocusNode = FocusNode();
+    _builtInKeyboardFocusNode.addListener(() {
+      setState(() {
+        _builtInKeyboardActive = _builtInKeyboardFocusNode.hasFocus;
+      });
+    });
+    _builtInKeyboardController = TextEditingController(text: " ");
     _checkSupportAndPermissions();
     _setupPlatformChannel();
+  }
+
+  @override
+  void dispose() {
+    _builtInKeyboardFocusNode.dispose();
+    _builtInKeyboardController.dispose();
+    super.dispose();
   }
 
   void _setupPlatformChannel() {
@@ -1888,26 +1947,78 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  Future<void> _toggleForcedLandscapeKeyboard() async {
-    if (_forcedLandscapeKeyboard) {
+  void _toggleKeyboardMode() {
+    setState(() {
+      _keyboardMode = !_keyboardMode;
+      if (!_keyboardMode) {
+        _builtInKeyboardFocusNode.unfocus();
+      }
+    });
+  }
+
+  Future<void> _queueKeyStroke(int scancode, {bool shift = false}) {
+    _keystrokeQueue = _keystrokeQueue.then((_) async {
+      int originalModifiers = _modifiersBitmask;
+
+      if (shift) {
+        _modifiersBitmask |= 0x02; // Left Shift
+      }
+
       setState(() {
-        _forcedLandscapeKeyboard = false;
+        _activeScancodes.add(scancode);
       });
-      await SystemChrome.setPreferredOrientations([
-        DeviceOrientation.portraitUp,
-        DeviceOrientation.portraitDown,
-        DeviceOrientation.landscapeLeft,
-        DeviceOrientation.landscapeRight,
-      ]);
-    } else {
+      await _sendKeyboardReport();
+
+      await Future.delayed(const Duration(milliseconds: 15));
+
       setState(() {
-        _forcedLandscapeKeyboard = true;
+        _activeScancodes.remove(scancode);
+        _modifiersBitmask = originalModifiers;
       });
-      await SystemChrome.setPreferredOrientations([
-        DeviceOrientation.landscapeLeft,
-        DeviceOrientation.landscapeRight,
-      ]);
-    }
+      await _sendKeyboardReport();
+
+      await Future.delayed(const Duration(milliseconds: 10));
+    });
+    return _keystrokeQueue;
+  }
+
+  Widget _buildHiddenTextField() {
+    return SizedBox(
+      width: 1,
+      height: 1,
+      child: Opacity(
+        opacity: 0.0,
+        child: TextField(
+          controller: _builtInKeyboardController,
+          focusNode: _builtInKeyboardFocusNode,
+          autocorrect: false,
+          enableSuggestions: false,
+          keyboardType: TextInputType.visiblePassword,
+          textInputAction: TextInputAction.send,
+          onChanged: (val) async {
+            if (val.length > 1) {
+              String typed = val.substring(1);
+              for (int i = 0; i < typed.length; i++) {
+                String char = typed[i];
+                if (_charToScancode.containsKey(char)) {
+                  await _queueKeyStroke(_charToScancode[char]!, shift: false);
+                } else if (_shiftCharToScancode.containsKey(char)) {
+                  await _queueKeyStroke(_shiftCharToScancode[char]!, shift: true);
+                }
+              }
+            } else if (val.isEmpty) {
+              await _queueKeyStroke(0x2A); // Backspace
+            }
+            _builtInKeyboardController.text = " ";
+            _builtInKeyboardController.selection = const TextSelection.collapsed(offset: 1);
+          },
+          onSubmitted: (_) async {
+            await _queueKeyStroke(0x28); // Enter
+            _builtInKeyboardFocusNode.requestFocus();
+          },
+        ),
+      ),
+    );
   }
 
   // --- UI Layout Generators ---
@@ -2607,29 +2718,177 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // --- Main Structural Layout Builders ---
+  Widget _buildKeyboardAccessoryBar() {
+    return Container(
+      height: 50,
+      decoration: const BoxDecoration(
+        color: Color(0xFF13131B),
+        border: Border(
+          top: BorderSide(color: Color(0x18FFFFFF)),
+          bottom: BorderSide(color: Color(0x18FFFFFF)),
+        ),
+      ),
+      child: ListView(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+        children: [
+          _buildAccessoryButton(
+            icon: Icons.keyboard_hide,
+            onTap: _toggleKeyboardMode,
+            color: Colors.redAccent,
+          ),
+          _buildAccessoryDivider(),
+          _buildAccessoryKey("Esc", 0x29),
+          _buildAccessoryKey("Tab", 0x2B),
+          _buildAccessoryDivider(),
+          _buildAccessoryModifier("Ctrl", 0x01, const Color(0xFFE040FB)),
+          _buildAccessoryModifier("Shift", 0x02, const Color(0xFFE040FB)),
+          _buildAccessoryModifier("Alt", 0x04, const Color(0xFFE040FB)),
+          _buildAccessoryModifier("Win", 0x08, const Color(0xFFE040FB)),
+          _buildAccessoryDivider(),
+          _buildAccessoryKey("◀", 0x50),
+          _buildAccessoryKey("▲", 0x52),
+          _buildAccessoryKey("▼", 0x51),
+          _buildAccessoryKey("▶", 0x4F),
+          _buildAccessoryDivider(),
+          _buildAccessoryKey("Del", 0x4C),
+          _buildAccessoryKey("Enter", 0x28),
+        ],
+      ),
+    );
+  }
 
-  Widget _buildPortraitLayout() {
-    return Column(
-      children: [
-        _buildConnectionDashboard(compact: false),
-        Expanded(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0),
-            child: LayoutBuilder(
-              builder: (context, constraints) {
-                return _buildTrackpad(
-                  height: constraints.maxHeight,
-                  borderOpacity: 0.1,
-                );
-              },
+  Widget _buildAccessoryKey(String label, int scancode) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 4.0),
+      child: GestureDetector(
+        onTap: () async {
+          await _queueKeyStroke(scancode);
+        },
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          decoration: BoxDecoration(
+            color: const Color(0xFF1B1B26),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: const Color(0x18FFFFFF)),
+          ),
+          alignment: Alignment.center,
+          child: Text(
+            label,
+            style: const TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+              fontSize: 12,
             ),
           ),
         ),
-        const SizedBox(height: 16),
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-          child: _buildClickButtons(height: 95, fontSize: 13),
+      ),
+    );
+  }
+
+  Widget _buildAccessoryModifier(String label, int mask, Color glowColor) {
+    bool isActive = (_modifiersBitmask & mask) != 0;
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 4.0),
+      child: GestureDetector(
+        onTap: () async {
+          setState(() {
+            _modifiersBitmask ^= mask;
+          });
+          await _sendKeyboardReport();
+        },
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 100),
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          decoration: BoxDecoration(
+            color: isActive ? glowColor.withValues(alpha: 0.15) : const Color(0xFF1B1B26),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(
+              color: isActive ? glowColor : const Color(0x18FFFFFF),
+              width: isActive ? 1.5 : 1.0,
+            ),
+          ),
+          alignment: Alignment.center,
+          child: Text(
+            label,
+            style: TextStyle(
+              color: isActive ? glowColor : Colors.white,
+              fontWeight: FontWeight.bold,
+              fontSize: 12,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAccessoryButton({
+    required IconData icon,
+    required VoidCallback onTap,
+    Color color = const Color(0xFF00E5FF),
+  }) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 4.0),
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10),
+          decoration: BoxDecoration(
+            color: const Color(0xFF1B1B26),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: const Color(0x18FFFFFF)),
+          ),
+          alignment: Alignment.center,
+          child: Icon(icon, color: color, size: 16),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAccessoryDivider() {
+    return Container(
+      width: 1.5,
+      height: 24,
+      color: const Color(0x18FFFFFF),
+      margin: const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
+    );
+  }
+
+  // --- Main Structural Layout Builders ---
+
+  Widget _buildPortraitLayout() {
+    return Stack(
+      children: [
+        Column(
+          children: [
+            _buildConnectionDashboard(compact: false),
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    return _buildTrackpad(
+                      height: constraints.maxHeight,
+                      borderOpacity: 0.1,
+                    );
+                  },
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            if (_builtInKeyboardActive)
+              _buildKeyboardAccessoryBar()
+            else
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                child: _buildClickButtons(height: 95, fontSize: 13),
+              ),
+          ],
+        ),
+        Positioned(
+          left: 0,
+          top: 0,
+          child: _buildHiddenTextField(),
         ),
       ],
     );
@@ -2828,28 +3087,14 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
               const SizedBox(width: 12),
-              // Compact Exit Button
-              ElevatedButton.icon(
-                onPressed: _toggleForcedLandscapeKeyboard,
-                icon: const Icon(Icons.exit_to_app, size: 12),
-                label: const Text("Exit"),
-                style: ElevatedButton.styleFrom(
-                  foregroundColor: Colors.white,
-                  backgroundColor: const Color(0xFFE53935),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 6,
-                  ),
-                  minimumSize: Size.zero,
-                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                  textStyle: const TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.bold,
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(6),
-                  ),
+              // Keyboard Toggle Button
+              IconButton(
+                onPressed: _toggleKeyboardMode,
+                icon: const Icon(
+                  Icons.keyboard,
+                  color: Color(0xFF0DF5E3),
                 ),
+                tooltip: "Split Keyboard Layout",
               ),
             ],
           ),
@@ -2886,70 +3131,85 @@ class _HomeScreenState extends State<HomeScreen> {
       return Scaffold(body: SafeArea(child: _buildPermissionsView()));
     }
 
-    return OrientationBuilder(
-      builder: (context, orientation) {
-        // If Forced Landscape Keyboard is enabled, override everything with the full keyboard layout
-        bool showFullKeyboard =
-            _forcedLandscapeKeyboard && orientation == Orientation.landscape;
+    final orientation = MediaQuery.of(context).orientation;
 
-        return Scaffold(
-          appBar: showFullKeyboard
-              ? null // No appBar when in full screen keyboard
-              : AppBar(
-                  leading: Builder(
-                    builder: (context) => IconButton(
-                      icon: const Icon(Icons.menu, color: Colors.white),
-                      onPressed: () => Scaffold.of(context).openDrawer(),
+    // Synchronize soft keyboard focus state based on orientation and keyboard mode.
+    if (orientation == Orientation.landscape && _builtInKeyboardFocusNode.hasFocus) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _builtInKeyboardFocusNode.unfocus();
+      });
+    } else if (orientation == Orientation.portrait && _keyboardMode && !_builtInKeyboardFocusNode.hasFocus) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _builtInKeyboardFocusNode.requestFocus();
+      });
+    }
+
+    bool showFullKeyboard = _keyboardMode && orientation == Orientation.landscape;
+
+    return Scaffold(
+      appBar: showFullKeyboard
+          ? null // No appBar when in full screen keyboard
+          : AppBar(
+              leading: Builder(
+                builder: (context) => IconButton(
+                  icon: const Icon(Icons.menu, color: Colors.white),
+                  onPressed: () => Scaffold.of(context).openDrawer(),
+                ),
+              ),
+              title: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    orientation == Orientation.portrait
+                        ? Icons.mouse
+                        : Icons.keyboard,
+                    color: const Color(0xFF00E5FF),
+                  ),
+                  const SizedBox(width: 12),
+                  const Text(
+                    "CouchMouse",
+                    style: TextStyle(
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 0.8,
+                      color: Colors.white,
                     ),
                   ),
-                  title: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        orientation == Orientation.portrait
-                            ? Icons.mouse
-                            : Icons.keyboard,
-                        color: const Color(0xFF00E5FF),
-                      ),
-                      const SizedBox(width: 12),
-                      const Text(
-                        "CouchMouse",
-                        style: TextStyle(
-                          fontWeight: FontWeight.w900,
-                          letterSpacing: 0.8,
-                          color: Colors.white,
-                        ),
-                      ),
-                    ],
+                ],
+              ),
+              centerTitle: true,
+              backgroundColor: Colors.transparent,
+              elevation: 0,
+              actions: [
+                if (orientation == Orientation.portrait)
+                  IconButton(
+                    icon: Icon(
+                      _builtInKeyboardActive ? Icons.keyboard_hide : Icons.keyboard,
+                      color: const Color(0xFF0DF5E3),
+                    ),
+                    onPressed: _toggleKeyboardMode,
+                    tooltip: "Built-in Keyboard",
+                  )
+                else if (orientation == Orientation.landscape)
+                  IconButton(
+                    icon: const Icon(
+                      Icons.keyboard,
+                      color: Color(0xFF0DF5E3),
+                    ),
+                    onPressed: _toggleKeyboardMode,
+                    tooltip: "Full Keyboard Mode",
                   ),
-                  centerTitle: true,
-                  backgroundColor: Colors.transparent,
-                  elevation: 0,
-                  actions: [
-                    // Only show forced landscape lock button if currently in portrait
-                    if (orientation == Orientation.portrait)
-                      IconButton(
-                        icon: const Icon(
-                          Icons.keyboard,
-                          color: Color(0xFF0DF5E3),
-                        ),
-                        onPressed: _toggleForcedLandscapeKeyboard,
-                        tooltip: "Full Keyboard Mode",
-                      ),
-                    const SizedBox(width: 8),
-                  ],
-                ),
-          drawer: showFullKeyboard ? null : _buildDrawer(),
-          body: SafeArea(
-            child: showFullKeyboard
-                ? _buildForcedLandscapeKeyboardLayout()
-                : (orientation == Orientation.portrait
-                      ? _buildPortraitLayout()
-                      : _buildSplitLandscapeLayout()),
-          ),
-        );
-      },
+                const SizedBox(width: 8),
+              ],
+            ),
+      drawer: showFullKeyboard ? null : _buildDrawer(),
+      body: SafeArea(
+        child: showFullKeyboard
+            ? _buildForcedLandscapeKeyboardLayout()
+            : (orientation == Orientation.portrait
+                  ? _buildPortraitLayout()
+                  : _buildSplitLandscapeLayout()),
+      ),
     );
   }
 
