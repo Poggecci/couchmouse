@@ -126,7 +126,11 @@ class MainActivity : FlutterActivity() {
                             flutterEngine?.dartExecutor?.binaryMessenger?.let { messenger ->
                                 MethodChannel(messenger, CHANNEL).invokeMethod(
                                     "onConnectionStateChanged", 
-                                    mapOf("connected" to isConnected, "deviceName" to deviceName)
+                                    mapOf(
+                                        "connected" to isConnected, 
+                                        "deviceName" to deviceName,
+                                        "deviceAddress" to device?.address
+                                    )
                                 )
                             }
                         }
@@ -186,6 +190,7 @@ class MainActivity : FlutterActivity() {
         }
     }
 
+    @SuppressLint("MissingPermission")
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
 
@@ -224,17 +229,20 @@ class MainActivity : FlutterActivity() {
                             "Host Laptop"
                         }
                     } else null
+                    val deviceAddress = device?.address
 
                     if (device != null) {
                         result.success(mapOf(
                             "connected" to true, 
                             "deviceName" to deviceName,
+                            "deviceAddress" to deviceAddress,
                             "registered" to isRegistered
                         ))
                     } else {
                         result.success(mapOf(
                             "connected" to false, 
                             "deviceName" to null,
+                            "deviceAddress" to null,
                             "registered" to isRegistered
                         ))
                     }
@@ -246,6 +254,87 @@ class MainActivity : FlutterActivity() {
                         result.success(true)
                     } catch (e: Exception) {
                         result.error("ERROR", "Could not open Bluetooth settings", e.message)
+                    }
+                }
+                "getPairedDevices" -> {
+                    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.P) {
+                        result.error("UNSUPPORTED", "Bluetooth HID requires Android 9+", null)
+                        return@setMethodCallHandler
+                    }
+                    try {
+                        val pairedDevices = bluetoothAdapter?.bondedDevices ?: emptySet()
+                        val devicesList = pairedDevices.map { device ->
+                            val name = try {
+                                device.name ?: "Unknown Device"
+                            } catch (e: SecurityException) {
+                                "Unknown Device"
+                            }
+                            mapOf(
+                                "name" to name,
+                                "address" to device.address
+                            )
+                        }
+                        result.success(devicesList)
+                    } catch (e: SecurityException) {
+                        result.error("SECURITY_EXCEPTION", "Permission denied: ${e.message}", null)
+                    } catch (e: Exception) {
+                        result.error("ERROR", e.message, null)
+                    }
+                }
+                "connectDevice" -> {
+                    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.P) {
+                        result.error("UNSUPPORTED", "Bluetooth HID requires Android 9+", null)
+                        return@setMethodCallHandler
+                    }
+                    val address = call.argument<String>("address")
+                    if (address == null) {
+                        result.error("INVALID_ARGUMENT", "Address cannot be null", null)
+                        return@setMethodCallHandler
+                    }
+                    val hid = bluetoothHidDevice
+                    val adapter = bluetoothAdapter
+                    if (hid == null || adapter == null) {
+                        result.error("UNAVAILABLE", "Bluetooth HID device proxy not initialized", null)
+                        return@setMethodCallHandler
+                    }
+                    try {
+                        val device = adapter.getRemoteDevice(address)
+                        val success = hid.connect(device)
+                        result.success(success)
+                    } catch (e: SecurityException) {
+                        result.error("SECURITY_EXCEPTION", "Permission denied: ${e.message}", null)
+                    } catch (e: Exception) {
+                        result.error("ERROR", e.message, null)
+                    }
+                }
+                "disconnectDevice" -> {
+                    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.P) {
+                        result.error("UNSUPPORTED", "Bluetooth HID requires Android 9+", null)
+                        return@setMethodCallHandler
+                    }
+                    val address = call.argument<String>("address")
+                    val hid = bluetoothHidDevice
+                    val adapter = bluetoothAdapter
+                    if (hid == null || adapter == null) {
+                        result.error("UNAVAILABLE", "Bluetooth HID device proxy not initialized", null)
+                        return@setMethodCallHandler
+                    }
+                    try {
+                        val device = if (address != null) {
+                            adapter.getRemoteDevice(address)
+                        } else {
+                            hostDevice
+                        }
+                        if (device != null) {
+                            val success = hid.disconnect(device)
+                            result.success(success)
+                        } else {
+                            result.success(false)
+                        }
+                    } catch (e: SecurityException) {
+                        result.error("SECURITY_EXCEPTION", "Permission denied: ${e.message}", null)
+                    } catch (e: Exception) {
+                        result.error("ERROR", e.message, null)
                     }
                 }
                 "sendMouseReport" -> {
