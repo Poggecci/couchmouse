@@ -38,6 +38,34 @@ class CouchMouseApp extends StatelessWidget {
   }
 }
 
+enum KeyboardKind {
+  fullSize,
+  compactFullSize,
+  tenkeyless,
+  seventyFive,
+  sixtyFive,
+  sixtyPercent,
+}
+
+extension KeyboardKindExtension on KeyboardKind {
+  String get name {
+    switch (this) {
+      case KeyboardKind.fullSize:
+        return "Full-Size (100%)";
+      case KeyboardKind.compactFullSize:
+        return "Compact Full-Size (96%)";
+      case KeyboardKind.tenkeyless:
+        return "Tenkeyless / TKL (80%)";
+      case KeyboardKind.seventyFive:
+        return "75%";
+      case KeyboardKind.sixtyFive:
+        return "65%";
+      case KeyboardKind.sixtyPercent:
+        return "60%";
+    }
+  }
+}
+
 class KeyInfo {
   final String label;
   final String? fnLabel;
@@ -46,6 +74,7 @@ class KeyInfo {
   final double flex;
   final bool isModifier;
   final int modifierMask;
+  final bool isSpacer;
 
   const KeyInfo({
     required this.label,
@@ -55,6 +84,7 @@ class KeyInfo {
     this.flex = 1.0,
     this.isModifier = false,
     this.modifierMask = 0,
+    this.isSpacer = false,
   });
 }
 
@@ -68,87 +98,694 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   static const _channel = MethodChannel('com.example.couchmouse/hid');
 
-  // Key mappings for the 60% keyboard layout
-  static const List<List<KeyInfo>> _keyboardLayout = [
-    // Row 1
-    [
-      KeyInfo(label: "Esc", fnLabel: "`", scancode: 0x29, fnScancode: 0x35, flex: 1.2),
-      KeyInfo(label: "1", fnLabel: "F1", scancode: 0x1E, fnScancode: 0x3A),
-      KeyInfo(label: "2", fnLabel: "F2", scancode: 0x1F, fnScancode: 0x3B),
-      KeyInfo(label: "3", fnLabel: "F3", scancode: 0x20, fnScancode: 0x3C),
-      KeyInfo(label: "4", fnLabel: "F4", scancode: 0x21, fnScancode: 0x3D),
-      KeyInfo(label: "5", fnLabel: "F5", scancode: 0x22, fnScancode: 0x3E),
-      KeyInfo(label: "6", fnLabel: "F6", scancode: 0x23, fnScancode: 0x3F),
-      KeyInfo(label: "7", fnLabel: "F7", scancode: 0x24, fnScancode: 0x40),
-      KeyInfo(label: "8", fnLabel: "F8", scancode: 0x25, fnScancode: 0x41),
-      KeyInfo(label: "9", fnLabel: "F9", scancode: 0x26, fnScancode: 0x42),
-      KeyInfo(label: "0", fnLabel: "F10", scancode: 0x27, fnScancode: 0x43),
-      KeyInfo(label: "-", fnLabel: "F11", scancode: 0x2D, fnScancode: 0x44),
-      KeyInfo(label: "=", fnLabel: "F12", scancode: 0x2E, fnScancode: 0x45),
-      KeyInfo(label: "Back", fnLabel: "Del", scancode: 0x2A, fnScancode: 0x4C, flex: 1.8),
-    ],
-    // Row 2
-    [
-      KeyInfo(label: "Tab", scancode: 0x2B, flex: 1.5),
-      KeyInfo(label: "Q", scancode: 0x14),
-      KeyInfo(label: "W", scancode: 0x1A),
-      KeyInfo(label: "E", scancode: 0x08),
-      KeyInfo(label: "R", scancode: 0x15),
-      KeyInfo(label: "T", scancode: 0x17),
-      KeyInfo(label: "Y", scancode: 0x1C),
-      KeyInfo(label: "U", scancode: 0x18),
-      KeyInfo(label: "I", scancode: 0x0C),
-      KeyInfo(label: "O", scancode: 0x12),
-      KeyInfo(label: "P", scancode: 0x13),
-      KeyInfo(label: "[", scancode: 0x2F),
-      KeyInfo(label: "]", scancode: 0x30),
-      KeyInfo(label: "\\", scancode: 0x31, flex: 1.5),
-    ],
-    // Row 3
-    [
-      KeyInfo(label: "Caps", scancode: 0x39, flex: 1.8),
-      KeyInfo(label: "A", scancode: 0x04),
-      KeyInfo(label: "S", scancode: 0x16),
-      KeyInfo(label: "D", scancode: 0x07),
-      KeyInfo(label: "F", scancode: 0x09),
-      KeyInfo(label: "G", scancode: 0x0A),
-      KeyInfo(label: "H", scancode: 0x0B),
-      KeyInfo(label: "J", scancode: 0x0D),
-      KeyInfo(label: "K", scancode: 0x0E),
-      KeyInfo(label: "L", scancode: 0x0F),
-      KeyInfo(label: ";", scancode: 0x33),
-      KeyInfo(label: "'", scancode: 0x34),
-      KeyInfo(label: "Enter", scancode: 0x28, flex: 2.2),
-    ],
-    // Row 4
-    [
-      KeyInfo(label: "Shift", scancode: 0, isModifier: true, modifierMask: 0x02, flex: 2.2),
-      KeyInfo(label: "Z", scancode: 0x1D),
-      KeyInfo(label: "X", scancode: 0x1B),
-      KeyInfo(label: "C", scancode: 0x06),
-      KeyInfo(label: "V", scancode: 0x19),
-      KeyInfo(label: "B", scancode: 0x05),
-      KeyInfo(label: "N", scancode: 0x11),
-      KeyInfo(label: "M", scancode: 0x10),
-      KeyInfo(label: ",", scancode: 0x36),
-      KeyInfo(label: ".", scancode: 0x37),
-      KeyInfo(label: "/", scancode: 0x38),
-      KeyInfo(label: "▲", fnLabel: "PgUp", scancode: 0x52, fnScancode: 0x4B, flex: 1.2),
-      KeyInfo(label: "Shift", scancode: 0, isModifier: true, modifierMask: 0x20, flex: 1.3),
-    ],
-    // Row 5
-    [
-      KeyInfo(label: "Ctrl", scancode: 0, isModifier: true, modifierMask: 0x01, flex: 1.4),
-      KeyInfo(label: "Win", scancode: 0, isModifier: true, modifierMask: 0x08, flex: 1.3),
-      KeyInfo(label: "Alt", scancode: 0, isModifier: true, modifierMask: 0x04, flex: 1.3),
-      KeyInfo(label: "Space", scancode: 0x2C, flex: 4.8),
-      KeyInfo(label: "Alt", scancode: 0, isModifier: true, modifierMask: 0x40, flex: 1.2),
-      KeyInfo(label: "Fn", scancode: -1, flex: 1.2),
-      KeyInfo(label: "◀", fnLabel: "Home", scancode: 0x50, fnScancode: 0x4A, flex: 1.0),
-      KeyInfo(label: "▼", fnLabel: "PgDn", scancode: 0x51, fnScancode: 0x4E, flex: 1.0),
-      KeyInfo(label: "▶", fnLabel: "End", scancode: 0x4F, fnScancode: 0x4D, flex: 1.0),
-    ],
-  ];
+  // Key mappings for TKL layout
+  static List<List<KeyInfo>> _getTklLayout() {
+    return [
+      // Row 1 (F-row)
+      [
+        const KeyInfo(label: "Esc", scancode: 0x29, flex: 1.0),
+        const KeyInfo(label: "", scancode: 0, isSpacer: true, flex: 0.5),
+        const KeyInfo(label: "F1", scancode: 0x3A, flex: 1.0),
+        const KeyInfo(label: "F2", scancode: 0x3B, flex: 1.0),
+        const KeyInfo(label: "F3", scancode: 0x3C, flex: 1.0),
+        const KeyInfo(label: "F4", scancode: 0x3D, flex: 1.0),
+        const KeyInfo(label: "", scancode: 0, isSpacer: true, flex: 0.5),
+        const KeyInfo(label: "F5", scancode: 0x3E, flex: 1.0),
+        const KeyInfo(label: "F6", scancode: 0x3F, flex: 1.0),
+        const KeyInfo(label: "F7", scancode: 0x40, flex: 1.0),
+        const KeyInfo(label: "F8", scancode: 0x41, flex: 1.0),
+        const KeyInfo(label: "", scancode: 0, isSpacer: true, flex: 0.5),
+        const KeyInfo(label: "F9", scancode: 0x42, flex: 1.0),
+        const KeyInfo(label: "F10", scancode: 0x43, flex: 1.0),
+        const KeyInfo(label: "F11", scancode: 0x44, flex: 1.0),
+        const KeyInfo(label: "F12", scancode: 0x45, flex: 1.0),
+        const KeyInfo(label: "", scancode: 0, isSpacer: true, flex: 0.3),
+        const KeyInfo(label: "Prt", scancode: 0x46, flex: 1.0),
+        const KeyInfo(label: "ScrL", scancode: 0x47, flex: 1.0),
+        const KeyInfo(label: "Pse", scancode: 0x48, flex: 1.0),
+      ],
+      // Row 2
+      [
+        const KeyInfo(label: "`", scancode: 0x35, flex: 1.0),
+        const KeyInfo(label: "1", scancode: 0x1E, flex: 1.0),
+        const KeyInfo(label: "2", scancode: 0x1F, flex: 1.0),
+        const KeyInfo(label: "3", scancode: 0x20, flex: 1.0),
+        const KeyInfo(label: "4", scancode: 0x21, flex: 1.0),
+        const KeyInfo(label: "5", scancode: 0x22, flex: 1.0),
+        const KeyInfo(label: "6", scancode: 0x23, flex: 1.0),
+        const KeyInfo(label: "7", scancode: 0x24, flex: 1.0),
+        const KeyInfo(label: "8", scancode: 0x25, flex: 1.0),
+        const KeyInfo(label: "9", scancode: 0x26, flex: 1.0),
+        const KeyInfo(label: "0", scancode: 0x27, flex: 1.0),
+        const KeyInfo(label: "-", scancode: 0x2D, flex: 1.0),
+        const KeyInfo(label: "=", scancode: 0x2E, flex: 1.0),
+        const KeyInfo(label: "Backspace", scancode: 0x2A, flex: 2.0),
+        const KeyInfo(label: "", scancode: 0, isSpacer: true, flex: 0.3),
+        const KeyInfo(label: "Ins", scancode: 0x49, flex: 1.0),
+        const KeyInfo(label: "Hm", scancode: 0x4A, flex: 1.0),
+        const KeyInfo(label: "PUp", scancode: 0x4B, flex: 1.0),
+      ],
+      // Row 3
+      [
+        const KeyInfo(label: "Tab", scancode: 0x2B, flex: 1.5),
+        const KeyInfo(label: "Q", scancode: 0x14, flex: 1.0),
+        const KeyInfo(label: "W", scancode: 0x1A, flex: 1.0),
+        const KeyInfo(label: "E", scancode: 0x08, flex: 1.0),
+        const KeyInfo(label: "R", scancode: 0x15, flex: 1.0),
+        const KeyInfo(label: "T", scancode: 0x17, flex: 1.0),
+        const KeyInfo(label: "Y", scancode: 0x1C, flex: 1.0),
+        const KeyInfo(label: "U", scancode: 0x18, flex: 1.0),
+        const KeyInfo(label: "I", scancode: 0x0C, flex: 1.0),
+        const KeyInfo(label: "O", scancode: 0x12, flex: 1.0),
+        const KeyInfo(label: "P", scancode: 0x13, flex: 1.0),
+        const KeyInfo(label: "[", scancode: 0x2F, flex: 1.0),
+        const KeyInfo(label: "]", scancode: 0x30, flex: 1.0),
+        const KeyInfo(label: "\\", scancode: 0x31, flex: 1.5),
+        const KeyInfo(label: "", scancode: 0, isSpacer: true, flex: 0.3),
+        const KeyInfo(label: "Del", scancode: 0x4C, flex: 1.0),
+        const KeyInfo(label: "End", scancode: 0x4D, flex: 1.0),
+        const KeyInfo(label: "PDn", scancode: 0x4E, flex: 1.0),
+      ],
+      // Row 4
+      [
+        const KeyInfo(label: "Caps", scancode: 0x39, flex: 1.8),
+        const KeyInfo(label: "A", scancode: 0x04, flex: 1.0),
+        const KeyInfo(label: "S", scancode: 0x16, flex: 1.0),
+        const KeyInfo(label: "D", scancode: 0x07, flex: 1.0),
+        const KeyInfo(label: "F", scancode: 0x09, flex: 1.0),
+        const KeyInfo(label: "G", scancode: 0x0A, flex: 1.0),
+        const KeyInfo(label: "H", scancode: 0x0B, flex: 1.0),
+        const KeyInfo(label: "J", scancode: 0x0D, flex: 1.0),
+        const KeyInfo(label: "K", scancode: 0x0E, flex: 1.0),
+        const KeyInfo(label: "L", scancode: 0x0F, flex: 1.0),
+        const KeyInfo(label: ";", scancode: 0x33, flex: 1.0),
+        const KeyInfo(label: "'", scancode: 0x34, flex: 1.0),
+        const KeyInfo(label: "Enter", scancode: 0x28, flex: 2.2),
+        const KeyInfo(label: "", scancode: 0, isSpacer: true, flex: 3.6),
+      ],
+      // Row 5
+      [
+        const KeyInfo(label: "Shift", scancode: 0, isModifier: true, modifierMask: 0x02, flex: 2.2),
+        const KeyInfo(label: "Z", scancode: 0x1D, flex: 1.0),
+        const KeyInfo(label: "X", scancode: 0x1B, flex: 1.0),
+        const KeyInfo(label: "C", scancode: 0x06, flex: 1.0),
+        const KeyInfo(label: "V", scancode: 0x19, flex: 1.0),
+        const KeyInfo(label: "B", scancode: 0x05, flex: 1.0),
+        const KeyInfo(label: "N", scancode: 0x11, flex: 1.0),
+        const KeyInfo(label: "M", scancode: 0x10, flex: 1.0),
+        const KeyInfo(label: ",", scancode: 0x36, flex: 1.0),
+        const KeyInfo(label: ".", scancode: 0x37, flex: 1.0),
+        const KeyInfo(label: "/", scancode: 0x38, flex: 1.0),
+        const KeyInfo(label: "Shift", scancode: 0, isModifier: true, modifierMask: 0x20, flex: 2.8),
+        const KeyInfo(label: "", scancode: 0, isSpacer: true, flex: 1.3),
+        const KeyInfo(label: "▲", scancode: 0x52, flex: 1.0),
+        const KeyInfo(label: "", scancode: 0, isSpacer: true, flex: 1.3),
+      ],
+      // Row 6
+      [
+        const KeyInfo(label: "Ctrl", scancode: 0, isModifier: true, modifierMask: 0x01, flex: 1.25),
+        const KeyInfo(label: "Win", scancode: 0, isModifier: true, modifierMask: 0x08, flex: 1.25),
+        const KeyInfo(label: "Alt", scancode: 0, isModifier: true, modifierMask: 0x04, flex: 1.25),
+        const KeyInfo(label: "Space", scancode: 0x2C, flex: 6.0),
+        const KeyInfo(label: "Alt", scancode: 0, isModifier: true, modifierMask: 0x40, flex: 1.25),
+        const KeyInfo(label: "Fn", scancode: -1, flex: 1.25),
+        const KeyInfo(label: "App", scancode: 0x65, flex: 1.25),
+        const KeyInfo(label: "Ctrl", scancode: 0, isModifier: true, modifierMask: 0x10, flex: 1.5),
+        const KeyInfo(label: "", scancode: 0, isSpacer: true, flex: 0.3),
+        const KeyInfo(label: "◀", scancode: 0x50, flex: 1.0),
+        const KeyInfo(label: "▼", scancode: 0x51, flex: 1.0),
+        const KeyInfo(label: "▶", scancode: 0x4F, flex: 1.0),
+      ],
+    ];
+  }
+
+  // Key mappings for Full-Size (100%) layout
+  static List<List<KeyInfo>> _getFullSizeLayout() {
+    return [
+      // Row 1 (F-row + NumLock cluster)
+      [
+        const KeyInfo(label: "Esc", scancode: 0x29, flex: 1.0),
+        const KeyInfo(label: "", scancode: 0, isSpacer: true, flex: 0.5),
+        const KeyInfo(label: "F1", scancode: 0x3A, flex: 1.0),
+        const KeyInfo(label: "F2", scancode: 0x3B, flex: 1.0),
+        const KeyInfo(label: "F3", scancode: 0x3C, flex: 1.0),
+        const KeyInfo(label: "F4", scancode: 0x3D, flex: 1.0),
+        const KeyInfo(label: "", scancode: 0, isSpacer: true, flex: 0.5),
+        const KeyInfo(label: "F5", scancode: 0x3E, flex: 1.0),
+        const KeyInfo(label: "F6", scancode: 0x3F, flex: 1.0),
+        const KeyInfo(label: "F7", scancode: 0x40, flex: 1.0),
+        const KeyInfo(label: "F8", scancode: 0x41, flex: 1.0),
+        const KeyInfo(label: "", scancode: 0, isSpacer: true, flex: 0.5),
+        const KeyInfo(label: "F9", scancode: 0x42, flex: 1.0),
+        const KeyInfo(label: "F10", scancode: 0x43, flex: 1.0),
+        const KeyInfo(label: "F11", scancode: 0x44, flex: 1.0),
+        const KeyInfo(label: "F12", scancode: 0x45, flex: 1.0),
+        const KeyInfo(label: "", scancode: 0, isSpacer: true, flex: 0.3),
+        const KeyInfo(label: "Prt", scancode: 0x46, flex: 1.0),
+        const KeyInfo(label: "ScrL", scancode: 0x47, flex: 1.0),
+        const KeyInfo(label: "Pse", scancode: 0x48, flex: 1.0),
+        const KeyInfo(label: "", scancode: 0, isSpacer: true, flex: 0.3),
+        const KeyInfo(label: "Num", scancode: 0x53, flex: 1.0),
+        const KeyInfo(label: "KP /", scancode: 0x54, flex: 1.0),
+        const KeyInfo(label: "KP *", scancode: 0x55, flex: 1.0),
+        const KeyInfo(label: "KP -", scancode: 0x56, flex: 1.0),
+      ],
+      // Row 2 (Number row + Ins/Del + KP 7-9)
+      [
+        const KeyInfo(label: "`", scancode: 0x35, flex: 1.0),
+        const KeyInfo(label: "1", scancode: 0x1E, flex: 1.0),
+        const KeyInfo(label: "2", scancode: 0x1F, flex: 1.0),
+        const KeyInfo(label: "3", scancode: 0x20, flex: 1.0),
+        const KeyInfo(label: "4", scancode: 0x21, flex: 1.0),
+        const KeyInfo(label: "5", scancode: 0x22, flex: 1.0),
+        const KeyInfo(label: "6", scancode: 0x23, flex: 1.0),
+        const KeyInfo(label: "7", scancode: 0x24, flex: 1.0),
+        const KeyInfo(label: "8", scancode: 0x25, flex: 1.0),
+        const KeyInfo(label: "9", scancode: 0x26, flex: 1.0),
+        const KeyInfo(label: "0", scancode: 0x27, flex: 1.0),
+        const KeyInfo(label: "-", scancode: 0x2D, flex: 1.0),
+        const KeyInfo(label: "=", scancode: 0x2E, flex: 1.0),
+        const KeyInfo(label: "Backspace", scancode: 0x2A, flex: 2.0),
+        const KeyInfo(label: "", scancode: 0, isSpacer: true, flex: 0.3),
+        const KeyInfo(label: "Ins", scancode: 0x49, flex: 1.0),
+        const KeyInfo(label: "Hm", scancode: 0x4A, flex: 1.0),
+        const KeyInfo(label: "PUp", scancode: 0x4B, flex: 1.0),
+        const KeyInfo(label: "", scancode: 0, isSpacer: true, flex: 0.3),
+        const KeyInfo(label: "KP 7", scancode: 0x5F, flex: 1.0),
+        const KeyInfo(label: "KP 8", scancode: 0x60, flex: 1.0),
+        const KeyInfo(label: "KP 9", scancode: 0x61, flex: 1.0),
+        const KeyInfo(label: "KP +", scancode: 0x57, flex: 1.0),
+      ],
+      // Row 3 (Q-P row + Del/End/PgDn + KP 4-6)
+      [
+        const KeyInfo(label: "Tab", scancode: 0x2B, flex: 1.5),
+        const KeyInfo(label: "Q", scancode: 0x14, flex: 1.0),
+        const KeyInfo(label: "W", scancode: 0x1A, flex: 1.0),
+        const KeyInfo(label: "E", scancode: 0x08, flex: 1.0),
+        const KeyInfo(label: "R", scancode: 0x15, flex: 1.0),
+        const KeyInfo(label: "T", scancode: 0x17, flex: 1.0),
+        const KeyInfo(label: "Y", scancode: 0x1C, flex: 1.0),
+        const KeyInfo(label: "U", scancode: 0x18, flex: 1.0),
+        const KeyInfo(label: "I", scancode: 0x0C, flex: 1.0),
+        const KeyInfo(label: "O", scancode: 0x12, flex: 1.0),
+        const KeyInfo(label: "P", scancode: 0x13, flex: 1.0),
+        const KeyInfo(label: "[", scancode: 0x2F, flex: 1.0),
+        const KeyInfo(label: "]", scancode: 0x30, flex: 1.0),
+        const KeyInfo(label: "\\", scancode: 0x31, flex: 1.5),
+        const KeyInfo(label: "", scancode: 0, isSpacer: true, flex: 0.3),
+        const KeyInfo(label: "Del", scancode: 0x4C, flex: 1.0),
+        const KeyInfo(label: "End", scancode: 0x4D, flex: 1.0),
+        const KeyInfo(label: "PDn", scancode: 0x4E, flex: 1.0),
+        const KeyInfo(label: "", scancode: 0, isSpacer: true, flex: 0.3),
+        const KeyInfo(label: "KP 4", scancode: 0x5C, flex: 1.0),
+        const KeyInfo(label: "KP 5", scancode: 0x5D, flex: 1.0),
+        const KeyInfo(label: "KP 6", scancode: 0x5E, flex: 1.0),
+        const KeyInfo(label: "KP +", scancode: 0x57, flex: 1.0),
+      ],
+      // Row 4 (A-Enter row + KP 1-3)
+      [
+        const KeyInfo(label: "Caps", scancode: 0x39, flex: 1.8),
+        const KeyInfo(label: "A", scancode: 0x04, flex: 1.0),
+        const KeyInfo(label: "S", scancode: 0x16, flex: 1.0),
+        const KeyInfo(label: "D", scancode: 0x07, flex: 1.0),
+        const KeyInfo(label: "F", scancode: 0x09, flex: 1.0),
+        const KeyInfo(label: "G", scancode: 0x0A, flex: 1.0),
+        const KeyInfo(label: "H", scancode: 0x0B, flex: 1.0),
+        const KeyInfo(label: "J", scancode: 0x0D, flex: 1.0),
+        const KeyInfo(label: "K", scancode: 0x0E, flex: 1.0),
+        const KeyInfo(label: "L", scancode: 0x0F, flex: 1.0),
+        const KeyInfo(label: ";", scancode: 0x33, flex: 1.0),
+        const KeyInfo(label: "'", scancode: 0x34, flex: 1.0),
+        const KeyInfo(label: "Enter", scancode: 0x28, flex: 2.2),
+        const KeyInfo(label: "", scancode: 0, isSpacer: true, flex: 3.6),
+        const KeyInfo(label: "KP 1", scancode: 0x59, flex: 1.0),
+        const KeyInfo(label: "KP 2", scancode: 0x5A, flex: 1.0),
+        const KeyInfo(label: "KP 3", scancode: 0x5B, flex: 1.0),
+        const KeyInfo(label: "KP Ent", scancode: 0x58, flex: 1.0),
+      ],
+      // Row 5 (Shift + arrows + KP 0)
+      [
+        const KeyInfo(label: "Shift", scancode: 0, isModifier: true, modifierMask: 0x02, flex: 2.2),
+        const KeyInfo(label: "Z", scancode: 0x1D, flex: 1.0),
+        const KeyInfo(label: "X", scancode: 0x1B, flex: 1.0),
+        const KeyInfo(label: "C", scancode: 0x06, flex: 1.0),
+        const KeyInfo(label: "V", scancode: 0x19, flex: 1.0),
+        const KeyInfo(label: "B", scancode: 0x05, flex: 1.0),
+        const KeyInfo(label: "N", scancode: 0x11, flex: 1.0),
+        const KeyInfo(label: "M", scancode: 0x10, flex: 1.0),
+        const KeyInfo(label: ",", scancode: 0x36, flex: 1.0),
+        const KeyInfo(label: ".", scancode: 0x37, flex: 1.0),
+        const KeyInfo(label: "/", scancode: 0x38, flex: 1.0),
+        const KeyInfo(label: "Shift", scancode: 0, isModifier: true, modifierMask: 0x20, flex: 2.8),
+        const KeyInfo(label: "", scancode: 0, isSpacer: true, flex: 1.3),
+        const KeyInfo(label: "▲", scancode: 0x52, flex: 1.0),
+        const KeyInfo(label: "", scancode: 0, isSpacer: true, flex: 1.3),
+        const KeyInfo(label: "KP 0", scancode: 0x62, flex: 2.0),
+        const KeyInfo(label: "KP .", scancode: 0x63, flex: 1.0),
+        const KeyInfo(label: "KP Ent", scancode: 0x58, flex: 1.0),
+      ],
+      // Row 6 (Ctrl/Alt/Space + arrows)
+      [
+        const KeyInfo(label: "Ctrl", scancode: 0, isModifier: true, modifierMask: 0x01, flex: 1.25),
+        const KeyInfo(label: "Win", scancode: 0, isModifier: true, modifierMask: 0x08, flex: 1.25),
+        const KeyInfo(label: "Alt", scancode: 0, isModifier: true, modifierMask: 0x04, flex: 1.25),
+        const KeyInfo(label: "Space", scancode: 0x2C, flex: 6.0),
+        const KeyInfo(label: "Alt", scancode: 0, isModifier: true, modifierMask: 0x40, flex: 1.25),
+        const KeyInfo(label: "Fn", scancode: -1, flex: 1.25),
+        const KeyInfo(label: "App", scancode: 0x65, flex: 1.25),
+        const KeyInfo(label: "Ctrl", scancode: 0, isModifier: true, modifierMask: 0x10, flex: 1.5),
+        const KeyInfo(label: "", scancode: 0, isSpacer: true, flex: 0.3),
+        const KeyInfo(label: "◀", scancode: 0x50, flex: 1.0),
+        const KeyInfo(label: "▼", scancode: 0x51, flex: 1.0),
+        const KeyInfo(label: "▶", scancode: 0x4F, flex: 1.0),
+        const KeyInfo(label: "", scancode: 0, isSpacer: true, flex: 4.3),
+      ],
+    ];
+  }
+
+  // Key mappings for Compact Full-Size (96%) layout
+  static List<List<KeyInfo>> _getCompactFullSizeLayout() {
+    return [
+      // Row 1 (F-row + NumLock cluster)
+      [
+        const KeyInfo(label: "Esc", scancode: 0x29, flex: 1.0),
+        const KeyInfo(label: "F1", scancode: 0x3A, flex: 1.0),
+        const KeyInfo(label: "F2", scancode: 0x3B, flex: 1.0),
+        const KeyInfo(label: "F3", scancode: 0x3C, flex: 1.0),
+        const KeyInfo(label: "F4", scancode: 0x3D, flex: 1.0),
+        const KeyInfo(label: "F5", scancode: 0x3E, flex: 1.0),
+        const KeyInfo(label: "F6", scancode: 0x3F, flex: 1.0),
+        const KeyInfo(label: "F7", scancode: 0x40, flex: 1.0),
+        const KeyInfo(label: "F8", scancode: 0x41, flex: 1.0),
+        const KeyInfo(label: "F9", scancode: 0x42, flex: 1.0),
+        const KeyInfo(label: "F10", scancode: 0x43, flex: 1.0),
+        const KeyInfo(label: "F11", scancode: 0x44, flex: 1.0),
+        const KeyInfo(label: "F12", scancode: 0x45, flex: 1.0),
+        const KeyInfo(label: "Prt", scancode: 0x46, flex: 1.0),
+        const KeyInfo(label: "Ins", scancode: 0x49, flex: 1.0),
+        const KeyInfo(label: "Del", scancode: 0x4C, flex: 1.0),
+        const KeyInfo(label: "Num", scancode: 0x53, flex: 1.0),
+        const KeyInfo(label: "KP /", scancode: 0x54, flex: 1.0),
+        const KeyInfo(label: "KP *", scancode: 0x55, flex: 1.0),
+        const KeyInfo(label: "KP -", scancode: 0x56, flex: 1.0),
+      ],
+      // Row 2 (Number row + Home + KP 7-9 + KP +)
+      [
+        const KeyInfo(label: "`", scancode: 0x35, flex: 1.0),
+        const KeyInfo(label: "1", scancode: 0x1E, flex: 1.0),
+        const KeyInfo(label: "2", scancode: 0x1F, flex: 1.0),
+        const KeyInfo(label: "3", scancode: 0x20, flex: 1.0),
+        const KeyInfo(label: "4", scancode: 0x21, flex: 1.0),
+        const KeyInfo(label: "5", scancode: 0x22, flex: 1.0),
+        const KeyInfo(label: "6", scancode: 0x23, flex: 1.0),
+        const KeyInfo(label: "7", scancode: 0x24, flex: 1.0),
+        const KeyInfo(label: "8", scancode: 0x25, flex: 1.0),
+        const KeyInfo(label: "9", scancode: 0x26, flex: 1.0),
+        const KeyInfo(label: "0", scancode: 0x27, flex: 1.0),
+        const KeyInfo(label: "-", scancode: 0x2D, flex: 1.0),
+        const KeyInfo(label: "=", scancode: 0x2E, flex: 1.0),
+        const KeyInfo(label: "Backspace", scancode: 0x2A, flex: 2.0),
+        const KeyInfo(label: "Hm", scancode: 0x4A, flex: 1.0),
+        const KeyInfo(label: "KP 7", scancode: 0x5F, flex: 1.0),
+        const KeyInfo(label: "KP 8", scancode: 0x60, flex: 1.0),
+        const KeyInfo(label: "KP 9", scancode: 0x61, flex: 1.0),
+        const KeyInfo(label: "KP +", scancode: 0x57, flex: 1.0),
+      ],
+      // Row 3 (Q-P row + PgUp + KP 4-6 + KP +)
+      [
+        const KeyInfo(label: "Tab", scancode: 0x2B, flex: 1.5),
+        const KeyInfo(label: "Q", scancode: 0x14, flex: 1.0),
+        const KeyInfo(label: "W", scancode: 0x1A, flex: 1.0),
+        const KeyInfo(label: "E", scancode: 0x08, flex: 1.0),
+        const KeyInfo(label: "R", scancode: 0x15, flex: 1.0),
+        const KeyInfo(label: "T", scancode: 0x17, flex: 1.0),
+        const KeyInfo(label: "Y", scancode: 0x1C, flex: 1.0),
+        const KeyInfo(label: "U", scancode: 0x18, flex: 1.0),
+        const KeyInfo(label: "I", scancode: 0x0C, flex: 1.0),
+        const KeyInfo(label: "O", scancode: 0x12, flex: 1.0),
+        const KeyInfo(label: "P", scancode: 0x13, flex: 1.0),
+        const KeyInfo(label: "[", scancode: 0x2F, flex: 1.0),
+        const KeyInfo(label: "]", scancode: 0x30, flex: 1.0),
+        const KeyInfo(label: "\\", scancode: 0x31, flex: 1.5),
+        const KeyInfo(label: "PUp", scancode: 0x4B, flex: 1.0),
+        const KeyInfo(label: "KP 4", scancode: 0x5C, flex: 1.0),
+        const KeyInfo(label: "KP 5", scancode: 0x5D, flex: 1.0),
+        const KeyInfo(label: "KP 6", scancode: 0x5E, flex: 1.0),
+        const KeyInfo(label: "KP +", scancode: 0x57, flex: 1.0),
+      ],
+      // Row 4 (A-Enter row + PgDn + KP 1-3 + KP Ent)
+      [
+        const KeyInfo(label: "Caps", scancode: 0x39, flex: 1.8),
+        const KeyInfo(label: "A", scancode: 0x04, flex: 1.0),
+        const KeyInfo(label: "S", scancode: 0x16, flex: 1.0),
+        const KeyInfo(label: "D", scancode: 0x07, flex: 1.0),
+        const KeyInfo(label: "F", scancode: 0x09, flex: 1.0),
+        const KeyInfo(label: "G", scancode: 0x0A, flex: 1.0),
+        const KeyInfo(label: "H", scancode: 0x0B, flex: 1.0),
+        const KeyInfo(label: "J", scancode: 0x0D, flex: 1.0),
+        const KeyInfo(label: "K", scancode: 0x0E, flex: 1.0),
+        const KeyInfo(label: "L", scancode: 0x0F, flex: 1.0),
+        const KeyInfo(label: ";", scancode: 0x33, flex: 1.0),
+        const KeyInfo(label: "'", scancode: 0x34, flex: 1.0),
+        const KeyInfo(label: "Enter", scancode: 0x28, flex: 2.2),
+        const KeyInfo(label: "PDn", scancode: 0x4E, flex: 1.0),
+        const KeyInfo(label: "KP 1", scancode: 0x59, flex: 1.0),
+        const KeyInfo(label: "KP 2", scancode: 0x5A, flex: 1.0),
+        const KeyInfo(label: "KP 3", scancode: 0x5B, flex: 1.0),
+        const KeyInfo(label: "KP Ent", scancode: 0x58, flex: 1.0),
+      ],
+      // Row 5 (Shift + Up + End + KP 0 + KP .)
+      [
+        const KeyInfo(label: "Shift", scancode: 0, isModifier: true, modifierMask: 0x02, flex: 2.0),
+        const KeyInfo(label: "Z", scancode: 0x1D, flex: 1.0),
+        const KeyInfo(label: "X", scancode: 0x1B, flex: 1.0),
+        const KeyInfo(label: "C", scancode: 0x06, flex: 1.0),
+        const KeyInfo(label: "V", scancode: 0x19, flex: 1.0),
+        const KeyInfo(label: "B", scancode: 0x05, flex: 1.0),
+        const KeyInfo(label: "N", scancode: 0x11, flex: 1.0),
+        const KeyInfo(label: "M", scancode: 0x10, flex: 1.0),
+        const KeyInfo(label: ",", scancode: 0x36, flex: 1.0),
+        const KeyInfo(label: ".", scancode: 0x37, flex: 1.0),
+        const KeyInfo(label: "/", scancode: 0x38, flex: 1.0),
+        const KeyInfo(label: "Shift", scancode: 0, isModifier: true, modifierMask: 0x20, flex: 3.0),
+        const KeyInfo(label: "▲", scancode: 0x52, flex: 1.0),
+        const KeyInfo(label: "End", scancode: 0x4D, flex: 1.0),
+        const KeyInfo(label: "KP 0", scancode: 0x62, flex: 2.0),
+        const KeyInfo(label: "KP .", scancode: 0x63, flex: 1.0),
+      ],
+      // Row 6 (Spacebar row + arrows + KP 0 / KP Ent)
+      [
+        const KeyInfo(label: "Ctrl", scancode: 0, isModifier: true, modifierMask: 0x01, flex: 1.25),
+        const KeyInfo(label: "Win", scancode: 0, isModifier: true, modifierMask: 0x08, flex: 1.25),
+        const KeyInfo(label: "Alt", scancode: 0, isModifier: true, modifierMask: 0x04, flex: 1.25),
+        const KeyInfo(label: "Space", scancode: 0x2C, flex: 5.5),
+        const KeyInfo(label: "Alt", scancode: 0, isModifier: true, modifierMask: 0x40, flex: 1.25),
+        const KeyInfo(label: "Fn", scancode: -1, flex: 1.25),
+        const KeyInfo(label: "Ctrl", scancode: 0, isModifier: true, modifierMask: 0x10, flex: 1.25),
+        const KeyInfo(label: "◀", scancode: 0x50, flex: 1.0),
+        const KeyInfo(label: "▼", scancode: 0x51, flex: 1.0),
+        const KeyInfo(label: "▶", scancode: 0x4F, flex: 1.0),
+        const KeyInfo(label: "KP 0", scancode: 0x62, flex: 2.0),
+        const KeyInfo(label: "KP .", scancode: 0x63, flex: 1.0),
+        const KeyInfo(label: "KP Ent", scancode: 0x58, flex: 1.0),
+      ],
+    ];
+  }
+
+  // Key mappings for 75% layout
+  static List<List<KeyInfo>> _getSeventyFiveLayout() {
+    return [
+      // Row 1 (F-row + PrtSc + Ins + Del)
+      [
+        const KeyInfo(label: "Esc", scancode: 0x29, flex: 1.0),
+        const KeyInfo(label: "F1", scancode: 0x3A, flex: 1.0),
+        const KeyInfo(label: "F2", scancode: 0x3B, flex: 1.0),
+        const KeyInfo(label: "F3", scancode: 0x3C, flex: 1.0),
+        const KeyInfo(label: "F4", scancode: 0x3D, flex: 1.0),
+        const KeyInfo(label: "F5", scancode: 0x3E, flex: 1.0),
+        const KeyInfo(label: "F6", scancode: 0x3F, flex: 1.0),
+        const KeyInfo(label: "F7", scancode: 0x40, flex: 1.0),
+        const KeyInfo(label: "F8", scancode: 0x41, flex: 1.0),
+        const KeyInfo(label: "F9", scancode: 0x42, flex: 1.0),
+        const KeyInfo(label: "F10", scancode: 0x43, flex: 1.0),
+        const KeyInfo(label: "F11", scancode: 0x44, flex: 1.0),
+        const KeyInfo(label: "F12", scancode: 0x45, flex: 1.0),
+        const KeyInfo(label: "Prt", scancode: 0x46, flex: 1.0),
+        const KeyInfo(label: "Ins", scancode: 0x49, flex: 1.0),
+        const KeyInfo(label: "Del", scancode: 0x4C, flex: 1.0),
+      ],
+      // Row 2 (Number row + Home)
+      [
+        const KeyInfo(label: "`", scancode: 0x35, flex: 1.0),
+        const KeyInfo(label: "1", scancode: 0x1E, flex: 1.0),
+        const KeyInfo(label: "2", scancode: 0x1F, flex: 1.0),
+        const KeyInfo(label: "3", scancode: 0x20, flex: 1.0),
+        const KeyInfo(label: "4", scancode: 0x21, flex: 1.0),
+        const KeyInfo(label: "5", scancode: 0x22, flex: 1.0),
+        const KeyInfo(label: "6", scancode: 0x23, flex: 1.0),
+        const KeyInfo(label: "7", scancode: 0x24, flex: 1.0),
+        const KeyInfo(label: "8", scancode: 0x25, flex: 1.0),
+        const KeyInfo(label: "9", scancode: 0x26, flex: 1.0),
+        const KeyInfo(label: "0", scancode: 0x27, flex: 1.0),
+        const KeyInfo(label: "-", scancode: 0x2D, flex: 1.0),
+        const KeyInfo(label: "=", scancode: 0x2E, flex: 1.0),
+        const KeyInfo(label: "Backspace", scancode: 0x2A, flex: 2.0),
+        const KeyInfo(label: "Hm", scancode: 0x4A, flex: 1.0),
+      ],
+      // Row 3 (Q-P row + PgUp)
+      [
+        const KeyInfo(label: "Tab", scancode: 0x2B, flex: 1.5),
+        const KeyInfo(label: "Q", scancode: 0x14, flex: 1.0),
+        const KeyInfo(label: "W", scancode: 0x1A, flex: 1.0),
+        const KeyInfo(label: "E", scancode: 0x08, flex: 1.0),
+        const KeyInfo(label: "R", scancode: 0x15, flex: 1.0),
+        const KeyInfo(label: "T", scancode: 0x17, flex: 1.0),
+        const KeyInfo(label: "Y", scancode: 0x1C, flex: 1.0),
+        const KeyInfo(label: "U", scancode: 0x18, flex: 1.0),
+        const KeyInfo(label: "I", scancode: 0x0C, flex: 1.0),
+        const KeyInfo(label: "O", scancode: 0x12, flex: 1.0),
+        const KeyInfo(label: "P", scancode: 0x13, flex: 1.0),
+        const KeyInfo(label: "[", scancode: 0x2F, flex: 1.0),
+        const KeyInfo(label: "]", scancode: 0x30, flex: 1.0),
+        const KeyInfo(label: "\\", scancode: 0x31, flex: 1.5),
+        const KeyInfo(label: "PUp", scancode: 0x4B, flex: 1.0),
+      ],
+      // Row 4 (A-Enter row + PgDn)
+      [
+        const KeyInfo(label: "Caps", scancode: 0x39, flex: 1.8),
+        const KeyInfo(label: "A", scancode: 0x04, flex: 1.0),
+        const KeyInfo(label: "S", scancode: 0x16, flex: 1.0),
+        const KeyInfo(label: "D", scancode: 0x07, flex: 1.0),
+        const KeyInfo(label: "F", scancode: 0x09, flex: 1.0),
+        const KeyInfo(label: "G", scancode: 0x0A, flex: 1.0),
+        const KeyInfo(label: "H", scancode: 0x0B, flex: 1.0),
+        const KeyInfo(label: "J", scancode: 0x0D, flex: 1.0),
+        const KeyInfo(label: "K", scancode: 0x0E, flex: 1.0),
+        const KeyInfo(label: "L", scancode: 0x0F, flex: 1.0),
+        const KeyInfo(label: ";", scancode: 0x33, flex: 1.0),
+        const KeyInfo(label: "'", scancode: 0x34, flex: 1.0),
+        const KeyInfo(label: "Enter", scancode: 0x28, flex: 2.2),
+        const KeyInfo(label: "PDn", scancode: 0x4E, flex: 1.0),
+      ],
+      // Row 5 (Shift + Up + End)
+      [
+        const KeyInfo(label: "Shift", scancode: 0, isModifier: true, modifierMask: 0x02, flex: 2.0),
+        const KeyInfo(label: "Z", scancode: 0x1D, flex: 1.0),
+        const KeyInfo(label: "X", scancode: 0x1B, flex: 1.0),
+        const KeyInfo(label: "C", scancode: 0x06, flex: 1.0),
+        const KeyInfo(label: "V", scancode: 0x19, flex: 1.0),
+        const KeyInfo(label: "B", scancode: 0x05, flex: 1.0),
+        const KeyInfo(label: "N", scancode: 0x11, flex: 1.0),
+        const KeyInfo(label: "M", scancode: 0x10, flex: 1.0),
+        const KeyInfo(label: ",", scancode: 0x36, flex: 1.0),
+        const KeyInfo(label: ".", scancode: 0x37, flex: 1.0),
+        const KeyInfo(label: "/", scancode: 0x38, flex: 1.0),
+        const KeyInfo(label: "Shift", scancode: 0, isModifier: true, modifierMask: 0x20, flex: 2.0),
+        const KeyInfo(label: "▲", scancode: 0x52, flex: 1.0),
+        const KeyInfo(label: "End", scancode: 0x4D, flex: 1.0),
+      ],
+      // Row 6 (Spacebar row + Left/Down/Right)
+      [
+        const KeyInfo(label: "Ctrl", scancode: 0, isModifier: true, modifierMask: 0x01, flex: 1.25),
+        const KeyInfo(label: "Win", scancode: 0, isModifier: true, modifierMask: 0x08, flex: 1.25),
+        const KeyInfo(label: "Alt", scancode: 0, isModifier: true, modifierMask: 0x04, flex: 1.25),
+        const KeyInfo(label: "Space", scancode: 0x2C, flex: 5.5),
+        const KeyInfo(label: "Alt", scancode: 0, isModifier: true, modifierMask: 0x40, flex: 1.25),
+        const KeyInfo(label: "Fn", scancode: -1, flex: 1.25),
+        const KeyInfo(label: "Ctrl", scancode: 0, isModifier: true, modifierMask: 0x10, flex: 1.25),
+        const KeyInfo(label: "◀", scancode: 0x50, flex: 1.0),
+        const KeyInfo(label: "▼", scancode: 0x51, flex: 1.0),
+        const KeyInfo(label: "▶", scancode: 0x4F, flex: 1.0),
+      ],
+    ];
+  }
+
+  // Key mappings for 65% layout
+  static List<List<KeyInfo>> _getSixtyFiveLayout() {
+    return [
+      // Row 1 (Number row + Del)
+      [
+        const KeyInfo(label: "`", scancode: 0x35, flex: 1.0),
+        const KeyInfo(label: "1", scancode: 0x1E, flex: 1.0),
+        const KeyInfo(label: "2", scancode: 0x1F, flex: 1.0),
+        const KeyInfo(label: "3", scancode: 0x20, flex: 1.0),
+        const KeyInfo(label: "4", scancode: 0x21, flex: 1.0),
+        const KeyInfo(label: "5", scancode: 0x22, flex: 1.0),
+        const KeyInfo(label: "6", scancode: 0x23, flex: 1.0),
+        const KeyInfo(label: "7", scancode: 0x24, flex: 1.0),
+        const KeyInfo(label: "8", scancode: 0x25, flex: 1.0),
+        const KeyInfo(label: "9", scancode: 0x26, flex: 1.0),
+        const KeyInfo(label: "0", scancode: 0x27, flex: 1.0),
+        const KeyInfo(label: "-", scancode: 0x2D, flex: 1.0),
+        const KeyInfo(label: "=", scancode: 0x2E, flex: 1.0),
+        const KeyInfo(label: "Backspace", scancode: 0x2A, flex: 2.0),
+        const KeyInfo(label: "Del", scancode: 0x4C, flex: 1.0),
+      ],
+      // Row 2 (Q-P row + PgUp)
+      [
+        const KeyInfo(label: "Tab", scancode: 0x2B, flex: 1.5),
+        const KeyInfo(label: "Q", scancode: 0x14, flex: 1.0),
+        const KeyInfo(label: "W", scancode: 0x1A, flex: 1.0),
+        const KeyInfo(label: "E", scancode: 0x08, flex: 1.0),
+        const KeyInfo(label: "R", scancode: 0x15, flex: 1.0),
+        const KeyInfo(label: "T", scancode: 0x17, flex: 1.0),
+        const KeyInfo(label: "Y", scancode: 0x1C, flex: 1.0),
+        const KeyInfo(label: "U", scancode: 0x18, flex: 1.0),
+        const KeyInfo(label: "I", scancode: 0x0C, flex: 1.0),
+        const KeyInfo(label: "O", scancode: 0x12, flex: 1.0),
+        const KeyInfo(label: "P", scancode: 0x13, flex: 1.0),
+        const KeyInfo(label: "[", scancode: 0x2F, flex: 1.0),
+        const KeyInfo(label: "]", scancode: 0x30, flex: 1.0),
+        const KeyInfo(label: "\\", scancode: 0x31, flex: 1.5),
+        const KeyInfo(label: "PUp", scancode: 0x4B, flex: 1.0),
+      ],
+      // Row 3 (A-Enter row + PgDn)
+      [
+        const KeyInfo(label: "Caps", scancode: 0x39, flex: 1.8),
+        const KeyInfo(label: "A", scancode: 0x04, flex: 1.0),
+        const KeyInfo(label: "S", scancode: 0x16, flex: 1.0),
+        const KeyInfo(label: "D", scancode: 0x07, flex: 1.0),
+        const KeyInfo(label: "F", scancode: 0x09, flex: 1.0),
+        const KeyInfo(label: "G", scancode: 0x0A, flex: 1.0),
+        const KeyInfo(label: "H", scancode: 0x0B, flex: 1.0),
+        const KeyInfo(label: "J", scancode: 0x0D, flex: 1.0),
+        const KeyInfo(label: "K", scancode: 0x0E, flex: 1.0),
+        const KeyInfo(label: "L", scancode: 0x0F, flex: 1.0),
+        const KeyInfo(label: ";", scancode: 0x33, flex: 1.0),
+        const KeyInfo(label: "'", scancode: 0x34, flex: 1.0),
+        const KeyInfo(label: "Enter", scancode: 0x28, flex: 2.2),
+        const KeyInfo(label: "PDn", scancode: 0x4E, flex: 1.0),
+      ],
+      // Row 4 (Shift + Up + End)
+      [
+        const KeyInfo(label: "Shift", scancode: 0, isModifier: true, modifierMask: 0x02, flex: 2.0),
+        const KeyInfo(label: "Z", scancode: 0x1D, flex: 1.0),
+        const KeyInfo(label: "X", scancode: 0x1B, flex: 1.0),
+        const KeyInfo(label: "C", scancode: 0x06, flex: 1.0),
+        const KeyInfo(label: "V", scancode: 0x19, flex: 1.0),
+        const KeyInfo(label: "B", scancode: 0x05, flex: 1.0),
+        const KeyInfo(label: "N", scancode: 0x11, flex: 1.0),
+        const KeyInfo(label: "M", scancode: 0x10, flex: 1.0),
+        const KeyInfo(label: ",", scancode: 0x36, flex: 1.0),
+        const KeyInfo(label: ".", scancode: 0x37, flex: 1.0),
+        const KeyInfo(label: "/", scancode: 0x38, flex: 1.0),
+        const KeyInfo(label: "Shift", scancode: 0, isModifier: true, modifierMask: 0x20, flex: 2.0),
+        const KeyInfo(label: "▲", scancode: 0x52, flex: 1.0),
+        const KeyInfo(label: "End", scancode: 0x4D, flex: 1.0),
+      ],
+      // Row 5 (Spacebar row + Left/Down/Right)
+      [
+        const KeyInfo(label: "Ctrl", scancode: 0, isModifier: true, modifierMask: 0x01, flex: 1.25),
+        const KeyInfo(label: "Win", scancode: 0, isModifier: true, modifierMask: 0x08, flex: 1.25),
+        const KeyInfo(label: "Alt", scancode: 0, isModifier: true, modifierMask: 0x04, flex: 1.25),
+        const KeyInfo(label: "Space", scancode: 0x2C, flex: 5.5),
+        const KeyInfo(label: "Alt", scancode: 0, isModifier: true, modifierMask: 0x40, flex: 1.25),
+        const KeyInfo(label: "Fn", scancode: -1, flex: 1.25),
+        const KeyInfo(label: "Ctrl", scancode: 0, isModifier: true, modifierMask: 0x10, flex: 1.25),
+        const KeyInfo(label: "◀", scancode: 0x50, flex: 1.0),
+        const KeyInfo(label: "▼", scancode: 0x51, flex: 1.0),
+        const KeyInfo(label: "▶", scancode: 0x4F, flex: 1.0),
+      ],
+    ];
+  }
+
+  // Key mappings for 60% layout
+  static List<List<KeyInfo>> _getSixtyPercentLayout() {
+    return [
+      // Row 1
+      [
+        const KeyInfo(label: "`", fnLabel: "Esc", scancode: 0x35, fnScancode: 0x29, flex: 1.2),
+        const KeyInfo(label: "1", fnLabel: "F1", scancode: 0x1E, fnScancode: 0x3A),
+        const KeyInfo(label: "2", fnLabel: "F2", scancode: 0x1F, fnScancode: 0x3B),
+        const KeyInfo(label: "3", fnLabel: "F3", scancode: 0x20, fnScancode: 0x3C),
+        const KeyInfo(label: "4", fnLabel: "F4", scancode: 0x21, fnScancode: 0x3D),
+        const KeyInfo(label: "5", fnLabel: "F5", scancode: 0x22, fnScancode: 0x3E),
+        const KeyInfo(label: "6", fnLabel: "F6", scancode: 0x23, fnScancode: 0x3F),
+        const KeyInfo(label: "7", fnLabel: "F7", scancode: 0x24, fnScancode: 0x40),
+        const KeyInfo(label: "8", fnLabel: "F8", scancode: 0x25, fnScancode: 0x41),
+        const KeyInfo(label: "9", fnLabel: "F9", scancode: 0x26, fnScancode: 0x42),
+        const KeyInfo(label: "0", fnLabel: "F10", scancode: 0x27, fnScancode: 0x43),
+        const KeyInfo(label: "-", fnLabel: "F11", scancode: 0x2D, fnScancode: 0x44),
+        const KeyInfo(label: "=", fnLabel: "F12", scancode: 0x2E, fnScancode: 0x45),
+        const KeyInfo(label: "Back", fnLabel: "Del", scancode: 0x2A, fnScancode: 0x4C, flex: 1.8),
+      ],
+      // Row 2
+      [
+        const KeyInfo(label: "Tab", scancode: 0x2B, flex: 1.5),
+        const KeyInfo(label: "Q", scancode: 0x14),
+        const KeyInfo(label: "W", scancode: 0x1A),
+        const KeyInfo(label: "E", scancode: 0x08),
+        const KeyInfo(label: "R", scancode: 0x15),
+        const KeyInfo(label: "T", scancode: 0x17),
+        const KeyInfo(label: "Y", scancode: 0x1C),
+        const KeyInfo(label: "U", fnLabel: "Home", scancode: 0x18, fnScancode: 0x4A),
+        const KeyInfo(label: "I", fnLabel: "▲", scancode: 0x0C, fnScancode: 0x52),
+        const KeyInfo(label: "O", fnLabel: "End", scancode: 0x12, fnScancode: 0x4D),
+        const KeyInfo(label: "P", fnLabel: "PgUp", scancode: 0x13, fnScancode: 0x4B),
+        const KeyInfo(label: "[", scancode: 0x2F),
+        const KeyInfo(label: "]", scancode: 0x30),
+        const KeyInfo(label: "\\", scancode: 0x31, flex: 1.5),
+      ],
+      // Row 3
+      [
+        const KeyInfo(label: "Caps", scancode: 0x39, flex: 1.8),
+        const KeyInfo(label: "A", scancode: 0x04),
+        const KeyInfo(label: "S", scancode: 0x16),
+        const KeyInfo(label: "D", scancode: 0x07),
+        const KeyInfo(label: "F", scancode: 0x09),
+        const KeyInfo(label: "G", scancode: 0x0A),
+        const KeyInfo(label: "H", scancode: 0x0B),
+        const KeyInfo(label: "J", fnLabel: "◀", scancode: 0x0D, fnScancode: 0x50),
+        const KeyInfo(label: "K", fnLabel: "▼", scancode: 0x0E, fnScancode: 0x51),
+        const KeyInfo(label: "L", fnLabel: "▶", scancode: 0x0F, fnScancode: 0x4F),
+        const KeyInfo(label: ";", fnLabel: "PgDn", scancode: 0x33, fnScancode: 0x4E),
+        const KeyInfo(label: "'", scancode: 0x34),
+        const KeyInfo(label: "Enter", scancode: 0x28, flex: 2.2),
+      ],
+      // Row 4
+      [
+        const KeyInfo(label: "Shift", scancode: 0, isModifier: true, modifierMask: 0x02, flex: 2.2),
+        const KeyInfo(label: "Z", scancode: 0x1D),
+        const KeyInfo(label: "X", scancode: 0x1B),
+        const KeyInfo(label: "C", scancode: 0x06),
+        const KeyInfo(label: "V", scancode: 0x19),
+        const KeyInfo(label: "B", scancode: 0x05),
+        const KeyInfo(label: "N", scancode: 0x11),
+        const KeyInfo(label: "M", scancode: 0x10),
+        const KeyInfo(label: ",", scancode: 0x36),
+        const KeyInfo(label: ".", scancode: 0x37),
+        const KeyInfo(label: "/", scancode: 0x38),
+        const KeyInfo(label: "Shift", scancode: 0, isModifier: true, modifierMask: 0x20, flex: 2.8),
+      ],
+      // Row 5
+      [
+        const KeyInfo(label: "Ctrl", scancode: 0, isModifier: true, modifierMask: 0x01, flex: 1.5),
+        const KeyInfo(label: "Win", scancode: 0, isModifier: true, modifierMask: 0x08, flex: 1.5),
+        const KeyInfo(label: "Alt", scancode: 0, isModifier: true, modifierMask: 0x04, flex: 1.5),
+        const KeyInfo(label: "Space", scancode: 0x2C, flex: 6.0),
+        const KeyInfo(label: "Alt", scancode: 0, isModifier: true, modifierMask: 0x40, flex: 1.5),
+        const KeyInfo(label: "Fn", scancode: -1, flex: 1.5),
+        const KeyInfo(label: "Ctrl", scancode: 0, isModifier: true, modifierMask: 0x10, flex: 1.5),
+      ],
+    ];
+  }
+
+  List<List<KeyInfo>> get _currentKeyboardLayout {
+    switch (_keyboardKind) {
+      case KeyboardKind.fullSize:
+        return _getFullSizeLayout();
+      case KeyboardKind.compactFullSize:
+        return _getCompactFullSizeLayout();
+      case KeyboardKind.tenkeyless:
+        return _getTklLayout();
+      case KeyboardKind.seventyFive:
+        return _getSeventyFiveLayout();
+      case KeyboardKind.sixtyFive:
+        return _getSixtyFiveLayout();
+      case KeyboardKind.sixtyPercent:
+        return _getSixtyPercentLayout();
+    }
+  }
 
   bool _isSupported = true;
   bool _permissionsGranted = false;
@@ -158,7 +795,9 @@ class _HomeScreenState extends State<HomeScreen> {
 
   // Trackpad Settings
   double _sensitivity = 3.0;
-  bool _mouseAcceleration = true;
+  bool _mouseAcceleration = false; // Mouse acceleration disabled by default
+  bool _trackpadOnLeft = true;     // Trackpad configuration parameter
+  KeyboardKind _keyboardKind = KeyboardKind.tenkeyless; // Default TKL style
 
   // Fraction accumulators for precision control
   double _fractionalDx = 0.0;
@@ -549,7 +1188,7 @@ class _HomeScreenState extends State<HomeScreen> {
         shape: BoxShape.circle,
         boxShadow: [
           BoxShadow(
-            color: dotColor.withOpacity(0.6),
+            color: dotColor.withValues(alpha: 0.6),
             blurRadius: 8,
             spreadRadius: 2,
           ),
@@ -702,7 +1341,7 @@ class _HomeScreenState extends State<HomeScreen> {
               border: Border.all(
                 color: _touchPos != null
                     ? const Color(0x3D00E5FF)
-                    : Colors.white.withOpacity(borderOpacity),
+                    : Colors.white.withValues(alpha: borderOpacity),
                 width: 1.5,
               ),
             ),
@@ -989,11 +1628,18 @@ class _HomeScreenState extends State<HomeScreen> {
       padding: const EdgeInsets.all(4),
       child: Column(
         mainAxisSize: MainAxisSize.min,
-        children: _keyboardLayout.map((row) {
+        children: _currentKeyboardLayout.map((row) {
           return Padding(
             padding: const EdgeInsets.symmetric(vertical: 2.0),
             child: Row(
               children: row.map((key) {
+                if (key.isSpacer) {
+                  return Expanded(
+                    flex: (key.flex * 10).toInt(),
+                    child: const SizedBox(),
+                  );
+                }
+
                 // Determine layout active state (glow highlight)
                 bool isActive = false;
                 Color glowColor = const Color(0xFF00E5FF);
@@ -1024,18 +1670,18 @@ class _HomeScreenState extends State<HomeScreen> {
                         duration: const Duration(milliseconds: 100),
                         height: rowHeight,
                         decoration: BoxDecoration(
-                          color: isActive ? glowColor.withOpacity(0.12) : const Color(0xFF14141E),
+                          color: isActive ? glowColor.withValues(alpha: 0.12) : const Color(0xFF14141E),
                           borderRadius: BorderRadius.circular(compact ? 6 : 8),
                           border: Border.all(
                             color: isActive
                                 ? glowColor
-                                : Colors.white.withOpacity(compact ? 0.05 : 0.08),
+                                : Colors.white.withValues(alpha: compact ? 0.05 : 0.08),
                             width: isActive ? 1.5 : 1.0,
                           ),
                           boxShadow: [
                             if (isActive)
                               BoxShadow(
-                                color: glowColor.withOpacity(0.2),
+                                color: glowColor.withValues(alpha: 0.2),
                                 blurRadius: 6,
                                 spreadRadius: 1,
                               ),
@@ -1047,7 +1693,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           style: TextStyle(
                             fontSize: keyFontSize,
                             fontWeight: FontWeight.bold,
-                            color: isActive ? glowColor : Colors.white.withOpacity(0.85),
+                            color: isActive ? glowColor : Colors.white.withValues(alpha: 0.85),
                           ),
                         ),
                       ),
@@ -1088,110 +1734,194 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildSplitLandscapeLayout() {
+    final trackpadColumn = Expanded(
+      flex: 4,
+      child: Padding(
+        padding: EdgeInsets.fromLTRB(_trackpadOnLeft ? 12 : 8, 8, _trackpadOnLeft ? 8 : 12, 8),
+        child: Column(
+          children: [
+            _buildConnectionDashboard(compact: true),
+            Expanded(
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  return _buildTrackpad(height: constraints.maxHeight, borderOpacity: 0.08);
+                },
+              ),
+            ),
+            const SizedBox(height: 8),
+            _buildClickButtons(height: 60, fontSize: 11),
+          ],
+        ),
+      ),
+    );
+
+    final divider = Container(
+      width: 1.5,
+      color: const Color(0x18FFFFFF),
+      margin: const EdgeInsets.symmetric(vertical: 12),
+    );
+
+    final keyboardColumn = Expanded(
+      flex: 6,
+      child: Padding(
+        padding: EdgeInsets.fromLTRB(_trackpadOnLeft ? 8 : 12, 8, _trackpadOnLeft ? 12 : 8, 8),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            _buildKeyboardToolbar(),
+            Expanded(
+              child: Center(
+                child: SingleChildScrollView(
+                  child: _buildKeyboard(compact: true),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+
     return Row(
       crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        // Left Column: Trackpad and mouse click buttons
-        Expanded(
-          flex: 4,
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(12, 8, 8, 8),
-            child: Column(
-              children: [
-                _buildConnectionDashboard(compact: true),
-                Expanded(
-                  child: LayoutBuilder(
-                    builder: (context, constraints) {
-                      return _buildTrackpad(height: constraints.maxHeight, borderOpacity: 0.08);
-                    },
-                  ),
-                ),
-                const SizedBox(height: 8),
-                _buildClickButtons(height: 60, fontSize: 11),
-              ],
-            ),
-          ),
-        ),
-        // Divider line
-        Container(
-          width: 1.5,
-          color: const Color(0x18FFFFFF),
-          margin: const EdgeInsets.symmetric(vertical: 12),
-        ),
-        // Right Column: Virtual 60% Keyboard Layout
-        Expanded(
-          flex: 6,
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(8, 8, 12, 8),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                _buildKeyboardToolbar(),
-                Expanded(
-                  child: Center(
-                    child: SingleChildScrollView(
-                      child: _buildKeyboard(compact: true),
+      children: _trackpadOnLeft
+          ? [trackpadColumn, divider, keyboardColumn]
+          : [keyboardColumn, divider, trackpadColumn],
+    );
+  }
+
+  Widget _buildForcedLandscapeHeader() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      decoration: const BoxDecoration(
+        color: Color(0xFF13131B),
+        border: Border(bottom: BorderSide(color: Color(0x12FFFFFF))),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Row(
+            children: [
+              _buildStatusDot(),
+              const SizedBox(width: 8),
+              const Text(
+                "CouchMouse",
+                style: TextStyle(fontWeight: FontWeight.w900, fontSize: 13, color: Colors.white, letterSpacing: 0.5),
+              ),
+              const SizedBox(width: 12),
+              // HoldLock Button
+              GestureDetector(
+                onTap: () {
+                  setState(() {
+                    _holdLockActive = !_holdLockActive;
+                    if (!_holdLockActive) {
+                      _activeScancodes.clear();
+                      _sendKeyboardReport();
+                    }
+                  });
+                },
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 150),
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: _holdLockActive ? const Color(0x20FFCA28) : const Color(0xFF1B1B27),
+                    borderRadius: BorderRadius.circular(6),
+                    border: Border.all(
+                      color: _holdLockActive ? const Color(0xFFFFCA28) : const Color(0x18FFFFFF),
+                      width: 1,
                     ),
                   ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        _holdLockActive ? Icons.lock : Icons.lock_open,
+                        size: 11,
+                        color: _holdLockActive ? const Color(0xFFFFCA28) : Colors.white54,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        "HoldLock",
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                          color: _holdLockActive ? const Color(0xFFFFCA28) : Colors.white70,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-              ],
-            ),
+              ),
+              const SizedBox(width: 6),
+              // Quick Reset Button
+              GestureDetector(
+                onTap: _resetHidState,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF1B1B27),
+                    borderRadius: BorderRadius.circular(6),
+                    border: Border.all(color: const Color(0x18FFFFFF), width: 1),
+                  ),
+                  child: const Row(
+                    children: [
+                      Icon(Icons.refresh, size: 11, color: Colors.white54),
+                      SizedBox(width: 4),
+                      Text(
+                        "Reset",
+                        style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.white70),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
           ),
-        ),
-      ],
+          Row(
+            children: [
+              Text(
+                _fnActive ? "FN ACTIVE" : "STANDARD",
+                style: TextStyle(
+                  fontSize: 9,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 0.8,
+                  color: _fnActive ? const Color(0xFF00E5FF) : Colors.white30,
+                ),
+              ),
+              const SizedBox(width: 12),
+              // Compact Exit Button
+              ElevatedButton.icon(
+                onPressed: _toggleForcedLandscapeKeyboard,
+                icon: const Icon(Icons.exit_to_app, size: 12),
+                label: const Text("Exit"),
+                style: ElevatedButton.styleFrom(
+                  foregroundColor: Colors.white,
+                  backgroundColor: const Color(0xFFE53935),
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  minimumSize: Size.zero,
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  textStyle: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 
   Widget _buildForcedLandscapeKeyboardLayout() {
     return Column(
       children: [
-        // Full screen keyboard header row
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          decoration: const BoxDecoration(
-            color: Color(0xFF13131B),
-            border: Border(bottom: BorderSide(color: Color(0x12FFFFFF))),
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Row(
-                children: [
-                  const Icon(Icons.keyboard, color: Color(0xFF00E5FF)),
-                  const SizedBox(width: 12),
-                  const Text(
-                    "CouchMouse Full Keyboard",
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.white),
-                  ),
-                  const SizedBox(width: 16),
-                  _buildStatusDot(),
-                ],
-              ),
-              ElevatedButton.icon(
-                onPressed: _toggleForcedLandscapeKeyboard,
-                icon: const Icon(Icons.exit_to_app, size: 16),
-                label: const Text("Exit Keyboard"),
-                style: ElevatedButton.styleFrom(
-                  foregroundColor: Colors.white,
-                  backgroundColor: const Color(0xFFE53935),
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                  textStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-        _buildKeyboardToolbar(),
+        _buildForcedLandscapeHeader(),
         Expanded(
           child: Container(
             color: const Color(0xFF07070B),
             alignment: Alignment.center,
             child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              child: _buildKeyboard(compact: false),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+              child: _buildKeyboard(compact: true),
             ),
           ),
         ),
@@ -1379,7 +2109,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   color: const Color(0xFF1B1B26),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   child: SwitchListTile(
-                    activeColor: const Color(0xFF0DF5E3),
+                    activeThumbColor: const Color(0xFF0DF5E3),
                     title: const Text("Mouse Acceleration", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
                     subtitle: const Text("Increases cursor speed with rapid swipes", style: TextStyle(fontSize: 12, color: Colors.white54)),
                     value: _mouseAcceleration,
@@ -1388,6 +2118,71 @@ class _HomeScreenState extends State<HomeScreen> {
                         _mouseAcceleration = val;
                       });
                     },
+                  ),
+                ),
+                const SizedBox(height: 8),
+                // Trackpad Orientation swap configuration
+                Card(
+                  color: const Color(0xFF1B1B26),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  child: SwitchListTile(
+                    activeThumbColor: const Color(0xFF0DF5E3),
+                    title: const Text("Trackpad Left-Side", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                    subtitle: const Text("Place trackpad on Left in Landscape mode", style: TextStyle(fontSize: 12, color: Colors.white54)),
+                    value: _trackpadOnLeft,
+                    onChanged: (val) {
+                      setState(() {
+                        _trackpadOnLeft = val;
+                      });
+                    },
+                  ),
+                ),
+                const SizedBox(height: 24),
+                const Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                  child: Text(
+                    "KEYBOARD SETTINGS",
+                    style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.white38, letterSpacing: 1.0),
+                  ),
+                ),
+                // Keyboard layout style dropdown
+                Card(
+                  color: const Color(0xFF1B1B26),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text("Layout Style", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                        const SizedBox(height: 8),
+                        DropdownButtonFormField<KeyboardKind>(
+                          initialValue: _keyboardKind,
+                          dropdownColor: const Color(0xFF13131B),
+                          decoration: const InputDecoration(
+                            border: InputBorder.none,
+                            contentPadding: EdgeInsets.zero,
+                          ),
+                          style: const TextStyle(color: Colors.white, fontSize: 14),
+                          onChanged: (val) {
+                            if (val != null) {
+                              setState(() {
+                                _keyboardKind = val;
+                                // Clear active key codes to prevent sticking
+                                _activeScancodes.clear();
+                                _sendKeyboardReport();
+                              });
+                            }
+                          },
+                          items: KeyboardKind.values.map((kind) {
+                            return DropdownMenuItem<KeyboardKind>(
+                              value: kind,
+                              child: Text(kind.name),
+                            );
+                          }).toList(),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
                 const SizedBox(height: 24),
@@ -1406,7 +2201,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                   title: const Text("HoldLock Mode", style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
                   trailing: Switch(
-                    activeColor: const Color(0xFFFFCA28),
+                    activeThumbColor: const Color(0xFFFFCA28),
                     value: _holdLockActive,
                     onChanged: (val) {
                       setState(() {
@@ -1477,7 +2272,7 @@ class TrackpadPainter extends CustomPainter {
       for (int i = 0; i < points.length - 1; i++) {
         double progress = i / points.length; // 0.0 to 1.0
         final Paint trailPaint = Paint()
-          ..color = const Color(0xFF00E5FF).withOpacity(progress * 0.4)
+          ..color = const Color(0xFF00E5FF).withValues(alpha: progress * 0.4)
           ..strokeWidth = progress * 6.0 + 2.0
           ..style = PaintingStyle.stroke
           ..strokeCap = StrokeCap.round;
