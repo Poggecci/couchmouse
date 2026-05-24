@@ -21,8 +21,6 @@ class MainActivity : FlutterActivity() {
     private var bluetoothHidDevice: BluetoothHidDevice? = null
     private var hostDevice: BluetoothDevice? = null
 
-    // Register 0 as our standard Input Report ID
-    private val REPORT_ID = 0
     private var isRegistered = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -48,6 +46,8 @@ class MainActivity : FlutterActivity() {
                             registerAppProfile()
                         } catch (e: SecurityException) {
                             Log.e(TAG, "SecurityException during profile registration: ${e.message}")
+                        } catch (e: Exception) {
+                            Log.e(TAG, "Exception during profile registration: ${e.message}")
                         }
                     }
                 }
@@ -61,6 +61,8 @@ class MainActivity : FlutterActivity() {
             }, BluetoothProfile.HID_DEVICE)
         } catch (e: SecurityException) {
             Log.e(TAG, "SecurityException during getProfileProxy: ${e.message}")
+        } catch (e: Exception) {
+            Log.e(TAG, "Exception during getProfileProxy: ${e.message}")
         }
     }
 
@@ -70,10 +72,10 @@ class MainActivity : FlutterActivity() {
 
         val sdpSettings = BluetoothHidDeviceAppSdpSettings(
             "CouchMouse",
-            "Virtual Trackpad Controller",
+            "CouchMouse Premium Controller",
             "CouchMouseDev",
-            0x80.toByte(), // Subclass descriptor code representing a Standard Mouse
-            HidDescriptors.MOUSE_DESCRIPTOR
+            0xC0.toByte(), // Subclass descriptor code representing Combo Keyboard/Mouse
+            HidDescriptors.COMPOSITE_DESCRIPTOR
         )
 
         val executor = Executors.newSingleThreadExecutor()
@@ -100,11 +102,18 @@ class MainActivity : FlutterActivity() {
 
                     override fun onConnectionStateChanged(device: BluetoothDevice?, state: Int) {
                         val isConnected = (state == BluetoothProfile.STATE_CONNECTED)
-                        val deviceName = if (isConnected) device?.name ?: "Unknown Device" else null
+                        val deviceName = if (isConnected) {
+                            try {
+                                device?.name ?: "Host Laptop"
+                            } catch (e: SecurityException) {
+                                Log.e(TAG, "SecurityException querying device name: ${e.message}")
+                                "Host Laptop"
+                            }
+                        } else null
                         
                         when (state) {
                             BluetoothProfile.STATE_CONNECTED -> {
-                                Log.i(TAG, "Connected to host: ${device?.name}")
+                                Log.i(TAG, "Connected to host: $deviceName")
                                 hostDevice = device
                             }
                             BluetoothProfile.STATE_DISCONNECTED -> {
@@ -122,10 +131,57 @@ class MainActivity : FlutterActivity() {
                             }
                         }
                     }
+
+                    override fun onGetReport(device: BluetoothDevice?, type: Byte, id: Byte, bufferSize: Int) {
+                        Log.d(TAG, "onGetReport: type=$type, id=$id, bufferSize=$bufferSize")
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                            val data = when (id.toInt()) {
+                                1 -> ByteArray(8) // Keyboard
+                                2 -> ByteArray(4) // Mouse
+                                else -> ByteArray(bufferSize.coerceAtLeast(1))
+                            }
+                            try {
+                                bluetoothHidDevice?.replyReport(device, type, id, data)
+                            } catch (e: SecurityException) {
+                                Log.e(TAG, "SecurityException in replyReport: ${e.message}")
+                            } catch (e: Exception) {
+                                Log.e(TAG, "Exception in replyReport: ${e.message}")
+                            }
+                        }
+                    }
+
+                    override fun onSetReport(device: BluetoothDevice?, type: Byte, id: Byte, data: ByteArray?) {
+                        Log.d(TAG, "onSetReport: type=$type, id=$id")
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                            try {
+                                bluetoothHidDevice?.reportError(device, BluetoothHidDevice.ERROR_RSP_SUCCESS)
+                            } catch (e: SecurityException) {
+                                Log.e(TAG, "SecurityException in reportError: ${e.message}")
+                            } catch (e: Exception) {
+                                Log.e(TAG, "Exception in reportError: ${e.message}")
+                            }
+                        }
+                    }
+
+                    override fun onSetProtocol(device: BluetoothDevice?, protocol: Byte) {
+                        Log.d(TAG, "onSetProtocol: protocol=$protocol")
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                            try {
+                                bluetoothHidDevice?.reportError(device, BluetoothHidDevice.ERROR_RSP_SUCCESS)
+                            } catch (e: SecurityException) {
+                                Log.e(TAG, "SecurityException in reportError: ${e.message}")
+                            } catch (e: Exception) {
+                                Log.e(TAG, "Exception in reportError: ${e.message}")
+                            }
+                        }
+                    }
                 }
             )
         } catch (e: SecurityException) {
             Log.e(TAG, "SecurityException inside registerApp: ${e.message}")
+            throw e
+        } catch (e: Exception) {
+            Log.e(TAG, "Exception inside registerApp: ${e.message}")
             throw e
         }
     }
@@ -137,6 +193,9 @@ class MainActivity : FlutterActivity() {
             when (call.method) {
                 "isSupported" -> {
                     result.success(Build.VERSION.SDK_INT >= Build.VERSION_CODES.P)
+                }
+                "getSdkVersion" -> {
+                    result.success(Build.VERSION.SDK_INT)
                 }
                 "registerAppProfile" -> {
                     if (Build.VERSION.SDK_INT < Build.VERSION_CODES.P) {
@@ -158,10 +217,18 @@ class MainActivity : FlutterActivity() {
                 }
                 "getConnectionState" -> {
                     val device = hostDevice
+                    val deviceName = if (device != null) {
+                        try {
+                            device.name ?: "Host Laptop"
+                        } catch (e: SecurityException) {
+                            "Host Laptop"
+                        }
+                    } else null
+
                     if (device != null) {
                         result.success(mapOf(
                             "connected" to true, 
-                            "deviceName" to (device.name ?: "Unknown Device"),
+                            "deviceName" to deviceName,
                             "registered" to isRegistered
                         ))
                     } else {
@@ -191,7 +258,34 @@ class MainActivity : FlutterActivity() {
                     val dy = call.argument<Double>("dy")?.toInt() ?: 0
                     val wheel = call.argument<Int>("wheel") ?: 0
 
-                    val success = sendReport(buttons, dx, dy, wheel)
+                    val report = byteArrayOf(
+                        buttons.toByte(),
+                        dx.coerceIn(-127, 127).toByte(),
+                        dy.coerceIn(-127, 127).toByte(),
+                        wheel.coerceIn(-127, 127).toByte()
+                    )
+                    val success = sendReport(2, report)
+                    if (success) {
+                        result.success(null)
+                    } else {
+                        result.error("UNAVAILABLE", "No Bluetooth device currently connected.", null)
+                    }
+                }
+                "sendKeyboardReport" -> {
+                    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.P) {
+                        result.error("UNSUPPORTED", "Bluetooth HID requires Android 9+", null)
+                        return@setMethodCallHandler
+                    }
+                    val bytesList = call.argument<List<Int>>("bytes")
+                    if (bytesList == null || bytesList.size != 8) {
+                        result.error("INVALID_ARGUMENT", "Keyboard report requires exactly 8 bytes", null)
+                        return@setMethodCallHandler
+                    }
+                    val report = ByteArray(8)
+                    for (i in 0 until 8) {
+                        report[i] = bytesList[i].toByte()
+                    }
+                    val success = sendReport(1, report)
                     if (success) {
                         result.success(null)
                     } else {
@@ -206,7 +300,7 @@ class MainActivity : FlutterActivity() {
     }
 
     @SuppressLint("MissingPermission")
-    private fun sendReport(buttons: Int, dx: Int, dy: Int, wheel: Int): Boolean {
+    private fun sendReport(id: Int, report: ByteArray): Boolean {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.P) return false
 
         val device = hostDevice
@@ -215,21 +309,27 @@ class MainActivity : FlutterActivity() {
             return false
         }
 
-        // Map inputs into the defined standard 4-byte Mouse report
-        val report = byteArrayOf(
-            buttons.toByte(),                  // Byte 0: Button States
-            dx.coerceIn(-127, 127).toByte(),   // Byte 1: Signed relative X coordinate
-            dy.coerceIn(-127, 127).toByte(),   // Byte 2: Signed relative Y coordinate
-            wheel.coerceIn(-127, 127).toByte() // Byte 3: Relative scroll wheel
-        )
-
-        return hid.sendReport(device, REPORT_ID, report)
+        return try {
+            hid.sendReport(device, id, report)
+        } catch (e: SecurityException) {
+            Log.e(TAG, "SecurityException inside sendReport: ${e.message}")
+            false
+        } catch (e: Exception) {
+            Log.e(TAG, "Exception inside sendReport: ${e.message}")
+            false
+        }
     }
 
     override fun onDestroy() {
         super.onDestroy()
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P && bluetoothAdapter != null) {
-            bluetoothAdapter?.closeProfileProxy(BluetoothProfile.HID_DEVICE, bluetoothHidDevice)
+            try {
+                bluetoothAdapter?.closeProfileProxy(BluetoothProfile.HID_DEVICE, bluetoothHidDevice)
+            } catch (e: SecurityException) {
+                Log.e(TAG, "SecurityException during closeProfileProxy: ${e.message}")
+            } catch (e: Exception) {
+                Log.e(TAG, "Exception during closeProfileProxy: ${e.message}")
+            }
         }
     }
 }
