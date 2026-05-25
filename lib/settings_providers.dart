@@ -1,3 +1,4 @@
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'main.dart' show KeyboardKind;
@@ -32,38 +33,36 @@ class CouchMouseSettings {
       invertTwoFingerScroll: invertTwoFingerScroll ?? this.invertTwoFingerScroll,
     );
   }
-
-  factory CouchMouseSettings.defaultSettings() {
-    return CouchMouseSettings(
-      sensitivity: 10.0,
-      mouseAcceleration: false,
-      trackpadOnLeft: false,
-      keyboardKind: KeyboardKind.seventyFive,
-      invertTwoFingerScroll: false,
-    );
-  }
 }
 
 class DeviceConnectionState {
   final bool isConnected;
   final String? connectedDeviceName;
   final String? connectedDeviceAddress;
+  final bool isConnecting;
+  final String? connectingAddress;
 
   DeviceConnectionState({
     required this.isConnected,
     this.connectedDeviceName,
     this.connectedDeviceAddress,
+    this.isConnecting = false,
+    this.connectingAddress,
   });
 
   DeviceConnectionState copyWith({
     bool? isConnected,
     String? connectedDeviceName,
     String? connectedDeviceAddress,
+    bool? isConnecting,
+    String? connectingAddress,
   }) {
     return DeviceConnectionState(
       isConnected: isConnected ?? this.isConnected,
       connectedDeviceName: connectedDeviceName ?? this.connectedDeviceName,
       connectedDeviceAddress: connectedDeviceAddress ?? this.connectedDeviceAddress,
+      isConnecting: isConnecting ?? this.isConnecting,
+      connectingAddress: connectingAddress ?? this.connectingAddress,
     );
   }
 }
@@ -78,26 +77,38 @@ class ConnectionStateNotifier extends Notifier<DeviceConnectionState> {
     return DeviceConnectionState(isConnected: false);
   }
 
-  void updateConnectionState({
+  Future<void> updateConnectionState({
     required bool isConnected,
     String? connectedDeviceName,
     String? connectedDeviceAddress,
-  }) {
-    state = DeviceConnectionState(
+  }) async {
+    state = state.copyWith(
       isConnected: isConnected,
       connectedDeviceName: connectedDeviceName,
       connectedDeviceAddress: connectedDeviceAddress,
+      isConnecting: false,
+      connectingAddress: null,
     );
     if (isConnected && connectedDeviceAddress != null && connectedDeviceName != null) {
       final prefs = ref.read(sharedPreferencesProvider);
-      prefs.setString('last_connected_device_address', connectedDeviceAddress);
-      prefs.setString('last_connected_device_name', connectedDeviceName);
+      await prefs.setString('last_connected_device_address', connectedDeviceAddress);
+      await prefs.setString('last_connected_device_name', connectedDeviceName);
 
       final history = List<String>.from(prefs.getStringList('connected_device_addresses_history') ?? []);
       history.remove(connectedDeviceAddress);
       history.insert(0, connectedDeviceAddress);
-      prefs.setStringList('connected_device_addresses_history', history);
+      await prefs.setStringList('connected_device_addresses_history', history);
     }
+  }
+
+  void updateConnectingState({
+    required bool isConnecting,
+    String? connectingAddress,
+  }) {
+    state = state.copyWith(
+      isConnecting: isConnecting,
+      connectingAddress: connectingAddress,
+    );
   }
 }
 
@@ -211,3 +222,40 @@ class SettingsNotifier extends Notifier<CouchMouseSettings> {
 }
 
 final settingsProvider = NotifierProvider<SettingsNotifier, CouchMouseSettings>(SettingsNotifier.new);
+
+final pairedDevicesProvider = FutureProvider<List<Map<String, String>>>((ref) async {
+  ref.watch(connectionStateProvider);
+  const channel = MethodChannel('com.example.couchmouse/hid');
+  final List<dynamic>? devices = await channel.invokeMethod('getPairedDevices');
+  if (devices == null) return [];
+
+  final prefs = ref.watch(sharedPreferencesProvider);
+  final history = prefs.getStringList('connected_device_addresses_history') ?? [];
+
+  final mappedDevices = devices.map((d) {
+    final map = d as Map;
+    return {
+      'name': (map['name'] ?? 'Unknown Device').toString(),
+      'address': (map['address'] ?? '').toString(),
+    };
+  }).toList();
+
+  mappedDevices.sort((a, b) {
+    final addrA = a['address'] ?? '';
+    final addrB = b['address'] ?? '';
+    final idxA = history.indexOf(addrA);
+    final idxB = history.indexOf(addrB);
+
+    if (idxA != -1 && idxB != -1) {
+      return idxA.compareTo(idxB);
+    } else if (idxA != -1) {
+      return -1;
+    } else if (idxB != -1) {
+      return 1;
+    } else {
+      return 0;
+    }
+  });
+
+  return mappedDevices;
+});

@@ -15,7 +15,7 @@ void main() {
       prefs = await SharedPreferences.getInstance();
     });
 
-    test('ConnectionStateNotifier updates connection history list in SharedPreferences', () {
+    test('ConnectionStateNotifier updates connection history list in SharedPreferences', () async {
       final container = ProviderContainer(
         overrides: [
           sharedPreferencesProvider.overrideWithValue(prefs),
@@ -29,7 +29,7 @@ void main() {
       expect(prefs.getStringList('connected_device_addresses_history'), null);
 
       // Connect to Device A
-      notifier.updateConnectionState(
+      await notifier.updateConnectionState(
         isConnected: true,
         connectedDeviceName: 'Device A',
         connectedDeviceAddress: 'AA:BB:CC:DD:EE:01',
@@ -38,7 +38,7 @@ void main() {
       expect(prefs.getStringList('connected_device_addresses_history'), ['AA:BB:CC:DD:EE:01']);
 
       // Connect to Device B
-      notifier.updateConnectionState(
+      await notifier.updateConnectionState(
         isConnected: true,
         connectedDeviceName: 'Device B',
         connectedDeviceAddress: 'AA:BB:CC:DD:EE:02',
@@ -50,7 +50,7 @@ void main() {
       ]);
 
       // Connect to Device A again (should move to front)
-      notifier.updateConnectionState(
+      await notifier.updateConnectionState(
         isConnected: true,
         connectedDeviceName: 'Device A',
         connectedDeviceAddress: 'AA:BB:CC:DD:EE:01',

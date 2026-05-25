@@ -254,4 +254,59 @@ void main() {
     expect(find.text('LEFT CLICK'), findsOneWidget);
     expect(find.byIcon(Icons.keyboard_hide), findsNothing);
   });
+
+  testWidgets('App lifecycle state changes (paused/inactive) exit keyboard mode and unfocus keyboard node', (WidgetTester tester) async {
+    tester.view.physicalSize = const Size(1080, 1920);
+    tester.view.devicePixelRatio = 2.0;
+    addTearDown(() {
+      tester.view.resetPhysicalSize();
+      tester.view.resetDevicePixelRatio();
+    });
+
+    SharedPreferences.setMockInitialValues({});
+    final prefs = await SharedPreferences.getInstance();
+
+    tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+      const MethodChannel('com.example.couchmouse/hid'),
+      (MethodCall methodCall) async {
+        if (methodCall.method == 'isSupported') return true;
+        if (methodCall.method == 'getSdkVersion') return 31;
+        return null;
+      },
+    );
+
+    tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+      const MethodChannel('flutter.baseflow.com/permissions/methods'),
+      (MethodCall methodCall) async {
+        if (methodCall.method == 'checkPermissionStatus') return 1;
+        return null;
+      },
+    );
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          sharedPreferencesProvider.overrideWithValue(prefs),
+        ],
+        child: const CouchMouseApp(),
+      ),
+    );
+
+    await tester.pumpAndSettle();
+
+    // 1. Drag up to open keyboard
+    await tester.drag(find.text('LEFT CLICK'), const Offset(0, -100));
+    await tester.pumpAndSettle();
+
+    // Verify keyboard is active
+    expect(find.byIcon(Icons.keyboard_hide), findsNWidgets(2));
+
+    // 2. Simulate app going to background (inactive)
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
+    await tester.pumpAndSettle();
+
+    // Verify keyboard accessory bar is hidden and click buttons are back
+    expect(find.text('LEFT CLICK'), findsOneWidget);
+    expect(find.byIcon(Icons.keyboard_hide), findsNothing);
+  });
 }
