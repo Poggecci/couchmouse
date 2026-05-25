@@ -22,6 +22,7 @@ class MainActivity : FlutterActivity() {
     private var hostDevice: BluetoothDevice? = null
 
     private var isRegistered = false
+    private var cachedFlutterEngine: FlutterEngine? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -91,7 +92,7 @@ class MainActivity : FlutterActivity() {
                         Log.d(TAG, "Application HID Profile registration state: $registered")
                         isRegistered = registered
                         runOnUiThread {
-                            flutterEngine?.dartExecutor?.binaryMessenger?.let { messenger ->
+                            cachedFlutterEngine?.dartExecutor?.binaryMessenger?.let { messenger ->
                                 MethodChannel(messenger, CHANNEL).invokeMethod(
                                     "onRegistrationChanged", 
                                     mapOf("registered" to registered)
@@ -123,7 +124,7 @@ class MainActivity : FlutterActivity() {
                         }
 
                         runOnUiThread {
-                            flutterEngine?.dartExecutor?.binaryMessenger?.let { messenger ->
+                            cachedFlutterEngine?.dartExecutor?.binaryMessenger?.let { messenger ->
                                 MethodChannel(messenger, CHANNEL).invokeMethod(
                                     "onConnectionStateChanged", 
                                     mapOf(
@@ -193,6 +194,7 @@ class MainActivity : FlutterActivity() {
     @SuppressLint("MissingPermission")
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
+        cachedFlutterEngine = flutterEngine
 
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, CHANNEL).setMethodCallHandler { call, result ->
             when (call.method) {
@@ -410,6 +412,7 @@ class MainActivity : FlutterActivity() {
     }
 
     override fun onDestroy() {
+        cachedFlutterEngine = null
         super.onDestroy()
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P && bluetoothAdapter != null) {
             try {

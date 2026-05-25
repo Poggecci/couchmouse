@@ -1,7 +1,7 @@
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'main.dart' show KeyboardKind;
+import 'keyboard_layouts.dart' show KeyboardKind;
 
 class CouchMouseSettings {
   final double sensitivity;
