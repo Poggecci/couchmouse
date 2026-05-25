@@ -104,7 +104,7 @@ class HomeScreen extends ConsumerStatefulWidget {
   ConsumerState<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends ConsumerState<HomeScreen> {
+class _HomeScreenState extends ConsumerState<HomeScreen> with WidgetsBindingObserver {
   static const _channel = MethodChannel('com.example.couchmouse/hid');
 
   // Key mappings for TKL layout
@@ -1170,6 +1170,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   String? _connectingAddress;
   List<Map<String, String>> _pairedDevices = [];
   StateSetter? _bottomSheetStateSetter;
+  BuildContext? _bottomSheetContext;
 
   // Trackpad Settings
   double _sensitivity = 10.0;
@@ -1285,6 +1286,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _builtInKeyboardFocusNode = FocusNode();
     _builtInKeyboardFocusNode.addListener(() {
       setState(() {
@@ -1298,6 +1300,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _builtInKeyboardFocusNode.dispose();
     _builtInKeyboardController.dispose();
     super.dispose();
@@ -1323,18 +1326,17 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               _connectingAddress = null;
             }
           });
-          if (_bottomSheetStateSetter != null) {
-            _bottomSheetStateSetter!(() {});
-          }
+          _updateBottomSheet();
           break;
         case 'onRegistrationChanged':
           final registered = call.arguments['registered'] as bool;
           setState(() {
             _isRegistered = registered;
           });
-          if (_bottomSheetStateSetter != null) {
-            _bottomSheetStateSetter!(() {});
+          if (registered) {
+            _retryLastConnection();
           }
+          _updateBottomSheet();
           break;
       }
     });
@@ -1434,9 +1436,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         setState(() {
           _isRegistered = result['registered'] as bool? ?? false;
         });
-        if (_bottomSheetStateSetter != null) {
-          _bottomSheetStateSetter!(() {});
+        if (_isRegistered) {
+          _retryLastConnection();
         }
+        _updateBottomSheet();
       }
     } catch (e) {
       debugPrint("Error loading connection state: $e");
@@ -1466,9 +1469,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             };
           }).toList();
         });
-        if (_bottomSheetStateSetter != null) {
-          _bottomSheetStateSetter!(() {});
-        }
+        _updateBottomSheet();
       }
     } catch (e) {
       debugPrint("Error fetching paired devices: $e");
@@ -1480,9 +1481,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       _isConnecting = true;
       _connectingAddress = address;
     });
-    if (_bottomSheetStateSetter != null) {
-      _bottomSheetStateSetter!(() {});
-    }
+    _updateBottomSheet();
 
     try {
       final success =
@@ -1495,9 +1494,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           _isConnecting = false;
           _connectingAddress = null;
         });
-        if (_bottomSheetStateSetter != null) {
-          _bottomSheetStateSetter!(() {});
-        }
+        _updateBottomSheet();
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -1514,9 +1511,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               _isConnecting = false;
               _connectingAddress = null;
             });
-            if (_bottomSheetStateSetter != null) {
-              _bottomSheetStateSetter!(() {});
-            }
+            _updateBottomSheet();
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text("Connection to $name timed out"),
@@ -1531,9 +1526,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         _isConnecting = false;
         _connectingAddress = null;
       });
-      if (_bottomSheetStateSetter != null) {
-        _bottomSheetStateSetter!(() {});
-      }
+      _updateBottomSheet();
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -1550,6 +1543,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       final success =
           await _channel.invokeMethod<bool>('disconnectDevice') ?? false;
       if (success) {
+        final prefs = ref.read(sharedPreferencesProvider);
+        await prefs.remove('last_connected_device_address');
+        await prefs.remove('last_connected_device_name');
         ref
             .read(connectionStateProvider.notifier)
             .updateConnectionState(
@@ -1557,12 +1553,44 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               connectedDeviceName: null,
               connectedDeviceAddress: null,
             );
-        if (_bottomSheetStateSetter != null) {
-          _bottomSheetStateSetter!(() {});
-        }
+        _updateBottomSheet();
       }
     } catch (e) {
       debugPrint("Error disconnecting device: $e");
+    }
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _checkSupportAndPermissions();
+      _retryLastConnection();
+    }
+  }
+
+  Future<void> _retryLastConnection() async {
+    if (_isConnected || _isConnecting) return;
+    if (!_isRegistered) return;
+
+    final prefs = ref.read(sharedPreferencesProvider);
+    final lastAddress = prefs.getString('last_connected_device_address');
+    final lastName = prefs.getString('last_connected_device_name');
+
+    if (lastAddress != null && lastName != null) {
+      debugPrint("Auto-reconnecting to last known device: $lastName ($lastAddress)");
+      await _connectToDevice(lastAddress, lastName);
+    }
+  }
+
+  void _updateBottomSheet() {
+    if (_bottomSheetStateSetter != null &&
+        _bottomSheetContext != null &&
+        _bottomSheetContext!.mounted) {
+      try {
+        _bottomSheetStateSetter!(() {});
+      } catch (e) {
+        debugPrint("Error updating bottom sheet: $e");
+      }
     }
   }
 
@@ -1580,6 +1608,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           builder: (BuildContext context, WidgetRef ref, Widget? child) {
             return StatefulBuilder(
               builder: (BuildContext context, StateSetter setModalState) {
+                _bottomSheetContext = context;
                 _bottomSheetStateSetter = setModalState;
                 final connection = ref.watch(connectionStateProvider);
                 final isConnected = connection.isConnected;
@@ -1899,6 +1928,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       },
     ).then((_) {
       _bottomSheetStateSetter = null;
+      _bottomSheetContext = null;
     });
   }
 

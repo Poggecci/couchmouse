@@ -88,6 +88,11 @@ class ConnectionStateNotifier extends Notifier<DeviceConnectionState> {
       connectedDeviceName: connectedDeviceName,
       connectedDeviceAddress: connectedDeviceAddress,
     );
+    if (isConnected && connectedDeviceAddress != null && connectedDeviceName != null) {
+      final prefs = ref.read(sharedPreferencesProvider);
+      prefs.setString('last_connected_device_address', connectedDeviceAddress);
+      prefs.setString('last_connected_device_name', connectedDeviceName);
+    }
   }
 }
 

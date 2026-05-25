@@ -413,11 +413,15 @@ class MainActivity : FlutterActivity() {
         super.onDestroy()
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P && bluetoothAdapter != null) {
             try {
+                if (isRegistered) {
+                    bluetoothHidDevice?.unregisterApp()
+                    isRegistered = false
+                }
                 bluetoothAdapter?.closeProfileProxy(BluetoothProfile.HID_DEVICE, bluetoothHidDevice)
             } catch (e: SecurityException) {
-                Log.e(TAG, "SecurityException during closeProfileProxy: ${e.message}")
+                Log.e(TAG, "SecurityException during unregisterApp/closeProfileProxy: ${e.message}")
             } catch (e: Exception) {
-                Log.e(TAG, "Exception during closeProfileProxy: ${e.message}")
+                Log.e(TAG, "Exception during unregisterApp/closeProfileProxy: ${e.message}")
             }
         }
     }
