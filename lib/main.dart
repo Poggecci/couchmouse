@@ -1203,6 +1203,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   late final FocusNode _builtInKeyboardFocusNode;
   late final TextEditingController _builtInKeyboardController;
   bool _builtInKeyboardActive = false;
+  double _swipeDragDistance = 0.0;
   Future<void> _keystrokeQueue = Future.value();
 
   // Character-to-scancode mapping tables
@@ -2991,13 +2992,32 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 ),
               ),
             ),
-            const SizedBox(height: 16),
-            if (_builtInKeyboardActive)
-              _buildKeyboardAccessoryBar()
-            else
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                child: _buildClickButtons(height: 95, fontSize: 13),
+            if (_builtInKeyboardActive) ...[
+              const SizedBox(height: 16),
+              _buildKeyboardAccessoryBar(),
+            ] else
+              GestureDetector(
+                behavior: HitTestBehavior.translucent,
+                onVerticalDragStart: (details) {
+                  _swipeDragDistance = 0.0;
+                },
+                onVerticalDragUpdate: (details) {
+                  if (details.primaryDelta != null) {
+                    _swipeDragDistance += details.primaryDelta!;
+                    if (_swipeDragDistance < -30.0) {
+                      if (!_keyboardMode) {
+                        _toggleKeyboardMode();
+                      } else {
+                        _builtInKeyboardFocusNode.requestFocus();
+                      }
+                      _swipeDragDistance = 0.0;
+                    }
+                  }
+                },
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
+                  child: _buildClickButtons(height: 95, fontSize: 13),
+                ),
               ),
           ],
         ),
