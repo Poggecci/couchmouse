@@ -18,9 +18,7 @@ void main() async {
   ]);
   runApp(
     ProviderScope(
-      overrides: [
-        sharedPreferencesProvider.overrideWithValue(prefs),
-      ],
+      overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
       child: const CouchMouseApp(),
     ),
   );
@@ -1310,11 +1308,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           final connected = call.arguments['connected'] as bool;
           final deviceName = call.arguments['deviceName'] as String?;
           final deviceAddress = call.arguments['deviceAddress'] as String?;
-          ref.read(connectionStateProvider.notifier).updateConnectionState(
-            isConnected: connected,
-            connectedDeviceName: deviceName,
-            connectedDeviceAddress: deviceAddress,
-          );
+          ref
+              .read(connectionStateProvider.notifier)
+              .updateConnectionState(
+                isConnected: connected,
+                connectedDeviceName: deviceName,
+                connectedDeviceAddress: deviceAddress,
+              );
           setState(() {
             if (connected) {
               _isConnecting = false;
@@ -1422,11 +1422,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         'getConnectionState',
       );
       if (result != null) {
-        ref.read(connectionStateProvider.notifier).updateConnectionState(
-          isConnected: result['connected'] as bool? ?? false,
-          connectedDeviceName: result['deviceName'] as String?,
-          connectedDeviceAddress: result['deviceAddress'] as String?,
-        );
+        ref
+            .read(connectionStateProvider.notifier)
+            .updateConnectionState(
+              isConnected: result['connected'] as bool? ?? false,
+              connectedDeviceName: result['deviceName'] as String?,
+              connectedDeviceAddress: result['deviceAddress'] as String?,
+            );
         setState(() {
           _isRegistered = result['registered'] as bool? ?? false;
         });
@@ -1454,9 +1456,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       );
       if (devices != null) {
         setState(() {
-          _pairedDevices = devices
-              .map((d) => Map<String, String>.from(d as Map))
-              .toList();
+          _pairedDevices = devices.map((d) {
+            final map = d as Map;
+            return {
+              'name': (map['name'] ?? 'Unknown Device').toString(),
+              'address': (map['address'] ?? '').toString(),
+            };
+          }).toList();
         });
         if (_bottomSheetStateSetter != null) {
           _bottomSheetStateSetter!(() {});
@@ -1542,11 +1548,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       final success =
           await _channel.invokeMethod<bool>('disconnectDevice') ?? false;
       if (success) {
-        ref.read(connectionStateProvider.notifier).updateConnectionState(
-          isConnected: false,
-          connectedDeviceName: null,
-          connectedDeviceAddress: null,
-        );
+        ref
+            .read(connectionStateProvider.notifier)
+            .updateConnectionState(
+              isConnected: false,
+              connectedDeviceName: null,
+              connectedDeviceAddress: null,
+            );
         if (_bottomSheetStateSetter != null) {
           _bottomSheetStateSetter!(() {});
         }
@@ -1574,7 +1582,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 final connection = ref.watch(connectionStateProvider);
                 final isConnected = connection.isConnected;
                 final connectedDeviceName = connection.connectedDeviceName;
-                final connectedDeviceAddress = connection.connectedDeviceAddress;
+                final connectedDeviceAddress =
+                    connection.connectedDeviceAddress;
                 final isLandscape =
                     MediaQuery.of(context).orientation == Orientation.landscape;
 
@@ -1695,7 +1704,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                       vertical: 6,
                                     ),
                                     minimumSize: Size.zero,
-                                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                    tapTargetSize:
+                                        MaterialTapTargetSize.shrinkWrap,
                                   ),
                                   child: const Text(
                                     "Disconnect",
@@ -1725,7 +1735,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         Flexible(
                           child: _pairedDevices.isEmpty
                               ? Container(
-                                  padding: const EdgeInsets.symmetric(vertical: 24),
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 24,
+                                  ),
                                   alignment: Alignment.center,
                                   child: const Text(
                                     "No paired devices found.\nMake sure your phone is paired to your computer.",
@@ -1741,7 +1753,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                   itemCount: _pairedDevices.length,
                                   itemBuilder: (context, index) {
                                     final device = _pairedDevices[index];
-                                    final name = device['name'] ?? "Unknown Device";
+                                    final name =
+                                        device['name'] ?? "Unknown Device";
                                     final address = device['address'] ?? "";
                                     final isConnectingThis =
                                         _isConnecting &&
@@ -1757,7 +1770,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                       child: Container(
                                         decoration: BoxDecoration(
                                           color: const Color(0xFF1B1B26),
-                                          borderRadius: BorderRadius.circular(12),
+                                          borderRadius: BorderRadius.circular(
+                                            12,
+                                          ),
                                           border: Border.all(
                                             color: isConnectedThis
                                                 ? const Color(0xFF00E5FF)
@@ -1813,10 +1828,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                                           );
                                                         },
                                                   style: ElevatedButton.styleFrom(
-                                                    backgroundColor: const Color(
-                                                      0xFF00E5FF,
-                                                    ),
-                                                    foregroundColor: Colors.black,
+                                                    backgroundColor:
+                                                        const Color(0xFF00E5FF),
+                                                    foregroundColor:
+                                                        Colors.black,
                                                     minimumSize: Size.zero,
                                                     padding:
                                                         const EdgeInsets.symmetric(
@@ -1825,14 +1840,17 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                                         ),
                                                     shape: RoundedRectangleBorder(
                                                       borderRadius:
-                                                          BorderRadius.circular(8),
+                                                          BorderRadius.circular(
+                                                            8,
+                                                          ),
                                                     ),
                                                   ),
                                                   child: const Text(
                                                     "Connect",
                                                     style: TextStyle(
                                                       fontSize: 12,
-                                                      fontWeight: FontWeight.w900,
+                                                      fontWeight:
+                                                          FontWeight.w900,
                                                     ),
                                                   ),
                                                 ),
@@ -3432,7 +3450,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                             min: 1,
                             max: 30,
                             onChanged: (val) {
-                              ref.read(settingsProvider.notifier).updateSensitivity(val);
+                              ref
+                                  .read(settingsProvider.notifier)
+                                  .updateSensitivity(val);
                             },
                           ),
                         ),
@@ -3462,7 +3482,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     ),
                     value: _mouseAcceleration,
                     onChanged: (val) {
-                      ref.read(settingsProvider.notifier).updateMouseAcceleration(val);
+                      ref
+                          .read(settingsProvider.notifier)
+                          .updateMouseAcceleration(val);
                     },
                   ),
                 ),
@@ -3488,7 +3510,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     ),
                     value: _trackpadOnLeft,
                     onChanged: (val) {
-                      ref.read(settingsProvider.notifier).updateTrackpadOnLeft(val);
+                      ref
+                          .read(settingsProvider.notifier)
+                          .updateTrackpadOnLeft(val);
                     },
                   ),
                 ),
@@ -3540,7 +3564,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           ),
                           onChanged: (val) {
                             if (val != null) {
-                              ref.read(settingsProvider.notifier).updateKeyboardKind(val);
+                              ref
+                                  .read(settingsProvider.notifier)
+                                  .updateKeyboardKind(val);
                               // Clear active key codes to prevent sticking
                               _activeScancodes.clear();
                               _sendKeyboardReport();
@@ -3621,7 +3647,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 ),
                 // Reset Application Settings
                 ListTile(
-                  leading: const Icon(Icons.delete_sweep, color: Colors.redAccent),
+                  leading: const Icon(
+                    Icons.delete_sweep,
+                    color: Colors.redAccent,
+                  ),
                   title: const Text(
                     "Reset Application Settings",
                     style: TextStyle(
