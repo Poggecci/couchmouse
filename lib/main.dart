@@ -1201,6 +1201,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with WidgetsBindingObse
 
   // Layout Management: Unified Keyboard Mode state
   bool _keyboardMode = false;
+  bool _keyboardDidOpen = false;
   late final FocusNode _builtInKeyboardFocusNode;
   late final TextEditingController _builtInKeyboardController;
   bool _builtInKeyboardActive = false;
@@ -1591,7 +1592,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with WidgetsBindingObse
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.resumed) {
+    if (state == AppLifecycleState.paused || state == AppLifecycleState.inactive) {
+      if (_keyboardMode) {
+        setState(() {
+          _keyboardMode = false;
+          _keyboardDidOpen = false;
+          _builtInKeyboardFocusNode.unfocus();
+        });
+      }
+    } else if (state == AppLifecycleState.resumed) {
       _checkSupportAndPermissions();
       _retryLastConnection();
     }
@@ -2099,6 +2108,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with WidgetsBindingObse
   void _toggleKeyboardMode() {
     setState(() {
       _keyboardMode = !_keyboardMode;
+      _keyboardDidOpen = false;
       if (!_keyboardMode) {
         _builtInKeyboardFocusNode.unfocus();
       }
@@ -3332,6 +3342,24 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with WidgetsBindingObse
     }
 
     final orientation = MediaQuery.of(context).orientation;
+    final viewInsetsBottom = MediaQuery.of(context).viewInsets.bottom;
+
+    if (orientation == Orientation.portrait) {
+      if (_keyboardMode) {
+        if (viewInsetsBottom > 0) {
+          _keyboardDidOpen = true;
+        } else if (_keyboardDidOpen && viewInsetsBottom == 0) {
+          // Soft keyboard was dismissed (e.g. by back gesture)
+          _keyboardMode = false;
+          _keyboardDidOpen = false;
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            _builtInKeyboardFocusNode.unfocus();
+          });
+        }
+      }
+    } else {
+      _keyboardDidOpen = false;
+    }
 
     // Synchronize soft keyboard focus state based on orientation and keyboard mode.
     if (orientation == Orientation.landscape &&
