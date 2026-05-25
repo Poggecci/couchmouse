@@ -1176,6 +1176,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   bool _mouseAcceleration = false; // Mouse acceleration disabled by default
   bool _trackpadOnLeft = false; // Trackpad configuration parameter
   KeyboardKind _keyboardKind = KeyboardKind.seventyFive;
+  bool _invertTwoFingerScroll = false;
 
   // Fraction accumulators for precision control
   double _fractionalDx = 0.0;
@@ -2376,9 +2377,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 _trailPoints.clear();
               });
 
-              // Scroll input direction is natural (-dy)
+              // Scroll input direction is natural (-dy) unless inverted (dy)
               double dy = details.focalPointDelta.dy;
-              double wheelDelta = -dy * 0.25;
+              double wheelDelta = (_invertTwoFingerScroll ? dy : -dy) * 0.25;
               if (wheelDelta != 0) {
                 _sendReport(
                   buttons: _lastButtonsState,
@@ -3241,6 +3242,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     _mouseAcceleration = settings.mouseAcceleration;
     _trackpadOnLeft = settings.trackpadOnLeft;
     _keyboardKind = settings.keyboardKind;
+    _invertTwoFingerScroll = settings.invertTwoFingerScroll;
 
     if (!_isSupported) {
       return Scaffold(body: SafeArea(child: _buildUnsupportedView()));
@@ -3513,6 +3515,34 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       ref
                           .read(settingsProvider.notifier)
                           .updateTrackpadOnLeft(val);
+                    },
+                  ),
+                ),
+                const SizedBox(height: 8),
+                // Invert Two Finger Scroll Toggle
+                Card(
+                  color: const Color(0xFF1B1B26),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: SwitchListTile(
+                    activeThumbColor: const Color(0xFF0DF5E3),
+                    title: const Text(
+                      "Invert Two-Finger Scroll",
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                      ),
+                    ),
+                    subtitle: const Text(
+                      "Invert the scroll direction of two-finger drag",
+                      style: TextStyle(fontSize: 12, color: Colors.white54),
+                    ),
+                    value: _invertTwoFingerScroll,
+                    onChanged: (val) {
+                      ref
+                          .read(settingsProvider.notifier)
+                          .updateInvertTwoFingerScroll(val);
                     },
                   ),
                 ),
