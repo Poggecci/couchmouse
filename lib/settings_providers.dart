@@ -92,6 +92,11 @@ class ConnectionStateNotifier extends Notifier<DeviceConnectionState> {
       final prefs = ref.read(sharedPreferencesProvider);
       prefs.setString('last_connected_device_address', connectedDeviceAddress);
       prefs.setString('last_connected_device_name', connectedDeviceName);
+
+      final history = List<String>.from(prefs.getStringList('connected_device_addresses_history') ?? []);
+      history.remove(connectedDeviceAddress);
+      history.insert(0, connectedDeviceAddress);
+      prefs.setStringList('connected_device_addresses_history', history);
     }
   }
 }

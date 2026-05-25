@@ -1460,14 +1460,36 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with WidgetsBindingObse
         'getPairedDevices',
       );
       if (devices != null) {
+        final prefs = ref.read(sharedPreferencesProvider);
+        final history = prefs.getStringList('connected_device_addresses_history') ?? [];
+
         setState(() {
-          _pairedDevices = devices.map((d) {
+          final mappedDevices = devices.map((d) {
             final map = d as Map;
             return {
               'name': (map['name'] ?? 'Unknown Device').toString(),
               'address': (map['address'] ?? '').toString(),
             };
           }).toList();
+
+          mappedDevices.sort((a, b) {
+            final addrA = a['address'] ?? '';
+            final addrB = b['address'] ?? '';
+            final idxA = history.indexOf(addrA);
+            final idxB = history.indexOf(addrB);
+
+            if (idxA != -1 && idxB != -1) {
+              return idxA.compareTo(idxB);
+            } else if (idxA != -1) {
+              return -1;
+            } else if (idxB != -1) {
+              return 1;
+            } else {
+              return 0;
+            }
+          });
+
+          _pairedDevices = mappedDevices;
         });
         _updateBottomSheet();
       }
