@@ -3701,9 +3701,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   child: Text(
                     "1. Open your host device's (PC, Mac, Linux) standard Bluetooth settings.\n"
-                    "2. Tap the Bluetooth settings icon in the top header card to view your phone's system Bluetooth menu.\n"
-                    "3. Ensure Bluetooth is ON and pair with 'CouchMouse' from the list.\n"
-                    "4. Once paired, CouchMouse acts as a physical peripheral device.",
+                    "2. Unpair your phone from the host and unpair the host from your phone.\n"
+                    "3. Turn your phone's bluetooth off and on again without leaving the app to bring up the native BT dialog which states your phone is discoverable.\n"
+                    "4. Ensure host Bluetooth is ON and look for your phone name in the available devices list.\n"
+                    "5. Go through the pairing flow. After pairing, you should be connected. On subsequent app opens you can simply connect using the in-app paired devices menu.",
                     style: TextStyle(
                       fontSize: 12,
                       color: Colors.white54,
