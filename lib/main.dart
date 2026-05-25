@@ -1289,8 +1289,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with WidgetsBindingObse
     WidgetsBinding.instance.addObserver(this);
     _builtInKeyboardFocusNode = FocusNode();
     _builtInKeyboardFocusNode.addListener(() {
+      if (!mounted) return;
       setState(() {
         _builtInKeyboardActive = _builtInKeyboardFocusNode.hasFocus;
+        if (!_builtInKeyboardFocusNode.hasFocus) {
+          final orientation = MediaQuery.maybeOrientationOf(context) ?? Orientation.portrait;
+          if (orientation == Orientation.portrait) {
+            _keyboardMode = false;
+          }
+        }
       });
     });
     _builtInKeyboardController = TextEditingController(text: " ");
