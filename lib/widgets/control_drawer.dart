@@ -147,6 +147,63 @@ class ControlDrawer extends ConsumerWidget {
                   ),
                 ),
                 const SizedBox(height: 8),
+                // Scroll Sensitivity control
+                Card(
+                  color: const Color(0xFF1B1B26),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 12,
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Text(
+                              "Scroll Sensitivity",
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 14,
+                              ),
+                            ),
+                            Text(
+                              "${settings.scrollSensitivity.toStringAsFixed(1)}x",
+                              style: const TextStyle(
+                                color: Color(0xFF00E5FF),
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                        SliderTheme(
+                          data: SliderTheme.of(context).copyWith(
+                            activeTrackColor: const Color(0xFF00E5FF),
+                            inactiveTrackColor: const Color(0x22FFFFFF),
+                            thumbColor: const Color(0xFF0DF5E3),
+                            overlayColor: const Color(0x2200E5FF),
+                            trackHeight: 3,
+                          ),
+                          child: Slider(
+                            value: settings.scrollSensitivity,
+                            min: 0.2,
+                            max: 5.0,
+                            onChanged: (val) {
+                              ref
+                                  .read(settingsProvider.notifier)
+                                  .updateScrollSensitivity(val);
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 8),
                 // Mouse Acceleration Toggle
                 Card(
                   color: const Color(0xFF1B1B26),

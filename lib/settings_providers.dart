@@ -9,6 +9,7 @@ class CouchMouseSettings {
   final bool trackpadOnLeft;
   final KeyboardKind keyboardKind;
   final bool invertTwoFingerScroll;
+  final double scrollSensitivity;
 
   CouchMouseSettings({
     required this.sensitivity,
@@ -16,6 +17,7 @@ class CouchMouseSettings {
     required this.trackpadOnLeft,
     required this.keyboardKind,
     required this.invertTwoFingerScroll,
+    required this.scrollSensitivity,
   });
 
   CouchMouseSettings copyWith({
@@ -24,6 +26,7 @@ class CouchMouseSettings {
     bool? trackpadOnLeft,
     KeyboardKind? keyboardKind,
     bool? invertTwoFingerScroll,
+    double? scrollSensitivity,
   }) {
     return CouchMouseSettings(
       sensitivity: sensitivity ?? this.sensitivity,
@@ -31,6 +34,7 @@ class CouchMouseSettings {
       trackpadOnLeft: trackpadOnLeft ?? this.trackpadOnLeft,
       keyboardKind: keyboardKind ?? this.keyboardKind,
       invertTwoFingerScroll: invertTwoFingerScroll ?? this.invertTwoFingerScroll,
+      scrollSensitivity: scrollSensitivity ?? this.scrollSensitivity,
     );
   }
 }
@@ -122,6 +126,7 @@ class SettingsNotifier extends Notifier<CouchMouseSettings> {
   static const String _keyGlobalTrackpadOnLeft = 'global_trackpad_on_left';
   static const String _keyGlobalKeyboardKind = 'global_keyboard_kind';
   static const String _keyGlobalInvertTwoFingerScroll = 'global_invert_two_finger_scroll';
+  static const String _keyGlobalScrollSensitivity = 'global_scroll_sensitivity';
 
   String _deviceKey(String address, String key) => 'device_${address}_$key';
 
@@ -140,6 +145,7 @@ class SettingsNotifier extends Notifier<CouchMouseSettings> {
           trackpadOnLeft: prefs.getBool(_deviceKey(address, 'trackpad_on_left')) ?? false,
           keyboardKind: KeyboardKind.values[prefs.getInt(_deviceKey(address, 'keyboard_kind')) ?? KeyboardKind.seventyFive.index],
           invertTwoFingerScroll: prefs.getBool(_deviceKey(address, 'invert_two_finger_scroll')) ?? false,
+          scrollSensitivity: prefs.getDouble(_deviceKey(address, 'scroll_sensitivity')) ?? 1.0,
         );
       }
     }
@@ -150,6 +156,7 @@ class SettingsNotifier extends Notifier<CouchMouseSettings> {
       trackpadOnLeft: prefs.getBool(_keyGlobalTrackpadOnLeft) ?? false,
       keyboardKind: KeyboardKind.values[prefs.getInt(_keyGlobalKeyboardKind) ?? KeyboardKind.seventyFive.index],
       invertTwoFingerScroll: prefs.getBool(_keyGlobalInvertTwoFingerScroll) ?? false,
+      scrollSensitivity: prefs.getDouble(_keyGlobalScrollSensitivity) ?? 1.0,
     );
   }
 
@@ -178,6 +185,11 @@ class SettingsNotifier extends Notifier<CouchMouseSettings> {
     await _saveCurrentState();
   }
 
+  Future<void> updateScrollSensitivity(double value) async {
+    state = state.copyWith(scrollSensitivity: value);
+    await _saveCurrentState();
+  }
+
   Future<void> _saveCurrentState() async {
     final connection = ref.read(connectionStateProvider);
     final prefs = ref.read(sharedPreferencesProvider);
@@ -189,12 +201,14 @@ class SettingsNotifier extends Notifier<CouchMouseSettings> {
       await prefs.setBool(_deviceKey(address, 'trackpad_on_left'), state.trackpadOnLeft);
       await prefs.setInt(_deviceKey(address, 'keyboard_kind'), state.keyboardKind.index);
       await prefs.setBool(_deviceKey(address, 'invert_two_finger_scroll'), state.invertTwoFingerScroll);
+      await prefs.setDouble(_deviceKey(address, 'scroll_sensitivity'), state.scrollSensitivity);
     } else {
       await prefs.setDouble(_keyGlobalSensitivity, state.sensitivity);
       await prefs.setBool(_keyGlobalMouseAcceleration, state.mouseAcceleration);
       await prefs.setBool(_keyGlobalTrackpadOnLeft, state.trackpadOnLeft);
       await prefs.setInt(_keyGlobalKeyboardKind, state.keyboardKind.index);
       await prefs.setBool(_keyGlobalInvertTwoFingerScroll, state.invertTwoFingerScroll);
+      await prefs.setDouble(_keyGlobalScrollSensitivity, state.scrollSensitivity);
     }
   }
 
@@ -209,12 +223,14 @@ class SettingsNotifier extends Notifier<CouchMouseSettings> {
       await prefs.remove(_deviceKey(address, 'trackpad_on_left'));
       await prefs.remove(_deviceKey(address, 'keyboard_kind'));
       await prefs.remove(_deviceKey(address, 'invert_two_finger_scroll'));
+      await prefs.remove(_deviceKey(address, 'scroll_sensitivity'));
     } else {
       await prefs.remove(_keyGlobalSensitivity);
       await prefs.remove(_keyGlobalMouseAcceleration);
       await prefs.remove(_keyGlobalTrackpadOnLeft);
       await prefs.remove(_keyGlobalKeyboardKind);
       await prefs.remove(_keyGlobalInvertTwoFingerScroll);
+      await prefs.remove(_keyGlobalScrollSensitivity);
     }
 
     ref.invalidateSelf();

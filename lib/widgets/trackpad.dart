@@ -6,6 +6,7 @@ class Trackpad extends StatefulWidget {
   final double sensitivity;
   final bool mouseAcceleration;
   final bool invertTwoFingerScroll;
+  final double scrollSensitivity;
   final void Function({required double dx, required double dy, required double wheel}) onReport;
   final VoidCallback onTap;
 
@@ -16,6 +17,7 @@ class Trackpad extends StatefulWidget {
     required this.sensitivity,
     required this.mouseAcceleration,
     required this.invertTwoFingerScroll,
+    required this.scrollSensitivity,
     required this.onReport,
     required this.onTap,
   });
@@ -73,7 +75,7 @@ class _TrackpadState extends State<Trackpad> {
               });
 
               double dy = details.focalPointDelta.dy;
-              double wheelDelta = (widget.invertTwoFingerScroll ? dy : -dy) * 0.25;
+              double wheelDelta = (widget.invertTwoFingerScroll ? dy : -dy) * 0.25 * widget.scrollSensitivity;
               if (wheelDelta != 0) {
                 widget.onReport(
                   dx: 0,

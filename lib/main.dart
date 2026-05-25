@@ -8,6 +8,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'settings_providers.dart';
 import 'keyboard_layouts.dart';
 import 'widgets/trackpad.dart';
+import 'widgets/scroll_wheel.dart';
 import 'widgets/click_buttons.dart';
 import 'widgets/virtual_keyboard.dart';
 import 'widgets/connection_dashboard.dart';
@@ -73,6 +74,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with WidgetsBindingObse
   bool _trackpadOnLeft = false;
   KeyboardKind _keyboardKind = KeyboardKind.seventyFive;
   bool _invertTwoFingerScroll = false;
+  double _scrollSensitivity = 1.0;
 
   double _fractionalDx = 0.0;
   double _fractionalDy = 0.0;
@@ -998,16 +1000,32 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with WidgetsBindingObse
                 padding: const EdgeInsets.symmetric(horizontal: 16.0),
                 child: LayoutBuilder(
                   builder: (context, constraints) {
-                    return Trackpad(
-                      height: constraints.maxHeight,
-                      borderOpacity: 0.1,
-                      sensitivity: _sensitivity,
-                      mouseAcceleration: _mouseAcceleration,
-                      invertTwoFingerScroll: _invertTwoFingerScroll,
-                      onReport: ({required double dx, required double dy, required double wheel}) {
-                        _sendReport(buttons: _lastButtonsState, dx: dx, dy: dy, wheel: wheel);
-                      },
-                      onTap: _tapClick,
+                    return Row(
+                      children: [
+                        Expanded(
+                          child: Trackpad(
+                            height: constraints.maxHeight,
+                            borderOpacity: 0.1,
+                            sensitivity: _sensitivity,
+                            mouseAcceleration: _mouseAcceleration,
+                            invertTwoFingerScroll: _invertTwoFingerScroll,
+                            scrollSensitivity: _scrollSensitivity,
+                            onReport: ({required double dx, required double dy, required double wheel}) {
+                              _sendReport(buttons: _lastButtonsState, dx: dx, dy: dy, wheel: wheel);
+                            },
+                            onTap: _tapClick,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        ScrollWheel(
+                          height: constraints.maxHeight,
+                          scrollSensitivity: _scrollSensitivity,
+                          invertScroll: _invertTwoFingerScroll,
+                          onScroll: (wheel) {
+                            _sendReport(buttons: _lastButtonsState, dx: 0, dy: 0, wheel: wheel);
+                          },
+                        ),
+                      ],
                     );
                   },
                 ),
@@ -1097,16 +1115,32 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with WidgetsBindingObse
             Expanded(
               child: LayoutBuilder(
                 builder: (context, constraints) {
-                  return Trackpad(
-                    height: constraints.maxHeight,
-                    borderOpacity: 0.08,
-                    sensitivity: _sensitivity,
-                    mouseAcceleration: _mouseAcceleration,
-                    invertTwoFingerScroll: _invertTwoFingerScroll,
-                    onReport: ({required double dx, required double dy, required double wheel}) {
-                      _sendReport(buttons: _lastButtonsState, dx: dx, dy: dy, wheel: wheel);
-                    },
-                    onTap: _tapClick,
+                  return Row(
+                    children: [
+                      Expanded(
+                        child: Trackpad(
+                          height: constraints.maxHeight,
+                          borderOpacity: 0.08,
+                          sensitivity: _sensitivity,
+                          mouseAcceleration: _mouseAcceleration,
+                          invertTwoFingerScroll: _invertTwoFingerScroll,
+                          scrollSensitivity: _scrollSensitivity,
+                          onReport: ({required double dx, required double dy, required double wheel}) {
+                            _sendReport(buttons: _lastButtonsState, dx: dx, dy: dy, wheel: wheel);
+                          },
+                          onTap: _tapClick,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      ScrollWheel(
+                        height: constraints.maxHeight,
+                        scrollSensitivity: _scrollSensitivity,
+                        invertScroll: _invertTwoFingerScroll,
+                        onScroll: (wheel) {
+                          _sendReport(buttons: _lastButtonsState, dx: 0, dy: 0, wheel: wheel);
+                        },
+                      ),
+                    ],
                   );
                 },
               ),
@@ -1283,6 +1317,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with WidgetsBindingObse
     _trackpadOnLeft = settings.trackpadOnLeft;
     _keyboardKind = settings.keyboardKind;
     _invertTwoFingerScroll = settings.invertTwoFingerScroll;
+    _scrollSensitivity = settings.scrollSensitivity;
 
     if (!_isSupported) {
       return Scaffold(body: SafeArea(child: _buildUnsupportedView()));
