@@ -240,8 +240,7 @@ class SettingsNotifier extends Notifier<CouchMouseSettings> {
 
 final settingsProvider = NotifierProvider<SettingsNotifier, CouchMouseSettings>(SettingsNotifier.new);
 
-final pairedDevicesProvider = FutureProvider<List<Map<String, String>>>((ref) async {
-  ref.watch(connectionStateProvider);
+final pairedDevicesProvider = FutureProvider.autoDispose<List<Map<String, String>>>((ref) async {
   const channel = MethodChannel('com.example.couchmouse/hid');
   final List<dynamic>? devices = await channel.invokeMethod('getPairedDevices');
   if (devices == null) return [];
