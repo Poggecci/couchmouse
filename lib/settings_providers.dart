@@ -280,19 +280,23 @@ final pairedDevicesProvider = FutureProvider<List<Map<String, String>>>((ref) as
 class DiscoverableState {
   final bool isDiscoverable;
   final int remainingSeconds;
+  final DateTime? expirationTime;
 
   DiscoverableState({
     required this.isDiscoverable,
     this.remainingSeconds = 0,
+    this.expirationTime,
   });
 
   DiscoverableState copyWith({
     bool? isDiscoverable,
     int? remainingSeconds,
+    DateTime? expirationTime,
   }) {
     return DiscoverableState(
       isDiscoverable: isDiscoverable ?? this.isDiscoverable,
       remainingSeconds: remainingSeconds ?? this.remainingSeconds,
+      expirationTime: expirationTime ?? this.expirationTime,
     );
   }
 }
@@ -311,20 +315,44 @@ class DiscoverableNotifier extends Notifier<DiscoverableState> {
   void setDiscoverable(bool isDiscoverable, {int durationSeconds = 120}) {
     _timer?.cancel();
     if (isDiscoverable) {
+      final now = DateTime.now();
+      final currentExpiration = state.expirationTime;
+
+      DateTime expiration;
+      if (currentExpiration != null && currentExpiration.isAfter(now) && state.isDiscoverable) {
+        expiration = currentExpiration;
+      } else {
+        expiration = now.add(Duration(seconds: durationSeconds));
+      }
+
+      final remaining = expiration.difference(now).inSeconds;
       state = DiscoverableState(
         isDiscoverable: true,
-        remainingSeconds: durationSeconds,
+        remainingSeconds: remaining,
+        expirationTime: expiration,
       );
+
       _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
-        if (state.remainingSeconds > 1) {
-          state = state.copyWith(remainingSeconds: state.remainingSeconds - 1);
+        final currentNow = DateTime.now();
+        if (expiration.isAfter(currentNow)) {
+          state = state.copyWith(
+            remainingSeconds: expiration.difference(currentNow).inSeconds,
+          );
         } else {
           _timer?.cancel();
-          state = DiscoverableState(isDiscoverable: false, remainingSeconds: 0);
+          state = DiscoverableState(
+            isDiscoverable: false,
+            remainingSeconds: 0,
+            expirationTime: null,
+          );
         }
       });
     } else {
-      state = DiscoverableState(isDiscoverable: false, remainingSeconds: 0);
+      state = DiscoverableState(
+        isDiscoverable: false,
+        remainingSeconds: 0,
+        expirationTime: null,
+      );
     }
   }
 }
