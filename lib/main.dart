@@ -151,6 +151,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with WidgetsBindingObse
             _retryLastConnection();
           }
           break;
+        case 'onScanModeChanged':
+          final isDiscoverable = call.arguments['isDiscoverable'] as bool;
+          ref.read(discoverableProvider.notifier).setDiscoverable(isDiscoverable);
+          break;
       }
     });
   }
@@ -165,6 +169,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with WidgetsBindingObse
 
       if (supported) {
         _checkPermissions();
+        _checkDiscoverability();
       }
     } catch (e) {
       debugPrint("Error checking support: $e");
@@ -261,6 +266,29 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with WidgetsBindingObse
       await _channel.invokeMethod('openBluetoothSettings');
     } catch (e) {
       debugPrint("Error opening bluetooth settings: $e");
+    }
+  }
+
+  Future<void> _checkDiscoverability() async {
+    try {
+      final isDisc = await _channel.invokeMethod<bool>('isDiscoverable') ?? false;
+      ref.read(discoverableProvider.notifier).setDiscoverable(isDisc);
+    } catch (e) {
+      debugPrint("Error checking discoverability: $e");
+    }
+  }
+
+  Future<void> _requestDiscoverable() async {
+    if (!_permissionsGranted) {
+      await _checkPermissions();
+      if (!_permissionsGranted) return;
+    }
+    try {
+      await _channel.invokeMethod('requestDiscoverable', {
+        'duration': 120,
+      });
+    } catch (e) {
+      debugPrint("Error requesting bluetooth discoverability: $e");
     }
   }
 
@@ -390,7 +418,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with WidgetsBindingObse
           isRegistered: _isRegistered,
           onConnect: _connectToDevice,
           onDisconnect: _disconnectDevice,
-          onOpenBluetoothSettings: _openBluetoothSettings,
+          onRequestDiscoverable: _requestDiscoverable,
         );
       },
     );

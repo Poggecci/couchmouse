@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -275,3 +276,59 @@ final pairedDevicesProvider = FutureProvider<List<Map<String, String>>>((ref) as
 
   return mappedDevices;
 });
+
+class DiscoverableState {
+  final bool isDiscoverable;
+  final int remainingSeconds;
+
+  DiscoverableState({
+    required this.isDiscoverable,
+    this.remainingSeconds = 0,
+  });
+
+  DiscoverableState copyWith({
+    bool? isDiscoverable,
+    int? remainingSeconds,
+  }) {
+    return DiscoverableState(
+      isDiscoverable: isDiscoverable ?? this.isDiscoverable,
+      remainingSeconds: remainingSeconds ?? this.remainingSeconds,
+    );
+  }
+}
+
+class DiscoverableNotifier extends Notifier<DiscoverableState> {
+  Timer? _timer;
+
+  @override
+  DiscoverableState build() {
+    ref.onDispose(() {
+      _timer?.cancel();
+    });
+    return DiscoverableState(isDiscoverable: false);
+  }
+
+  void setDiscoverable(bool isDiscoverable, {int durationSeconds = 120}) {
+    _timer?.cancel();
+    if (isDiscoverable) {
+      state = DiscoverableState(
+        isDiscoverable: true,
+        remainingSeconds: durationSeconds,
+      );
+      _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
+        if (state.remainingSeconds > 1) {
+          state = state.copyWith(remainingSeconds: state.remainingSeconds - 1);
+        } else {
+          _timer?.cancel();
+          state = DiscoverableState(isDiscoverable: false, remainingSeconds: 0);
+        }
+      });
+    } else {
+      state = DiscoverableState(isDiscoverable: false, remainingSeconds: 0);
+    }
+  }
+}
+
+final discoverableProvider = NotifierProvider<DiscoverableNotifier, DiscoverableState>(
+  DiscoverableNotifier.new,
+);

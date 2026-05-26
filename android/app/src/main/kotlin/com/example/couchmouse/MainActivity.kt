@@ -2,8 +2,10 @@ package com.example.couchmouse
 
 import android.annotation.SuppressLint
 import android.bluetooth.*
+import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
 import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
@@ -24,8 +26,32 @@ class MainActivity : FlutterActivity() {
     private var isRegistered = false
     private var cachedFlutterEngine: FlutterEngine? = null
 
+    private val bluetoothReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent?) {
+            val action = intent?.action
+            if (BluetoothAdapter.ACTION_SCAN_MODE_CHANGED == action) {
+                val scanMode = intent.getIntExtra(BluetoothAdapter.EXTRA_SCAN_MODE, BluetoothAdapter.ERROR)
+                val isDiscoverable = (scanMode == BluetoothAdapter.SCAN_MODE_CONNECTABLE_DISCOVERABLE)
+                runOnUiThread {
+                    cachedFlutterEngine?.dartExecutor?.binaryMessenger?.let { messenger ->
+                        MethodChannel(messenger, CHANNEL).invokeMethod(
+                            "onScanModeChanged", 
+                            mapOf("isDiscoverable" to isDiscoverable)
+                        )
+                    }
+                }
+            }
+        }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        val filter = IntentFilter(BluetoothAdapter.ACTION_SCAN_MODE_CHANGED)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            registerReceiver(bluetoothReceiver, filter, Context.RECEIVER_EXPORTED)
+        } else {
+            registerReceiver(bluetoothReceiver, filter)
+        }
     }
 
     private fun initBluetoothHID() {
@@ -200,6 +226,40 @@ class MainActivity : FlutterActivity() {
             when (call.method) {
                 "isSupported" -> {
                     result.success(Build.VERSION.SDK_INT >= Build.VERSION_CODES.P)
+                }
+                "requestDiscoverable" -> {
+                    val duration = call.argument<Int>("duration") ?: 120
+                    val adapter = bluetoothAdapter
+                    if (adapter == null) {
+                        result.error("UNAVAILABLE", "Bluetooth adapter not available", null)
+                        return@setMethodCallHandler
+                    }
+                    try {
+                        val intent = Intent(BluetoothAdapter.ACTION_REQUEST_DISCOVERABLE).apply {
+                            putExtra(BluetoothAdapter.EXTRA_DISCOVERABLE_DURATION, duration)
+                        }
+                        startActivity(intent)
+                        result.success(true)
+                    } catch (e: SecurityException) {
+                        result.error("SECURITY_EXCEPTION", "Permission denied: ${e.message}", null)
+                    } catch (e: Exception) {
+                        result.error("ERROR", "Could not request Bluetooth discoverability: ${e.message}", null)
+                    }
+                }
+                "isDiscoverable" -> {
+                    val adapter = bluetoothAdapter
+                    if (adapter == null) {
+                        result.success(false)
+                        return@setMethodCallHandler
+                    }
+                    try {
+                        val isDisc = adapter.scanMode == BluetoothAdapter.SCAN_MODE_CONNECTABLE_DISCOVERABLE
+                        result.success(isDisc)
+                    } catch (e: SecurityException) {
+                        result.error("SECURITY_EXCEPTION", "Permission denied: ${e.message}", null)
+                    } catch (e: Exception) {
+                        result.error("ERROR", e.message, null)
+                    }
                 }
                 "getSdkVersion" -> {
                     result.success(Build.VERSION.SDK_INT)
@@ -413,6 +473,11 @@ class MainActivity : FlutterActivity() {
 
     override fun onDestroy() {
         cachedFlutterEngine = null
+        try {
+            unregisterReceiver(bluetoothReceiver)
+        } catch (e: Exception) {
+            Log.e(TAG, "Exception unregistering bluetooth receiver: ${e.message}")
+        }
         super.onDestroy()
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P && bluetoothAdapter != null) {
             try {

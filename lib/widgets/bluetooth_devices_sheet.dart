@@ -6,20 +6,21 @@ class BluetoothDevicesSheet extends ConsumerWidget {
   final bool isRegistered;
   final Future<void> Function(String address, String name) onConnect;
   final Future<void> Function() onDisconnect;
-  final VoidCallback onOpenBluetoothSettings;
+  final VoidCallback onRequestDiscoverable;
 
   const BluetoothDevicesSheet({
     super.key,
     required this.isRegistered,
     required this.onConnect,
     required this.onDisconnect,
-    required this.onOpenBluetoothSettings,
+    required this.onRequestDiscoverable,
   });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final connection = ref.watch(connectionStateProvider);
     final devicesAsync = ref.watch(pairedDevicesProvider);
+    final discoverable = ref.watch(discoverableProvider);
     final isLandscape = MediaQuery.of(context).orientation == Orientation.landscape;
 
     return Container(
@@ -294,32 +295,155 @@ class BluetoothDevicesSheet extends ConsumerWidget {
               ),
             ),
             SizedBox(height: isLandscape ? 8 : 16),
-            ElevatedButton.icon(
-              onPressed: () {
-                Navigator.pop(context);
-                onOpenBluetoothSettings();
-              },
-              icon: const Icon(Icons.add, size: 18),
-              label: const Text("Pair New Device"),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF1B1B26),
-                foregroundColor: Colors.white,
-                padding: EdgeInsets.symmetric(
-                  vertical: isLandscape ? 8 : 14,
-                ),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  side: const BorderSide(
-                    color: Color(0x18FFFFFF),
-                    width: 1,
-                  ),
-                ),
-              ),
+            PulsatingGlowButton(
+              isDiscoverable: discoverable.isDiscoverable,
+              remainingSeconds: discoverable.remainingSeconds,
+              label: "Make Discoverable",
+              isLandscape: isLandscape,
+              onPressed: onRequestDiscoverable,
             ),
             SizedBox(height: isLandscape ? 4 : 10),
           ],
         ),
       ),
     );
+  }
+}
+
+class PulsatingGlowButton extends StatefulWidget {
+  final VoidCallback onPressed;
+  final String label;
+  final bool isDiscoverable;
+  final int remainingSeconds;
+  final bool isLandscape;
+
+  const PulsatingGlowButton({
+    super.key,
+    required this.onPressed,
+    required this.label,
+    required this.isDiscoverable,
+    required this.remainingSeconds,
+    required this.isLandscape,
+  });
+
+  @override
+  State<PulsatingGlowButton> createState() => _PulsatingGlowButtonState();
+}
+
+class _PulsatingGlowButtonState extends State<PulsatingGlowButton>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 2),
+    );
+    if (widget.isDiscoverable) {
+      _controller.repeat(reverse: true);
+    }
+  }
+
+  @override
+  void didUpdateWidget(covariant PulsatingGlowButton oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.isDiscoverable && !oldWidget.isDiscoverable) {
+      _controller.repeat(reverse: true);
+    } else if (!widget.isDiscoverable && oldWidget.isDiscoverable) {
+      _controller.stop();
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (widget.isDiscoverable) {
+      return AnimatedBuilder(
+        animation: _controller,
+        builder: (context, child) {
+          final glowValue = _controller.value;
+          return Container(
+            width: double.infinity,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFF00E5FF).withOpacity(0.15 + (glowValue * 0.2)),
+                  blurRadius: 8 + (glowValue * 8),
+                  spreadRadius: 1 + (glowValue * 3),
+                ),
+              ],
+            ),
+            child: SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: widget.onPressed,
+                icon: Icon(
+                  Icons.sensors,
+                  size: 18,
+                  color: Color.lerp(
+                    const Color(0xFF00E5FF),
+                    const Color(0xFF0DF5E3),
+                    glowValue,
+                  ),
+                ),
+                label: Text(
+                  "Visible to Hosts (${widget.remainingSeconds}s)",
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF0C0C12),
+                  foregroundColor: const Color(0xFF00E5FF),
+                  padding: EdgeInsets.symmetric(
+                    vertical: widget.isLandscape ? 8 : 14,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    side: BorderSide(
+                      color: Color.lerp(
+                        const Color(0x8000E5FF),
+                        const Color(0xFF0DF5E3),
+                        glowValue,
+                      )!,
+                      width: 1.5,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          );
+        },
+      );
+    } else {
+      return SizedBox(
+        width: double.infinity,
+        child: ElevatedButton.icon(
+          onPressed: widget.onPressed,
+          icon: const Icon(Icons.bluetooth_searching, size: 18),
+          label: Text(widget.label),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: const Color(0xFF00E5FF).withOpacity(0.1),
+            foregroundColor: const Color(0xFF00E5FF),
+            padding: EdgeInsets.symmetric(
+              vertical: widget.isLandscape ? 8 : 14,
+            ),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+              side: const BorderSide(
+                color: Color(0x3000E5FF),
+                width: 1,
+              ),
+            ),
+          ),
+        ),
+      );
+    }
   }
 }
