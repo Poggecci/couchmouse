@@ -241,11 +241,11 @@ class SettingsNotifier extends Notifier<CouchMouseSettings> {
 final settingsProvider = NotifierProvider<SettingsNotifier, CouchMouseSettings>(SettingsNotifier.new);
 
 final pairedDevicesProvider = FutureProvider.autoDispose<List<Map<String, String>>>((ref) async {
+  final prefs = ref.watch(sharedPreferencesProvider);
   const channel = MethodChannel('com.example.couchmouse/hid');
   final List<dynamic>? devices = await channel.invokeMethod('getPairedDevices');
   if (devices == null) return [];
 
-  final prefs = ref.watch(sharedPreferencesProvider);
   final history = prefs.getStringList('connected_device_addresses_history') ?? [];
 
   final mappedDevices = devices.map((d) {
