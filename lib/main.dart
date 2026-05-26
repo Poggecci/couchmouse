@@ -400,6 +400,17 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with WidgetsBindingObse
     final lastName = prefs.getString('last_connected_device_name');
 
     if (lastAddress != null && lastName != null) {
+      try {
+        final pairedDevices = await ref.read(pairedDevicesProvider.future);
+        final isStillPaired = pairedDevices.any((device) => device['address'] == lastAddress);
+        if (!isStillPaired) {
+          debugPrint("Auto-reconnect skipped: $lastName ($lastAddress) is no longer in paired devices.");
+          return;
+        }
+      } catch (e) {
+        debugPrint("Error checking paired devices for auto-reconnect: $e");
+      }
+
       debugPrint("Auto-reconnecting to last known device: $lastName ($lastAddress)");
       await _connectToDevice(lastAddress, lastName);
     }
