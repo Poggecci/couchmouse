@@ -418,7 +418,8 @@ class ControlDrawer extends ConsumerWidget {
                     ),
                   ),
                   subtitle: Text(
-                    connection.isConnected && connection.connectedDeviceAddress != null
+                    connection.isConnected &&
+                            connection.connectedDeviceAddress != null
                         ? "Reset settings for this device to global defaults"
                         : "Reset global settings to defaults",
                     style: const TextStyle(fontSize: 12, color: Colors.white54),

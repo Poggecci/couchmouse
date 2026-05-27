@@ -21,7 +21,8 @@ class BluetoothDevicesSheet extends ConsumerWidget {
     final connection = ref.watch(connectionStateProvider);
     final devicesAsync = ref.watch(pairedDevicesProvider);
     final discoverable = ref.watch(discoverableProvider);
-    final isLandscape = MediaQuery.of(context).orientation == Orientation.landscape;
+    final isLandscape =
+        MediaQuery.of(context).orientation == Orientation.landscape;
 
     return Container(
       constraints: BoxConstraints(
@@ -52,11 +53,7 @@ class BluetoothDevicesSheet extends ConsumerWidget {
               children: [
                 const Row(
                   children: [
-                    Icon(
-                      Icons.bluetooth,
-                      color: Color(0xFF00E5FF),
-                      size: 24,
-                    ),
+                    Icon(Icons.bluetooth, color: Color(0xFF00E5FF), size: 24),
                     SizedBox(width: 10),
                     Text(
                       "Bluetooth Connections",
@@ -169,10 +166,7 @@ class BluetoothDevicesSheet extends ConsumerWidget {
                       child: const Text(
                         "No paired devices found.\nMake sure your phone is paired to your computer.",
                         textAlign: TextAlign.center,
-                        style: TextStyle(
-                          color: Colors.white30,
-                          fontSize: 13,
-                        ),
+                        style: TextStyle(color: Colors.white30, fontSize: 13),
                       ),
                     );
                   }
@@ -183,9 +177,11 @@ class BluetoothDevicesSheet extends ConsumerWidget {
                       final device = devices[index];
                       final name = device['name'] ?? "Unknown Device";
                       final address = device['address'] ?? "";
-                      final isConnectingThis = connection.isConnecting &&
+                      final isConnectingThis =
+                          connection.isConnecting &&
                           connection.connectingAddress == address;
-                      final isConnectedThis = connection.isConnected &&
+                      final isConnectedThis =
+                          connection.isConnected &&
                           connection.connectedDeviceAddress == address;
 
                       return Padding(
@@ -233,37 +229,37 @@ class BluetoothDevicesSheet extends ConsumerWidget {
                                     ),
                                   )
                                 : isConnectedThis
-                                    ? const Icon(
-                                        Icons.check_circle,
-                                        color: Color(0xFF0DF5E3),
-                                        size: 22,
-                                      )
-                                    : ElevatedButton(
-                                        onPressed: connection.isConnecting
-                                            ? null
-                                            : () async {
-                                                await onConnect(address, name);
-                                              },
-                                        style: ElevatedButton.styleFrom(
-                                          backgroundColor: const Color(0xFF00E5FF),
-                                          foregroundColor: Colors.black,
-                                          minimumSize: Size.zero,
-                                          padding: const EdgeInsets.symmetric(
-                                            horizontal: 14,
-                                            vertical: 8,
-                                          ),
-                                          shape: RoundedRectangleBorder(
-                                            borderRadius: BorderRadius.circular(8),
-                                          ),
-                                        ),
-                                        child: const Text(
-                                          "Connect",
-                                          style: TextStyle(
-                                            fontSize: 12,
-                                            fontWeight: FontWeight.w900,
-                                          ),
-                                        ),
+                                ? const Icon(
+                                    Icons.check_circle,
+                                    color: Color(0xFF0DF5E3),
+                                    size: 22,
+                                  )
+                                : ElevatedButton(
+                                    onPressed: connection.isConnecting
+                                        ? null
+                                        : () async {
+                                            await onConnect(address, name);
+                                          },
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: const Color(0xFF00E5FF),
+                                      foregroundColor: Colors.black,
+                                      minimumSize: Size.zero,
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 14,
+                                        vertical: 8,
                                       ),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                    ),
+                                    child: const Text(
+                                      "Connect",
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w900,
+                                      ),
+                                    ),
+                                  ),
                           ),
                         ),
                       );
@@ -375,7 +371,9 @@ class _PulsatingGlowButtonState extends State<PulsatingGlowButton>
               borderRadius: BorderRadius.circular(12),
               boxShadow: [
                 BoxShadow(
-                  color: const Color(0xFF00E5FF).withOpacity(0.15 + (glowValue * 0.2)),
+                  color: const Color(
+                    0xFF00E5FF,
+                  ).withValues(alpha: 0.15 + (glowValue * 0.2)),
                   blurRadius: 8 + (glowValue * 8),
                   spreadRadius: 1 + (glowValue * 3),
                 ),
@@ -429,17 +427,14 @@ class _PulsatingGlowButtonState extends State<PulsatingGlowButton>
           icon: const Icon(Icons.bluetooth_searching, size: 18),
           label: Text(widget.label),
           style: ElevatedButton.styleFrom(
-            backgroundColor: const Color(0xFF00E5FF).withOpacity(0.1),
+            backgroundColor: const Color(0xFF00E5FF).withValues(alpha: 0.1),
             foregroundColor: const Color(0xFF00E5FF),
             padding: EdgeInsets.symmetric(
               vertical: widget.isLandscape ? 8 : 14,
             ),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
-              side: const BorderSide(
-                color: Color(0x3000E5FF),
-                width: 1,
-              ),
+              side: const BorderSide(color: Color(0x3000E5FF), width: 1),
             ),
           ),
         ),

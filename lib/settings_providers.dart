@@ -34,7 +34,8 @@ class CouchMouseSettings {
       mouseAcceleration: mouseAcceleration ?? this.mouseAcceleration,
       trackpadOnLeft: trackpadOnLeft ?? this.trackpadOnLeft,
       keyboardKind: keyboardKind ?? this.keyboardKind,
-      invertTwoFingerScroll: invertTwoFingerScroll ?? this.invertTwoFingerScroll,
+      invertTwoFingerScroll:
+          invertTwoFingerScroll ?? this.invertTwoFingerScroll,
       scrollSensitivity: scrollSensitivity ?? this.scrollSensitivity,
     );
   }
@@ -65,7 +66,8 @@ class DeviceConnectionState {
     return DeviceConnectionState(
       isConnected: isConnected ?? this.isConnected,
       connectedDeviceName: connectedDeviceName ?? this.connectedDeviceName,
-      connectedDeviceAddress: connectedDeviceAddress ?? this.connectedDeviceAddress,
+      connectedDeviceAddress:
+          connectedDeviceAddress ?? this.connectedDeviceAddress,
       isConnecting: isConnecting ?? this.isConnecting,
       connectingAddress: connectingAddress ?? this.connectingAddress,
     );
@@ -73,7 +75,9 @@ class DeviceConnectionState {
 }
 
 final sharedPreferencesProvider = Provider<SharedPreferences>((ref) {
-  throw UnimplementedError("sharedPreferencesProvider must be overridden in ProviderScope");
+  throw UnimplementedError(
+    "sharedPreferencesProvider must be overridden in ProviderScope",
+  );
 });
 
 class ConnectionStateNotifier extends Notifier<DeviceConnectionState> {
@@ -94,12 +98,19 @@ class ConnectionStateNotifier extends Notifier<DeviceConnectionState> {
       isConnecting: false,
       connectingAddress: null,
     );
-    if (isConnected && connectedDeviceAddress != null && connectedDeviceName != null) {
+    if (isConnected &&
+        connectedDeviceAddress != null &&
+        connectedDeviceName != null) {
       final prefs = ref.read(sharedPreferencesProvider);
-      await prefs.setString('last_connected_device_address', connectedDeviceAddress);
+      await prefs.setString(
+        'last_connected_device_address',
+        connectedDeviceAddress,
+      );
       await prefs.setString('last_connected_device_name', connectedDeviceName);
 
-      final history = List<String>.from(prefs.getStringList('connected_device_addresses_history') ?? []);
+      final history = List<String>.from(
+        prefs.getStringList('connected_device_addresses_history') ?? [],
+      );
       history.remove(connectedDeviceAddress);
       history.insert(0, connectedDeviceAddress);
       await prefs.setStringList('connected_device_addresses_history', history);
@@ -117,16 +128,18 @@ class ConnectionStateNotifier extends Notifier<DeviceConnectionState> {
   }
 }
 
-final connectionStateProvider = NotifierProvider<ConnectionStateNotifier, DeviceConnectionState>(
-  ConnectionStateNotifier.new,
-);
+final connectionStateProvider =
+    NotifierProvider<ConnectionStateNotifier, DeviceConnectionState>(
+      ConnectionStateNotifier.new,
+    );
 
 class SettingsNotifier extends Notifier<CouchMouseSettings> {
   static const String _keyGlobalSensitivity = 'global_sensitivity';
   static const String _keyGlobalMouseAcceleration = 'global_mouse_acceleration';
   static const String _keyGlobalTrackpadOnLeft = 'global_trackpad_on_left';
   static const String _keyGlobalKeyboardKind = 'global_keyboard_kind';
-  static const String _keyGlobalInvertTwoFingerScroll = 'global_invert_two_finger_scroll';
+  static const String _keyGlobalInvertTwoFingerScroll =
+      'global_invert_two_finger_scroll';
   static const String _keyGlobalScrollSensitivity = 'global_scroll_sensitivity';
 
   String _deviceKey(String address, String key) => 'device_${address}_$key';
@@ -138,15 +151,27 @@ class SettingsNotifier extends Notifier<CouchMouseSettings> {
 
     if (connection.isConnected && connection.connectedDeviceAddress != null) {
       final address = connection.connectedDeviceAddress!;
-      final hasDeviceSettings = prefs.containsKey(_deviceKey(address, 'sensitivity'));
+      final hasDeviceSettings = prefs.containsKey(
+        _deviceKey(address, 'sensitivity'),
+      );
       if (hasDeviceSettings) {
         return CouchMouseSettings(
-          sensitivity: prefs.getDouble(_deviceKey(address, 'sensitivity')) ?? 10.0,
-          mouseAcceleration: prefs.getBool(_deviceKey(address, 'mouse_acceleration')) ?? false,
-          trackpadOnLeft: prefs.getBool(_deviceKey(address, 'trackpad_on_left')) ?? false,
-          keyboardKind: KeyboardKind.values[prefs.getInt(_deviceKey(address, 'keyboard_kind')) ?? KeyboardKind.seventyFive.index],
-          invertTwoFingerScroll: prefs.getBool(_deviceKey(address, 'invert_two_finger_scroll')) ?? false,
-          scrollSensitivity: prefs.getDouble(_deviceKey(address, 'scroll_sensitivity')) ?? 1.0,
+          sensitivity:
+              prefs.getDouble(_deviceKey(address, 'sensitivity')) ?? 10.0,
+          mouseAcceleration:
+              prefs.getBool(_deviceKey(address, 'mouse_acceleration')) ?? false,
+          trackpadOnLeft:
+              prefs.getBool(_deviceKey(address, 'trackpad_on_left')) ?? false,
+          keyboardKind:
+              KeyboardKind.values[prefs.getInt(
+                    _deviceKey(address, 'keyboard_kind'),
+                  ) ??
+                  KeyboardKind.seventyFive.index],
+          invertTwoFingerScroll:
+              prefs.getBool(_deviceKey(address, 'invert_two_finger_scroll')) ??
+              false,
+          scrollSensitivity:
+              prefs.getDouble(_deviceKey(address, 'scroll_sensitivity')) ?? 1.0,
         );
       }
     }
@@ -155,8 +180,11 @@ class SettingsNotifier extends Notifier<CouchMouseSettings> {
       sensitivity: prefs.getDouble(_keyGlobalSensitivity) ?? 10.0,
       mouseAcceleration: prefs.getBool(_keyGlobalMouseAcceleration) ?? false,
       trackpadOnLeft: prefs.getBool(_keyGlobalTrackpadOnLeft) ?? false,
-      keyboardKind: KeyboardKind.values[prefs.getInt(_keyGlobalKeyboardKind) ?? KeyboardKind.seventyFive.index],
-      invertTwoFingerScroll: prefs.getBool(_keyGlobalInvertTwoFingerScroll) ?? false,
+      keyboardKind:
+          KeyboardKind.values[prefs.getInt(_keyGlobalKeyboardKind) ??
+              KeyboardKind.seventyFive.index],
+      invertTwoFingerScroll:
+          prefs.getBool(_keyGlobalInvertTwoFingerScroll) ?? false,
       scrollSensitivity: prefs.getDouble(_keyGlobalScrollSensitivity) ?? 1.0,
     );
   }
@@ -197,19 +225,43 @@ class SettingsNotifier extends Notifier<CouchMouseSettings> {
 
     if (connection.isConnected && connection.connectedDeviceAddress != null) {
       final address = connection.connectedDeviceAddress!;
-      await prefs.setDouble(_deviceKey(address, 'sensitivity'), state.sensitivity);
-      await prefs.setBool(_deviceKey(address, 'mouse_acceleration'), state.mouseAcceleration);
-      await prefs.setBool(_deviceKey(address, 'trackpad_on_left'), state.trackpadOnLeft);
-      await prefs.setInt(_deviceKey(address, 'keyboard_kind'), state.keyboardKind.index);
-      await prefs.setBool(_deviceKey(address, 'invert_two_finger_scroll'), state.invertTwoFingerScroll);
-      await prefs.setDouble(_deviceKey(address, 'scroll_sensitivity'), state.scrollSensitivity);
+      await prefs.setDouble(
+        _deviceKey(address, 'sensitivity'),
+        state.sensitivity,
+      );
+      await prefs.setBool(
+        _deviceKey(address, 'mouse_acceleration'),
+        state.mouseAcceleration,
+      );
+      await prefs.setBool(
+        _deviceKey(address, 'trackpad_on_left'),
+        state.trackpadOnLeft,
+      );
+      await prefs.setInt(
+        _deviceKey(address, 'keyboard_kind'),
+        state.keyboardKind.index,
+      );
+      await prefs.setBool(
+        _deviceKey(address, 'invert_two_finger_scroll'),
+        state.invertTwoFingerScroll,
+      );
+      await prefs.setDouble(
+        _deviceKey(address, 'scroll_sensitivity'),
+        state.scrollSensitivity,
+      );
     } else {
       await prefs.setDouble(_keyGlobalSensitivity, state.sensitivity);
       await prefs.setBool(_keyGlobalMouseAcceleration, state.mouseAcceleration);
       await prefs.setBool(_keyGlobalTrackpadOnLeft, state.trackpadOnLeft);
       await prefs.setInt(_keyGlobalKeyboardKind, state.keyboardKind.index);
-      await prefs.setBool(_keyGlobalInvertTwoFingerScroll, state.invertTwoFingerScroll);
-      await prefs.setDouble(_keyGlobalScrollSensitivity, state.scrollSensitivity);
+      await prefs.setBool(
+        _keyGlobalInvertTwoFingerScroll,
+        state.invertTwoFingerScroll,
+      );
+      await prefs.setDouble(
+        _keyGlobalScrollSensitivity,
+        state.scrollSensitivity,
+      );
     }
   }
 
@@ -238,43 +290,49 @@ class SettingsNotifier extends Notifier<CouchMouseSettings> {
   }
 }
 
-final settingsProvider = NotifierProvider<SettingsNotifier, CouchMouseSettings>(SettingsNotifier.new);
+final settingsProvider = NotifierProvider<SettingsNotifier, CouchMouseSettings>(
+  SettingsNotifier.new,
+);
 
-final pairedDevicesProvider = FutureProvider.autoDispose<List<Map<String, String>>>((ref) async {
-  final prefs = ref.watch(sharedPreferencesProvider);
-  const channel = MethodChannel('com.example.couchmouse/hid');
-  final List<dynamic>? devices = await channel.invokeMethod('getPairedDevices');
-  if (devices == null) return [];
+final pairedDevicesProvider =
+    FutureProvider.autoDispose<List<Map<String, String>>>((ref) async {
+      final prefs = ref.watch(sharedPreferencesProvider);
+      const channel = MethodChannel('com.example.couchmouse/hid');
+      final List<dynamic>? devices = await channel.invokeMethod(
+        'getPairedDevices',
+      );
+      if (devices == null) return [];
 
-  final history = prefs.getStringList('connected_device_addresses_history') ?? [];
+      final history =
+          prefs.getStringList('connected_device_addresses_history') ?? [];
 
-  final mappedDevices = devices.map((d) {
-    final map = d as Map;
-    return {
-      'name': (map['name'] ?? 'Unknown Device').toString(),
-      'address': (map['address'] ?? '').toString(),
-    };
-  }).toList();
+      final mappedDevices = devices.map((d) {
+        final map = d as Map;
+        return {
+          'name': (map['name'] ?? 'Unknown Device').toString(),
+          'address': (map['address'] ?? '').toString(),
+        };
+      }).toList();
 
-  mappedDevices.sort((a, b) {
-    final addrA = a['address'] ?? '';
-    final addrB = b['address'] ?? '';
-    final idxA = history.indexOf(addrA);
-    final idxB = history.indexOf(addrB);
+      mappedDevices.sort((a, b) {
+        final addrA = a['address'] ?? '';
+        final addrB = b['address'] ?? '';
+        final idxA = history.indexOf(addrA);
+        final idxB = history.indexOf(addrB);
 
-    if (idxA != -1 && idxB != -1) {
-      return idxA.compareTo(idxB);
-    } else if (idxA != -1) {
-      return -1;
-    } else if (idxB != -1) {
-      return 1;
-    } else {
-      return 0;
-    }
-  });
+        if (idxA != -1 && idxB != -1) {
+          return idxA.compareTo(idxB);
+        } else if (idxA != -1) {
+          return -1;
+        } else if (idxB != -1) {
+          return 1;
+        } else {
+          return 0;
+        }
+      });
 
-  return mappedDevices;
-});
+      return mappedDevices;
+    });
 
 class DiscoverableState {
   final bool isDiscoverable;
@@ -318,7 +376,9 @@ class DiscoverableNotifier extends Notifier<DiscoverableState> {
       final currentExpiration = state.expirationTime;
 
       DateTime expiration;
-      if (currentExpiration != null && currentExpiration.isAfter(now) && state.isDiscoverable) {
+      if (currentExpiration != null &&
+          currentExpiration.isAfter(now) &&
+          state.isDiscoverable) {
         expiration = currentExpiration;
       } else {
         expiration = now.add(Duration(seconds: durationSeconds));
@@ -356,6 +416,7 @@ class DiscoverableNotifier extends Notifier<DiscoverableState> {
   }
 }
 
-final discoverableProvider = NotifierProvider<DiscoverableNotifier, DiscoverableState>(
-  DiscoverableNotifier.new,
-);
+final discoverableProvider =
+    NotifierProvider<DiscoverableNotifier, DiscoverableState>(
+      DiscoverableNotifier.new,
+    );

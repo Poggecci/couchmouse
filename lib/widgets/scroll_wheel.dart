@@ -38,7 +38,10 @@ class _ScrollWheelState extends State<ScrollWheel> {
         final dy = details.primaryDelta ?? 0.0;
         if (dy != 0.0) {
           // Send scroll event
-          final wheelDelta = (widget.invertScroll ? dy : -dy) * 0.25 * widget.scrollSensitivity;
+          final wheelDelta =
+              (widget.invertScroll ? dy : -dy) *
+              0.25 *
+              widget.scrollSensitivity;
           widget.onScroll(wheelDelta);
 
           // Update visual rotation angle of the cylinder
@@ -94,10 +97,7 @@ class ScrollWheelPainter extends CustomPainter {
   final double scrollAngle;
   final bool isPressed;
 
-  ScrollWheelPainter({
-    required this.scrollAngle,
-    required this.isPressed,
-  });
+  ScrollWheelPainter({required this.scrollAngle, required this.isPressed});
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -121,7 +121,7 @@ class ScrollWheelPainter extends CustomPainter {
 
     // Draw horizontal ribs
     const double thetaStep = 0.22; // approx 12.6 degrees
-    
+
     for (int k = -50; k <= 50; k++) {
       final double theta = (k * thetaStep + scrollAngle) % (2.0 * math.pi);
       double normTheta = theta;
@@ -135,7 +135,8 @@ class ScrollWheelPainter extends CustomPainter {
         final double strokeWidth = cosTheta * 2.0 + 1.0;
 
         final Paint ribPaint = Paint()
-          ..color = (isPressed ? const Color(0xFF00E5FF) : Colors.white).withValues(alpha: opacity)
+          ..color = (isPressed ? const Color(0xFF00E5FF) : Colors.white)
+              .withValues(alpha: opacity)
           ..strokeWidth = strokeWidth
           ..style = PaintingStyle.stroke
           ..strokeCap = StrokeCap.round;
@@ -168,6 +169,7 @@ class ScrollWheelPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant ScrollWheelPainter oldDelegate) {
-    return oldDelegate.scrollAngle != scrollAngle || oldDelegate.isPressed != isPressed;
+    return oldDelegate.scrollAngle != scrollAngle ||
+        oldDelegate.isPressed != isPressed;
   }
 }

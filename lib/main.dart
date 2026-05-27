@@ -62,7 +62,8 @@ class HomeScreen extends ConsumerStatefulWidget {
   ConsumerState<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends ConsumerState<HomeScreen> with WidgetsBindingObserver {
+class _HomeScreenState extends ConsumerState<HomeScreen>
+    with WidgetsBindingObserver {
   static const _channel = MethodChannel('com.example.couchmouse/hid');
 
   bool _isSupported = true;
@@ -107,7 +108,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with WidgetsBindingObse
       setState(() {
         _builtInKeyboardActive = _builtInKeyboardFocusNode.hasFocus;
         if (!_builtInKeyboardFocusNode.hasFocus) {
-          final orientation = MediaQuery.maybeOrientationOf(context) ?? Orientation.portrait;
+          final orientation =
+              MediaQuery.maybeOrientationOf(context) ?? Orientation.portrait;
           if (orientation == Orientation.portrait) {
             _keyboardMode = false;
           }
@@ -153,7 +155,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with WidgetsBindingObse
           break;
         case 'onScanModeChanged':
           final isDiscoverable = call.arguments['isDiscoverable'] as bool;
-          ref.read(discoverableProvider.notifier).setDiscoverable(isDiscoverable);
+          ref
+              .read(discoverableProvider.notifier)
+              .setDiscoverable(isDiscoverable);
           break;
       }
     });
@@ -271,7 +275,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with WidgetsBindingObse
 
   Future<void> _checkDiscoverability() async {
     try {
-      final isDisc = await _channel.invokeMethod<bool>('isDiscoverable') ?? false;
+      final isDisc =
+          await _channel.invokeMethod<bool>('isDiscoverable') ?? false;
       ref.read(discoverableProvider.notifier).setDiscoverable(isDisc);
     } catch (e) {
       debugPrint("Error checking discoverability: $e");
@@ -284,19 +289,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with WidgetsBindingObse
       if (!_permissionsGranted) return;
     }
     try {
-      await _channel.invokeMethod('requestDiscoverable', {
-        'duration': 120,
-      });
+      await _channel.invokeMethod('requestDiscoverable', {'duration': 120});
     } catch (e) {
       debugPrint("Error requesting bluetooth discoverability: $e");
     }
   }
 
   Future<void> _connectToDevice(String address, String name) async {
-    ref.read(connectionStateProvider.notifier).updateConnectingState(
-          isConnecting: true,
-          connectingAddress: address,
-        );
+    ref
+        .read(connectionStateProvider.notifier)
+        .updateConnectingState(isConnecting: true, connectingAddress: address);
 
     try {
       final success =
@@ -305,7 +307,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with WidgetsBindingObse
           }) ??
           false;
       if (!success) {
-        ref.read(connectionStateProvider.notifier).updateConnectingState(
+        ref
+            .read(connectionStateProvider.notifier)
+            .updateConnectingState(
               isConnecting: false,
               connectingAddress: null,
             );
@@ -323,7 +327,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with WidgetsBindingObse
             final connection = ref.read(connectionStateProvider);
             if (connection.isConnecting &&
                 connection.connectingAddress == address) {
-              ref.read(connectionStateProvider.notifier).updateConnectingState(
+              ref
+                  .read(connectionStateProvider.notifier)
+                  .updateConnectingState(
                     isConnecting: false,
                     connectingAddress: null,
                   );
@@ -338,10 +344,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with WidgetsBindingObse
         });
       }
     } catch (e) {
-      ref.read(connectionStateProvider.notifier).updateConnectingState(
-            isConnecting: false,
-            connectingAddress: null,
-          );
+      ref
+          .read(connectionStateProvider.notifier)
+          .updateConnectingState(isConnecting: false, connectingAddress: null);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -376,7 +381,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with WidgetsBindingObse
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.paused || state == AppLifecycleState.inactive) {
+    if (state == AppLifecycleState.paused ||
+        state == AppLifecycleState.inactive) {
       if (_keyboardMode) {
         setState(() {
           _keyboardMode = false;
@@ -402,16 +408,22 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with WidgetsBindingObse
     if (lastAddress != null && lastName != null) {
       try {
         final pairedDevices = await ref.read(pairedDevicesProvider.future);
-        final isStillPaired = pairedDevices.any((device) => device['address'] == lastAddress);
+        final isStillPaired = pairedDevices.any(
+          (device) => device['address'] == lastAddress,
+        );
         if (!isStillPaired) {
-          debugPrint("Auto-reconnect skipped: $lastName ($lastAddress) is no longer in paired devices.");
+          debugPrint(
+            "Auto-reconnect skipped: $lastName ($lastAddress) is no longer in paired devices.",
+          );
           return;
         }
       } catch (e) {
         debugPrint("Error checking paired devices for auto-reconnect: $e");
       }
 
-      debugPrint("Auto-reconnecting to last known device: $lastName ($lastAddress)");
+      debugPrint(
+        "Auto-reconnecting to last known device: $lastName ($lastAddress)",
+      );
       await _connectToDevice(lastAddress, lastName);
     }
   }
@@ -613,8 +625,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with WidgetsBindingObse
               for (int i = 0; i < typed.length; i++) {
                 String char = typed[i];
                 if (KeyboardLayouts.charToScancode.containsKey(char)) {
-                  await _queueKeyStroke(KeyboardLayouts.charToScancode[char]!, shift: false);
-                } else if (KeyboardLayouts.shiftCharToScancode.containsKey(char)) {
+                  await _queueKeyStroke(
+                    KeyboardLayouts.charToScancode[char]!,
+                    shift: false,
+                  );
+                } else if (KeyboardLayouts.shiftCharToScancode.containsKey(
+                  char,
+                )) {
                   await _queueKeyStroke(
                     KeyboardLayouts.shiftCharToScancode[char]!,
                     shift: true,
@@ -796,9 +813,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with WidgetsBindingObse
             Icon(
               _holdLockActive ? Icons.lock : Icons.lock_open,
               size: compact ? 11 : 13,
-              color: _holdLockActive
-                  ? const Color(0xFFFFCA28)
-                  : Colors.white54,
+              color: _holdLockActive ? const Color(0xFFFFCA28) : Colors.white54,
             ),
             SizedBox(width: compact ? 4 : 6),
             Text(
@@ -828,18 +843,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with WidgetsBindingObse
         decoration: BoxDecoration(
           color: const Color(0xFF1B1B26),
           borderRadius: BorderRadius.circular(compact ? 6 : 8),
-          border: Border.all(
-            color: const Color(0x18FFFFFF),
-            width: 1,
-          ),
+          border: Border.all(color: const Color(0x18FFFFFF), width: 1),
         ),
         child: Row(
           children: [
-            Icon(
-              Icons.refresh,
-              size: compact ? 11 : 13,
-              color: Colors.white54,
-            ),
+            Icon(Icons.refresh, size: compact ? 11 : 13, color: Colors.white54),
             SizedBox(width: compact ? 4 : 6),
             Text(
               "Reset",
@@ -1049,9 +1057,19 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with WidgetsBindingObse
                             mouseAcceleration: _mouseAcceleration,
                             invertTwoFingerScroll: _invertTwoFingerScroll,
                             scrollSensitivity: _scrollSensitivity,
-                            onReport: ({required double dx, required double dy, required double wheel}) {
-                              _sendReport(buttons: _lastButtonsState, dx: dx, dy: dy, wheel: wheel);
-                            },
+                            onReport:
+                                ({
+                                  required double dx,
+                                  required double dy,
+                                  required double wheel,
+                                }) {
+                                  _sendReport(
+                                    buttons: _lastButtonsState,
+                                    dx: dx,
+                                    dy: dy,
+                                    wheel: wheel,
+                                  );
+                                },
                             onTap: _tapClick,
                           ),
                         ),
@@ -1061,7 +1079,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with WidgetsBindingObse
                           scrollSensitivity: _scrollSensitivity,
                           invertScroll: _invertTwoFingerScroll,
                           onScroll: (wheel) {
-                            _sendReport(buttons: _lastButtonsState, dx: 0, dy: 0, wheel: wheel);
+                            _sendReport(
+                              buttons: _lastButtonsState,
+                              dx: 0,
+                              dy: 0,
+                              wheel: wheel,
+                            );
                           },
                         ),
                       ],
@@ -1164,9 +1187,19 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with WidgetsBindingObse
                           mouseAcceleration: _mouseAcceleration,
                           invertTwoFingerScroll: _invertTwoFingerScroll,
                           scrollSensitivity: _scrollSensitivity,
-                          onReport: ({required double dx, required double dy, required double wheel}) {
-                            _sendReport(buttons: _lastButtonsState, dx: dx, dy: dy, wheel: wheel);
-                          },
+                          onReport:
+                              ({
+                                required double dx,
+                                required double dy,
+                                required double wheel,
+                              }) {
+                                _sendReport(
+                                  buttons: _lastButtonsState,
+                                  dx: dx,
+                                  dy: dy,
+                                  wheel: wheel,
+                                );
+                              },
                           onTap: _tapClick,
                         ),
                       ),
@@ -1176,7 +1209,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with WidgetsBindingObse
                         scrollSensitivity: _scrollSensitivity,
                         invertScroll: _invertTwoFingerScroll,
                         onScroll: (wheel) {
-                          _sendReport(buttons: _lastButtonsState, dx: 0, dy: 0, wheel: wheel);
+                          _sendReport(
+                            buttons: _lastButtonsState,
+                            dx: 0,
+                            dy: 0,
+                            wheel: wheel,
+                          );
                         },
                       ),
                     ],
