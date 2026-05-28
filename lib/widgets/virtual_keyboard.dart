@@ -28,7 +28,7 @@ class VirtualKeyboard extends StatelessWidget {
     final layout = KeyboardLayouts.getLayout(keyboardKind);
 
     return Container(
-      color: const Color(0xFF07070B),
+      color: const Color(0xFFF4F4F6),
       padding: const EdgeInsets.all(4),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -46,22 +46,16 @@ class VirtualKeyboard extends StatelessWidget {
 
                 // Determine layout active state (glow highlight)
                 bool isActive = false;
-                Color glowColor = const Color(0xFF00E5FF);
 
                 if (key.isModifier) {
                   isActive = (modifiersBitmask & key.modifierMask) != 0;
-                  glowColor = const Color(0xFFE040FB);
                 } else if (key.scancode == -1) {
                   isActive = fnActive;
-                  glowColor = const Color(0xFF00E5FF);
                 } else {
                   int scancode = (fnActive && key.fnScancode != null)
                       ? key.fnScancode!
                       : key.scancode;
                   isActive = activeScancodes.contains(scancode);
-                  glowColor = holdLockActive
-                      ? const Color(0xFFFFCA28)
-                      : const Color(0xFF0DF5E3);
                 }
 
                 // Determine display label
@@ -77,39 +71,29 @@ class VirtualKeyboard extends StatelessWidget {
                       behavior: HitTestBehavior.opaque,
                       onTapDown: (_) => onKeyTap(key),
                       child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 100),
+                        duration: const Duration(milliseconds: 80),
                         height: rowHeight,
                         decoration: BoxDecoration(
                           color: isActive
-                              ? glowColor.withValues(alpha: 0.12)
-                              : const Color(0xFF14141E),
-                          borderRadius: BorderRadius.circular(compact ? 6 : 8),
+                              ? Colors.black
+                              : const Color(0xFFFFFFFF),
+                          borderRadius: BorderRadius.circular(compact ? 4 : 6),
                           border: Border.all(
                             color: isActive
-                                ? glowColor
-                                : Colors.white.withValues(
-                                    alpha: compact ? 0.05 : 0.08,
-                                  ),
-                            width: isActive ? 1.5 : 1.0,
+                                ? Colors.black
+                                : Colors.black.withValues(alpha: 0.08),
+                            width: isActive ? 1.0 : 0.5,
                           ),
-                          boxShadow: [
-                            if (isActive)
-                              BoxShadow(
-                                color: glowColor.withValues(alpha: 0.2),
-                                blurRadius: 6,
-                                spreadRadius: 1,
-                              ),
-                          ],
                         ),
                         alignment: Alignment.center,
                         child: Text(
                           label,
                           style: TextStyle(
                             fontSize: keyFontSize,
-                            fontWeight: FontWeight.bold,
+                            fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
                             color: isActive
-                                ? glowColor
-                                : Colors.white.withValues(alpha: 0.85),
+                                ? Colors.white
+                                : Colors.black.withValues(alpha: 0.7),
                           ),
                         ),
                       ),

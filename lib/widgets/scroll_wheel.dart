@@ -11,7 +11,7 @@ class ScrollWheel extends StatefulWidget {
   const ScrollWheel({
     super.key,
     required this.height,
-    this.width = 28.0,
+    this.width = 24.0,
     required this.scrollSensitivity,
     required this.invertScroll,
     required this.onScroll,
@@ -66,21 +66,17 @@ class _ScrollWheelState extends State<ScrollWheel> {
         width: widget.width,
         height: widget.height,
         decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            colors: [Color(0xFF0F0F16), Color(0xFF08080C)],
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-          ),
-          borderRadius: BorderRadius.circular(16),
+          color: const Color(0xFFFAFAFC),
+          borderRadius: BorderRadius.circular(12),
           border: Border.all(
             color: _isPressed
-                ? const Color(0x3D00E5FF)
-                : Colors.white.withValues(alpha: 0.08),
-            width: 1.5,
+                ? Colors.black.withValues(alpha: 0.2)
+                : Colors.black.withValues(alpha: 0.08),
+            width: 1.0,
           ),
         ),
         child: ClipRRect(
-          borderRadius: BorderRadius.circular(15),
+          borderRadius: BorderRadius.circular(11),
           child: CustomPaint(
             painter: ScrollWheelPainter(
               scrollAngle: _scrollAngle,
@@ -110,9 +106,9 @@ class ScrollWheelPainter extends CustomPainter {
     final Paint sheenPaint = Paint()
       ..shader = LinearGradient(
         colors: [
-          Colors.black.withValues(alpha: 0.8),
-          Colors.white.withValues(alpha: 0.05),
-          Colors.black.withValues(alpha: 0.8),
+          Colors.black.withValues(alpha: 0.02),
+          Colors.white,
+          Colors.black.withValues(alpha: 0.02),
         ],
         begin: Alignment.centerLeft,
         end: Alignment.centerRight,
@@ -131,23 +127,22 @@ class ScrollWheelPainter extends CustomPainter {
         final double y = cy + r * math.sin(normTheta);
 
         final double cosTheta = math.cos(normTheta);
-        final double opacity = cosTheta * (isPressed ? 0.8 : 0.4);
-        final double strokeWidth = cosTheta * 2.0 + 1.0;
+        final double opacity = cosTheta * (isPressed ? 0.6 : 0.3);
+        final double strokeWidth = cosTheta * 1.5 + 0.5;
 
         final Paint ribPaint = Paint()
-          ..color = (isPressed ? const Color(0xFF00E5FF) : Colors.white)
-              .withValues(alpha: opacity)
+          ..color = Colors.black.withValues(alpha: opacity)
           ..strokeWidth = strokeWidth
           ..style = PaintingStyle.stroke
           ..strokeCap = StrokeCap.round;
 
-        canvas.drawLine(Offset(4, y), Offset(w - 4, y), ribPaint);
+        canvas.drawLine(Offset(3, y), Offset(w - 3, y), ribPaint);
       }
     }
 
     // Draw a subtle vertical indicator line down the center to emphasize track
     final Paint trackPaint = Paint()
-      ..color = (isPressed ? const Color(0x3300E5FF) : Colors.white10)
+      ..color = Colors.black.withValues(alpha: isPressed ? 0.15 : 0.06)
       ..strokeWidth = 1.0;
     canvas.drawLine(Offset(w / 2, 8), Offset(w / 2, h - 8), trackPaint);
 
@@ -155,10 +150,10 @@ class ScrollWheelPainter extends CustomPainter {
     final Paint fadePaint = Paint()
       ..shader = LinearGradient(
         colors: [
-          const Color(0xFF08080C),
+          const Color(0xFFFAFAFC),
           Colors.transparent,
           Colors.transparent,
-          const Color(0xFF0F0F16),
+          const Color(0xFFFAFAFC),
         ],
         stops: const [0.0, 0.15, 0.85, 1.0],
         begin: Alignment.topCenter,

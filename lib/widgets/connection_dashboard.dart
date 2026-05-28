@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../settings_providers.dart';
 
@@ -10,24 +11,24 @@ class StatusDot extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final connection = ref.watch(connectionStateProvider);
-    Color dotColor = Colors.red;
+    Color dotColor = const Color(0xFF8E8E93);
     if (connection.isConnected) {
-      dotColor = const Color(0xFF0DF5E3);
+      dotColor = const Color(0xFF34C759);
     } else if (isRegistered) {
-      dotColor = Colors.amber;
+      dotColor = const Color(0xFFFF9500);
     }
 
     return Container(
-      width: 12,
-      height: 12,
+      width: 10,
+      height: 10,
       decoration: BoxDecoration(
         color: dotColor,
         shape: BoxShape.circle,
         boxShadow: [
           BoxShadow(
-            color: dotColor.withValues(alpha: 0.6),
-            blurRadius: 8,
-            spreadRadius: 2,
+            color: dotColor.withValues(alpha: 0.2),
+            blurRadius: 4,
+            spreadRadius: 1,
           ),
         ],
       ),
@@ -64,22 +65,12 @@ class ConnectionDashboard extends ConsumerWidget {
               ? const EdgeInsets.symmetric(horizontal: 10, vertical: 1)
               : const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: const Color(0xFF13131B),
-            borderRadius: BorderRadius.circular(16),
+            color: const Color(0xFFF4F4F6),
+            borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color: isConnected
-                  ? const Color(0x330DF5E3)
-                  : const Color(0x1AFFFFFF),
-              width: 1.5,
+              color: Colors.black.withValues(alpha: 0.08),
+              width: 1.0,
             ),
-            boxShadow: [
-              if (isConnected)
-                const BoxShadow(
-                  color: Color(0x1A0DF5E3),
-                  blurRadius: 10,
-                  spreadRadius: 2,
-                ),
-            ],
           ),
           child: Row(
             children: [
@@ -91,8 +82,8 @@ class ConnectionDashboard extends ConsumerWidget {
                   isConnected ? "Connected" : "Disconnected",
                   style: const TextStyle(
                     fontSize: 12,
-                    fontWeight: FontWeight.w800,
-                    color: Colors.white70,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.black87,
                     letterSpacing: 0.5,
                   ),
                 ),
@@ -107,9 +98,9 @@ class ConnectionDashboard extends ConsumerWidget {
                       Text(
                         isConnected ? "Connected" : "Not Connected",
                         style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.black,
                         ),
                       ),
                       const SizedBox(height: 2),
@@ -119,9 +110,9 @@ class ConnectionDashboard extends ConsumerWidget {
                             : "Tap to connect or pair a device",
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          fontSize: 13,
-                          color: Colors.white54,
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.black.withValues(alpha: 0.4),
                         ),
                       ),
                     ],
@@ -130,11 +121,11 @@ class ConnectionDashboard extends ConsumerWidget {
               ],
               IconButton(
                 onPressed: onTap,
-                icon: const Icon(Icons.settings_bluetooth),
-                color: const Color(0xFF00E5FF),
+                icon: const Icon(CupertinoIcons.bluetooth),
+                color: Colors.black.withValues(alpha: 0.8),
                 padding: EdgeInsets.zero,
                 constraints: const BoxConstraints(),
-                iconSize: compact ? 20 : 26,
+                iconSize: compact ? 18 : 22,
                 tooltip: "Bluetooth Connections",
               ),
             ],

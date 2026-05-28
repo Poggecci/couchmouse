@@ -95,17 +95,13 @@ class _TrackpadState extends State<Trackpad> {
           child: Container(
             height: widget.height,
             decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [Color(0xFF0F0F16), Color(0xFF08080C)],
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-              ),
-              borderRadius: BorderRadius.circular(24),
+              color: const Color(0xFFF4F4F6),
+              borderRadius: BorderRadius.circular(20),
               border: Border.all(
                 color: _touchPos != null
-                    ? const Color(0x3D00E5FF)
-                    : Colors.white.withValues(alpha: widget.borderOpacity),
-                width: 1.5,
+                    ? Colors.black.withValues(alpha: 0.2)
+                    : Colors.black.withValues(alpha: widget.borderOpacity),
+                width: 1.0,
               ),
             ),
             alignment: Alignment.center,
@@ -113,19 +109,20 @@ class _TrackpadState extends State<Trackpad> {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Icon(
-                  Icons.touch_app_outlined,
-                  size: widget.height < 200 ? 32 : 48,
+                  Icons.mouse_outlined,
+                  size: widget.height < 200 ? 28 : 40,
                   color: _touchPos != null
-                      ? const Color(0xFF00E5FF)
-                      : Colors.white12,
+                      ? Colors.black.withValues(alpha: 0.8)
+                      : Colors.black.withValues(alpha: 0.15),
                 ),
                 const SizedBox(height: 12),
                 Text(
-                  "Trackpad Surface",
+                  "Trackpad",
                   style: TextStyle(
-                    fontSize: widget.height < 200 ? 15 : 18,
-                    fontWeight: FontWeight.bold,
-                    color: _touchPos != null ? Colors.white : Colors.white30,
+                    fontSize: widget.height < 200 ? 14 : 16,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: 0.5,
+                    color: _touchPos != null ? Colors.black : Colors.black.withValues(alpha: 0.4),
                   ),
                 ),
                 if (widget.height >= 180) ...[
@@ -134,10 +131,10 @@ class _TrackpadState extends State<Trackpad> {
                     "Slide to Move • Tap to Click • 2 Fingers to Scroll",
                     textAlign: TextAlign.center,
                     style: TextStyle(
-                      fontSize: widget.height < 200 ? 11 : 12,
+                      fontSize: widget.height < 200 ? 10 : 11,
                       color: _touchPos != null
-                          ? Colors.white60
-                          : Colors.white24,
+                          ? Colors.black.withValues(alpha: 0.5)
+                          : Colors.black.withValues(alpha: 0.3),
                     ),
                   ),
                 ],
@@ -172,8 +169,8 @@ class TrackpadPainter extends CustomPainter {
       for (int i = 0; i < points.length - 1; i++) {
         double progress = i / points.length;
         final Paint trailPaint = Paint()
-          ..color = const Color(0xFF00E5FF).withValues(alpha: progress * 0.4)
-          ..strokeWidth = progress * 6.0 + 2.0
+          ..color = Colors.black.withValues(alpha: progress * 0.2)
+          ..strokeWidth = progress * 4.0 + 1.5
           ..style = PaintingStyle.stroke
           ..strokeCap = StrokeCap.round;
 
@@ -184,24 +181,24 @@ class TrackpadPainter extends CustomPainter {
     if (currentPoint != null) {
       final Paint glowPaint = Paint()
         ..shader = RadialGradient(
-          colors: const [
-            Color(0x4000E5FF),
-            Color(0x1000E5FF),
+          colors: [
+            Colors.black.withValues(alpha: 0.08),
+            Colors.black.withValues(alpha: 0.01),
             Colors.transparent,
           ],
-        ).createShader(Rect.fromCircle(center: currentPoint!, radius: 44.0));
-      canvas.drawCircle(currentPoint!, 44.0, glowPaint);
+        ).createShader(Rect.fromCircle(center: currentPoint!, radius: 36.0));
+      canvas.drawCircle(currentPoint!, 36.0, glowPaint);
 
       final Paint ringPaint = Paint()
-        ..color = const Color(0xFF00E5FF)
+        ..color = Colors.black.withValues(alpha: 0.25)
         ..style = PaintingStyle.stroke
-        ..strokeWidth = 2.0;
-      canvas.drawCircle(currentPoint!, 18.0, ringPaint);
+        ..strokeWidth = 1.0;
+      canvas.drawCircle(currentPoint!, 15.0, ringPaint);
 
       final Paint dotPaint = Paint()
-        ..color = Colors.white
+        ..color = Colors.black
         ..style = PaintingStyle.fill;
-      canvas.drawCircle(currentPoint!, 4.0, dotPaint);
+      canvas.drawCircle(currentPoint!, 3.0, dotPaint);
     }
   }
 

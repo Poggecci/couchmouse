@@ -1,9 +1,11 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 import 'settings_providers.dart';
 import 'keyboard_layouts.dart';
@@ -41,12 +43,13 @@ class CouchMouseApp extends StatelessWidget {
       title: 'CouchMouse',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        brightness: Brightness.dark,
-        scaffoldBackgroundColor: const Color(0xFF07070B),
-        colorScheme: const ColorScheme.dark(
-          primary: Color(0xFF00E5FF),
-          secondary: Color(0xFF0DF5E3),
-          surface: Color(0xFF13131B),
+        brightness: Brightness.light,
+        scaffoldBackgroundColor: const Color(0xFFFFFFFF),
+        fontFamily: GoogleFonts.plusJakartaSans().fontFamily,
+        colorScheme: const ColorScheme.light(
+          primary: Colors.black,
+          secondary: Color(0xFF1C1C1E),
+          surface: Color(0xFFF4F4F6),
         ),
         useMaterial3: true,
       ),
@@ -742,9 +745,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
             const SizedBox(height: 16),
             TextButton(
               onPressed: _openBluetoothSettings,
-              child: const Text(
+              child: Text(
                 "Open System Settings",
-                style: TextStyle(color: Color(0xFF0DF5E3), fontSize: 15),
+                style: TextStyle(color: Colors.black.withValues(alpha: 0.6), fontSize: 15),
               ),
             ),
           ],
@@ -755,26 +758,19 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
 
   Widget _buildStatusDot() {
     final connection = ref.watch(connectionStateProvider);
-    Color dotColor = Colors.red;
+    Color dotColor = const Color(0xFF8E8E93);
     if (connection.isConnected) {
-      dotColor = const Color(0xFF0DF5E3);
+      dotColor = const Color(0xFF34C759);
     } else if (_isRegistered) {
-      dotColor = Colors.amber;
+      dotColor = const Color(0xFFFF9500);
     }
 
     return Container(
-      width: 12,
-      height: 12,
+      width: 10,
+      height: 10,
       decoration: BoxDecoration(
         color: dotColor,
         shape: BoxShape.circle,
-        boxShadow: [
-          BoxShadow(
-            color: dotColor.withValues(alpha: 0.6),
-            blurRadius: 8,
-            spreadRadius: 2,
-          ),
-        ],
       ),
     );
   }
@@ -798,13 +794,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
         ),
         decoration: BoxDecoration(
           color: _holdLockActive
-              ? const Color(0x20FFCA28)
-              : const Color(0xFF1B1B26),
+              ? Colors.black
+              : const Color(0xFFF4F4F6),
           borderRadius: BorderRadius.circular(compact ? 6 : 8),
           border: Border.all(
             color: _holdLockActive
-                ? const Color(0xFFFFCA28)
-                : const Color(0x18FFFFFF),
+                ? Colors.black
+                : Colors.black.withValues(alpha: 0.08),
             width: 1,
           ),
         ),
@@ -813,7 +809,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
             Icon(
               _holdLockActive ? Icons.lock : Icons.lock_open,
               size: compact ? 11 : 13,
-              color: _holdLockActive ? const Color(0xFFFFCA28) : Colors.white54,
+              color: _holdLockActive ? Colors.white : Colors.black.withValues(alpha: 0.4),
             ),
             SizedBox(width: compact ? 4 : 6),
             Text(
@@ -822,8 +818,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                 fontSize: compact ? 10 : 11,
                 fontWeight: FontWeight.bold,
                 color: _holdLockActive
-                    ? const Color(0xFFFFCA28)
-                    : Colors.white70,
+                    ? Colors.white
+                    : Colors.black.withValues(alpha: 0.6),
               ),
             ),
           ],
@@ -841,9 +837,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
           vertical: compact ? 4 : 6,
         ),
         decoration: BoxDecoration(
-          color: const Color(0xFF1B1B26),
+          color: const Color(0xFFF4F4F6),
           borderRadius: BorderRadius.circular(compact ? 6 : 8),
-          border: Border.all(color: const Color(0x18FFFFFF), width: 1),
+          border: Border.all(color: Colors.black.withValues(alpha: 0.08), width: 1),
         ),
         child: Row(
           children: [
@@ -866,9 +862,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   Widget _buildKeyboardToolbar() {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: const BoxDecoration(
-        color: Color(0xFF0E0E15),
-        border: Border(bottom: BorderSide(color: Color(0x12FFFFFF))),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFFFFFF),
+        border: Border(bottom: BorderSide(color: Colors.black.withValues(alpha: 0.08))),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -886,7 +882,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
               fontSize: 10,
               fontWeight: FontWeight.w800,
               letterSpacing: 1.0,
-              color: _fnActive ? const Color(0xFF00E5FF) : Colors.white30,
+              color: _fnActive ? Colors.white : Colors.white.withValues(alpha: 0.3),
             ),
           ),
         ],
@@ -897,11 +893,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   Widget _buildKeyboardAccessoryBar() {
     return Container(
       height: 50,
-      decoration: const BoxDecoration(
-        color: Color(0xFF13131B),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFFFFFF),
         border: Border(
-          top: BorderSide(color: Color(0x18FFFFFF)),
-          bottom: BorderSide(color: Color(0x18FFFFFF)),
+          top: BorderSide(color: Colors.black.withValues(alpha: 0.08)),
+          bottom: BorderSide(color: Colors.black.withValues(alpha: 0.08)),
         ),
       ),
       child: ListView(
@@ -911,16 +907,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
           _buildAccessoryButton(
             icon: Icons.keyboard_hide,
             onTap: _toggleKeyboardMode,
-            color: Colors.redAccent,
+            color: Colors.black.withValues(alpha: 0.6),
           ),
           _buildAccessoryDivider(),
           _buildAccessoryKey("Esc", 0x29),
           _buildAccessoryKey("Tab", 0x2B),
           _buildAccessoryDivider(),
-          _buildAccessoryModifier("Ctrl", 0x01, const Color(0xFFE040FB)),
-          _buildAccessoryModifier("Shift", 0x02, const Color(0xFFE040FB)),
-          _buildAccessoryModifier("Alt", 0x04, const Color(0xFFE040FB)),
-          _buildAccessoryModifier("Win", 0x08, const Color(0xFFE040FB)),
+          _buildAccessoryModifier("Ctrl", 0x01, Colors.black),
+          _buildAccessoryModifier("Shift", 0x02, Colors.black),
+          _buildAccessoryModifier("Alt", 0x04, Colors.black),
+          _buildAccessoryModifier("Win", 0x08, Colors.black),
           _buildAccessoryDivider(),
           _buildAccessoryKey("◀", 0x50),
           _buildAccessoryKey("▲", 0x52),
@@ -944,15 +940,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 12),
           decoration: BoxDecoration(
-            color: const Color(0xFF1B1B26),
+            color: const Color(0xFFF4F4F6),
             borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: const Color(0x18FFFFFF)),
+            border: Border.all(color: Colors.black.withValues(alpha: 0.08)),
           ),
           alignment: Alignment.center,
           child: Text(
             label,
             style: const TextStyle(
-              color: Colors.white,
+              color: Colors.black,
               fontWeight: FontWeight.bold,
               fontSize: 12,
             ),
@@ -978,19 +974,19 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
           padding: const EdgeInsets.symmetric(horizontal: 12),
           decoration: BoxDecoration(
             color: isActive
-                ? glowColor.withValues(alpha: 0.15)
-                : const Color(0xFF1B1B26),
+                ? Colors.black
+                : const Color(0xFFF4F4F6),
             borderRadius: BorderRadius.circular(8),
             border: Border.all(
-              color: isActive ? glowColor : const Color(0x18FFFFFF),
-              width: isActive ? 1.5 : 1.0,
+              color: isActive ? Colors.black : Colors.black.withValues(alpha: 0.08),
+              width: 1.0,
             ),
           ),
           alignment: Alignment.center,
           child: Text(
             label,
             style: TextStyle(
-              color: isActive ? glowColor : Colors.white,
+              color: isActive ? Colors.white : Colors.black,
               fontWeight: FontWeight.bold,
               fontSize: 12,
             ),
@@ -1003,7 +999,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   Widget _buildAccessoryButton({
     required IconData icon,
     required VoidCallback onTap,
-    Color color = const Color(0xFF00E5FF),
+    Color color = Colors.black,
   }) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 4.0),
@@ -1012,9 +1008,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 10),
           decoration: BoxDecoration(
-            color: const Color(0xFF1B1B26),
+            color: const Color(0xFFF4F4F6),
             borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: const Color(0x18FFFFFF)),
+            border: Border.all(color: Colors.black.withValues(alpha: 0.08)),
           ),
           alignment: Alignment.center,
           child: Icon(icon, color: color, size: 16),
@@ -1027,7 +1023,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     return Container(
       width: 1.5,
       height: 24,
-      color: const Color(0x18FFFFFF),
+      color: Colors.black.withValues(alpha: 0.08),
       margin: const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
     );
   }
@@ -1261,7 +1257,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
 
     final divider = Container(
       width: 1.5,
-      color: const Color(0x18FFFFFF),
+      color: Colors.black.withValues(alpha: 0.08),
       margin: const EdgeInsets.symmetric(vertical: 12),
     );
 
@@ -1309,9 +1305,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   Widget _buildForcedLandscapeHeader() {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-      decoration: const BoxDecoration(
-        color: Color(0xFF13131B),
-        border: Border(bottom: BorderSide(color: Color(0x12FFFFFF))),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF4F4F6),
+        border: Border(bottom: BorderSide(color: Colors.black.withValues(alpha: 0.08))),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -1325,7 +1321,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                 style: TextStyle(
                   fontWeight: FontWeight.w900,
                   fontSize: 13,
-                  color: Colors.white,
+                  color: Colors.black,
                   letterSpacing: 0.5,
                 ),
               ),
@@ -1343,13 +1339,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                   fontSize: 9,
                   fontWeight: FontWeight.w800,
                   letterSpacing: 0.8,
-                  color: _fnActive ? const Color(0xFF00E5FF) : Colors.white30,
+                  color: _fnActive ? Colors.black : Colors.black.withValues(alpha: 0.3),
                 ),
               ),
               const SizedBox(width: 12),
               IconButton(
                 onPressed: _toggleKeyboardMode,
-                icon: const Icon(Icons.keyboard, color: Color(0xFF0DF5E3)),
+                icon: const Icon(CupertinoIcons.keyboard, color: Colors.black),
                 tooltip: "Split Keyboard Layout",
               ),
             ],
@@ -1365,7 +1361,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
         _buildForcedLandscapeHeader(),
         Expanded(
           child: Container(
-            color: const Color(0xFF07070B),
+            color: const Color(0xFFFFFFFF),
             alignment: Alignment.center,
             child: SingleChildScrollView(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
@@ -1451,7 +1447,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
           : AppBar(
               leading: Builder(
                 builder: (context) => IconButton(
-                  icon: const Icon(Icons.menu, color: Colors.white),
+                  icon: const Icon(CupertinoIcons.bars, color: Colors.black),
                   onPressed: () => Scaffold.of(context).openDrawer(),
                 ),
               ),
@@ -1461,9 +1457,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                 children: [
                   Icon(
                     orientation == Orientation.portrait
-                        ? Icons.mouse
-                        : Icons.keyboard,
-                    color: const Color(0xFF00E5FF),
+                        ? Icons.mouse_outlined
+                        : CupertinoIcons.keyboard,
+                    color: Colors.black,
+                    size: 20,
                   ),
                   const SizedBox(width: 12),
                   const Text(
@@ -1471,7 +1468,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                     style: TextStyle(
                       fontWeight: FontWeight.w900,
                       letterSpacing: 0.8,
-                      color: Colors.white,
+                      color: Colors.black,
                     ),
                   ),
                 ],
@@ -1484,16 +1481,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                   IconButton(
                     icon: Icon(
                       _builtInKeyboardActive
-                          ? Icons.keyboard_hide
-                          : Icons.keyboard,
-                      color: const Color(0xFF0DF5E3),
+                          ? CupertinoIcons.keyboard_chevron_compact_down
+                          : CupertinoIcons.keyboard,
+                      color: Colors.black,
                     ),
                     onPressed: _toggleKeyboardMode,
                     tooltip: "Built-in Keyboard",
                   )
                 else if (orientation == Orientation.landscape)
                   IconButton(
-                    icon: const Icon(Icons.keyboard, color: Color(0xFF0DF5E3)),
+                    icon: const Icon(CupertinoIcons.keyboard, color: Colors.black54),
                     onPressed: _toggleKeyboardMode,
                     tooltip: "Full Keyboard Mode",
                   ),

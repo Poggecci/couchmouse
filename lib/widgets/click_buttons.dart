@@ -16,7 +16,7 @@ class ClickButtons extends StatelessWidget {
   const ClickButtons({
     super.key,
     required this.height,
-    this.fontSize = 14,
+    this.fontSize = 13,
     this.compact = false,
     required this.leftActive,
     required this.rightActive,
@@ -33,9 +33,9 @@ class ClickButtons extends StatelessWidget {
     return Container(
       height: height,
       decoration: BoxDecoration(
-        color: const Color(0xFF13131B),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0x11FFFFFF)),
+        color: const Color(0xFFF4F4F6),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.black.withValues(alpha: 0.08), width: 1.0),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -47,24 +47,15 @@ class ClickButtons extends StatelessWidget {
               onTapUp: onLeftTapUp,
               onTapCancel: onLeftTapCancel,
               child: AnimatedContainer(
-                duration: const Duration(milliseconds: 80),
+                duration: const Duration(milliseconds: 60),
                 decoration: BoxDecoration(
-                  gradient: leftActive
-                      ? const RadialGradient(
-                          colors: [Color(0x3300E5FF), Colors.transparent],
-                          radius: 1.0,
-                        )
-                      : null,
                   color: leftActive
-                      ? const Color(0x0A00E5FF)
+                      ? Colors.black.withValues(alpha: 0.04)
                       : Colors.transparent,
                   borderRadius: const BorderRadius.only(
-                    topLeft: Radius.circular(20),
-                    bottomLeft: Radius.circular(20),
+                    topLeft: Radius.circular(15),
+                    bottomLeft: Radius.circular(15),
                   ),
-                  border: leftActive
-                      ? Border.all(color: const Color(0xFF00E5FF), width: 1.5)
-                      : null,
                 ),
                 child: Center(
                   child: Column(
@@ -72,23 +63,23 @@ class ClickButtons extends StatelessWidget {
                     children: [
                       if (!compact) ...[
                         Icon(
-                          Icons.mouse,
+                          Icons.mouse_outlined,
                           color: leftActive
-                              ? const Color(0xFF00E5FF)
-                              : Colors.white38,
-                          size: height < 70 ? 20 : 28,
+                              ? Colors.black.withValues(alpha: 0.8)
+                              : Colors.black.withValues(alpha: 0.15),
+                          size: height < 70 ? 18 : 22,
                         ),
-                        const SizedBox(height: 4),
+                        const SizedBox(height: 6),
                       ],
                       Text(
                         compact ? "LEFT" : "LEFT CLICK",
                         style: TextStyle(
                           color: leftActive
-                              ? const Color(0xFF00E5FF)
-                              : Colors.white70,
-                          fontWeight: FontWeight.bold,
+                              ? Colors.black
+                              : Colors.black.withValues(alpha: 0.4),
+                          fontWeight: FontWeight.w600,
                           fontSize: fontSize,
-                          letterSpacing: 1.2,
+                          letterSpacing: 0.8,
                         ),
                       ),
                     ],
@@ -97,7 +88,7 @@ class ClickButtons extends StatelessWidget {
               ),
             ),
           ),
-          Container(width: 1.5, color: const Color(0x11FFFFFF)),
+          Container(width: 0.5, color: Colors.black.withValues(alpha: 0.08)),
           Expanded(
             child: GestureDetector(
               behavior: HitTestBehavior.opaque,
@@ -105,24 +96,15 @@ class ClickButtons extends StatelessWidget {
               onTapUp: onRightTapUp,
               onTapCancel: onRightTapCancel,
               child: AnimatedContainer(
-                duration: const Duration(milliseconds: 80),
+                duration: const Duration(milliseconds: 60),
                 decoration: BoxDecoration(
-                  gradient: rightActive
-                      ? const RadialGradient(
-                          colors: [Color(0x330DF5E3), Colors.transparent],
-                          radius: 1.0,
-                        )
-                      : null,
                   color: rightActive
-                      ? const Color(0x0A0DF5E3)
+                      ? Colors.black.withValues(alpha: 0.04)
                       : Colors.transparent,
                   borderRadius: const BorderRadius.only(
-                    topRight: Radius.circular(20),
-                    bottomRight: Radius.circular(20),
+                    topRight: Radius.circular(15),
+                    bottomRight: Radius.circular(15),
                   ),
-                  border: rightActive
-                      ? Border.all(color: const Color(0xFF0DF5E3), width: 1.5)
-                      : null,
                 ),
                 child: Center(
                   child: Column(
@@ -132,21 +114,21 @@ class ClickButtons extends StatelessWidget {
                         Icon(
                           Icons.mouse_outlined,
                           color: rightActive
-                              ? const Color(0xFF0DF5E3)
-                              : Colors.white38,
-                          size: height < 70 ? 20 : 28,
+                              ? Colors.black.withValues(alpha: 0.8)
+                              : Colors.black.withValues(alpha: 0.15),
+                          size: height < 70 ? 18 : 22,
                         ),
-                        const SizedBox(height: 4),
+                        const SizedBox(height: 6),
                       ],
                       Text(
                         compact ? "RIGHT" : "RIGHT CLICK",
                         style: TextStyle(
                           color: rightActive
-                              ? const Color(0xFF0DF5E3)
-                              : Colors.white70,
-                          fontWeight: FontWeight.bold,
+                              ? Colors.black
+                              : Colors.black.withValues(alpha: 0.4),
+                          fontWeight: FontWeight.w600,
                           fontSize: fontSize,
-                          letterSpacing: 1.2,
+                          letterSpacing: 0.8,
                         ),
                       ),
                     ],
