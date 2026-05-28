@@ -122,10 +122,13 @@ class ControlDrawer extends ConsumerWidget {
               padding: EdgeInsets.zero,
               children: [
                 _buildSectionHeader("MOUSE CONTROLS"),
-                
+
                 // Sensitivity Custom Block Slider
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
                   child: BlockSlider(
                     value: settings.sensitivity,
                     min: 1,
@@ -133,22 +136,30 @@ class ControlDrawer extends ConsumerWidget {
                     label: "Sensitivity",
                     valueText: "${settings.sensitivity.toStringAsFixed(1)}x",
                     onChanged: (val) {
-                      ref.read(settingsProvider.notifier).updateSensitivity(val);
+                      ref
+                          .read(settingsProvider.notifier)
+                          .updateSensitivity(val);
                     },
                   ),
                 ),
 
                 // Scroll Sensitivity Custom Block Slider
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
                   child: BlockSlider(
                     value: settings.scrollSensitivity,
                     min: 0.2,
                     max: 5.0,
                     label: "Scroll Sensitivity",
-                    valueText: "${settings.scrollSensitivity.toStringAsFixed(1)}x",
+                    valueText:
+                        "${settings.scrollSensitivity.toStringAsFixed(1)}x",
                     onChanged: (val) {
-                      ref.read(settingsProvider.notifier).updateScrollSensitivity(val);
+                      ref
+                          .read(settingsProvider.notifier)
+                          .updateScrollSensitivity(val);
                     },
                   ),
                 ),
@@ -163,7 +174,9 @@ class ControlDrawer extends ConsumerWidget {
                     activeThumbColor: Colors.black,
                     value: settings.mouseAcceleration,
                     onChanged: (val) {
-                      ref.read(settingsProvider.notifier).updateMouseAcceleration(val);
+                      ref
+                          .read(settingsProvider.notifier)
+                          .updateMouseAcceleration(val);
                     },
                   ),
                 ),
@@ -178,7 +191,9 @@ class ControlDrawer extends ConsumerWidget {
                     activeThumbColor: Colors.black,
                     value: settings.trackpadOnLeft,
                     onChanged: (val) {
-                      ref.read(settingsProvider.notifier).updateTrackpadOnLeft(val);
+                      ref
+                          .read(settingsProvider.notifier)
+                          .updateTrackpadOnLeft(val);
                     },
                   ),
                 ),
@@ -193,7 +208,9 @@ class ControlDrawer extends ConsumerWidget {
                     activeThumbColor: Colors.black,
                     value: settings.invertTwoFingerScroll,
                     onChanged: (val) {
-                      ref.read(settingsProvider.notifier).updateInvertTwoFingerScroll(val);
+                      ref
+                          .read(settingsProvider.notifier)
+                          .updateInvertTwoFingerScroll(val);
                     },
                   ),
                 ),
@@ -208,11 +225,16 @@ class ControlDrawer extends ConsumerWidget {
                   control: SizedBox(
                     width: 130,
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 2,
+                      ),
                       decoration: BoxDecoration(
                         color: const Color(0xFFF4F4F6),
                         borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: Colors.black.withValues(alpha: 0.08)),
+                        border: Border.all(
+                          color: Colors.black.withValues(alpha: 0.08),
+                        ),
                       ),
                       child: DropdownButton<KeyboardKind>(
                         isExpanded: true,
@@ -224,29 +246,29 @@ class ControlDrawer extends ConsumerWidget {
                           size: 14,
                           color: Colors.black54,
                         ),
-                      style: const TextStyle(
-                        color: Colors.black,
-                        fontWeight: FontWeight.w600,
-                        fontSize: 13,
+                        style: const TextStyle(
+                          color: Colors.black,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 13,
+                        ),
+                        onChanged: (val) {
+                          if (val != null) {
+                            onKeyboardKindChanged(val);
+                          }
+                        },
+                        items: KeyboardKind.values.map((kind) {
+                          return DropdownMenuItem<KeyboardKind>(
+                            value: kind,
+                            child: Padding(
+                              padding: const EdgeInsets.only(right: 8.0),
+                              child: Text(kind.name),
+                            ),
+                          );
+                        }).toList(),
                       ),
-                      onChanged: (val) {
-                        if (val != null) {
-                          onKeyboardKindChanged(val);
-                        }
-                      },
-                      items: KeyboardKind.values.map((kind) {
-                        return DropdownMenuItem<KeyboardKind>(
-                          value: kind,
-                          child: Padding(
-                            padding: const EdgeInsets.only(right: 8.0),
-                            child: Text(kind.name),
-                          ),
-                        );
-                      }).toList(),
                     ),
                   ),
                 ),
-              ),
 
                 _buildDivider(),
                 _buildSectionHeader("UTILITIES"),
@@ -319,10 +341,14 @@ class ControlDrawer extends ConsumerWidget {
                     ),
                   ),
                   subtitle: Text(
-                    connection.isConnected && connection.connectedDeviceAddress != null
+                    connection.isConnected &&
+                            connection.connectedDeviceAddress != null
                         ? "Clear configurations for this device"
                         : "Reset settings to defaults",
-                    style: TextStyle(fontSize: 11, color: Colors.black.withValues(alpha: 0.4)),
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: Colors.black.withValues(alpha: 0.4),
+                    ),
                   ),
                   onTap: () async {
                     final address = connection.connectedDeviceAddress;
@@ -355,9 +381,9 @@ class ControlDrawer extends ConsumerWidget {
                 Padding(
                   padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
                   child: Text(
-                    "1. Open your host device's (PC, Mac, Linux) standard Bluetooth settings.\n\n"
+                    "1. Open your host device's (PC, Mac, Linux) standard Bluetooth (BT) settings.\n\n"
                     "2. Unpair your phone from the host and unpair the host from your phone.\n\n"
-                    "3. Turn your phone's bluetooth off and on again without leaving the app to bring up the native BT dialog which states your phone is discoverable.\n\n"
+                    "3. Open the connection tab on the app (the bar with the Bluetooth ᛒ icon at its right) and press \"Make Discoverable\".\n\n"
                     "4. Ensure host Bluetooth is ON and look for your phone name in the available devices list.\n\n"
                     "5. Go through the pairing flow. After pairing, you should be connected. On subsequent app opens you can simply connect using the in-app paired devices menu.",
                     style: TextStyle(
@@ -417,11 +443,15 @@ class BlockSlider extends StatelessWidget {
         decoration: BoxDecoration(
           color: const Color(0xFFF4F4F6),
           borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: Colors.black.withValues(alpha: 0.06), width: 0.5),
+          border: Border.all(
+            color: Colors.black.withValues(alpha: 0.06),
+            width: 0.5,
+          ),
         ),
         child: LayoutBuilder(
           builder: (context, constraints) {
-            final double fillWidth = constraints.maxWidth * ((value - min) / (max - min));
+            final double fillWidth =
+                constraints.maxWidth * ((value - min) / (max - min));
             return Stack(
               children: [
                 // Filled progress track
@@ -433,8 +463,12 @@ class BlockSlider extends StatelessWidget {
                     borderRadius: BorderRadius.only(
                       topLeft: const Radius.circular(9),
                       bottomLeft: const Radius.circular(9),
-                      topRight: Radius.circular(fillWidth >= constraints.maxWidth - 2 ? 9 : 0),
-                      bottomRight: Radius.circular(fillWidth >= constraints.maxWidth - 2 ? 9 : 0),
+                      topRight: Radius.circular(
+                        fillWidth >= constraints.maxWidth - 2 ? 9 : 0,
+                      ),
+                      bottomRight: Radius.circular(
+                        fillWidth >= constraints.maxWidth - 2 ? 9 : 0,
+                      ),
                     ),
                   ),
                 ),
