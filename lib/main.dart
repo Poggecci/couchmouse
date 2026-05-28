@@ -73,7 +73,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   bool _permissionsGranted = false;
   bool _isRegistered = false;
 
-  double _sensitivity = 10.0;
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
+
+  double _sensitivity = 5.0;
   bool _mouseAcceleration = false;
   bool _trackpadOnLeft = false;
   KeyboardKind _keyboardKind = KeyboardKind.seventyFive;
@@ -99,6 +101,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   late final TextEditingController _builtInKeyboardController;
   bool _builtInKeyboardActive = false;
   double _swipeDragDistance = 0.0;
+  double _horizontalSwipeDragDistance = 0.0;
   Future<void> _keystrokeQueue = Future.value();
 
   @override
@@ -907,7 +910,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
           _buildAccessoryButton(
             icon: Icons.keyboard_hide,
             onTap: _toggleKeyboardMode,
-            color: Colors.black.withValues(alpha: 0.6),
+            color: Colors.white,
+            backgroundColor: Colors.redAccent.withValues(alpha: 0.7),
+            borderColor: Colors.transparent,
           ),
           _buildAccessoryDivider(),
           _buildAccessoryKey("Esc", 0x29),
@@ -1000,6 +1005,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     required IconData icon,
     required VoidCallback onTap,
     Color color = Colors.black,
+    Color? backgroundColor,
+    Color? borderColor,
   }) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 4.0),
@@ -1008,9 +1015,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 10),
           decoration: BoxDecoration(
-            color: const Color(0xFFF4F4F6),
+            color: backgroundColor ?? const Color(0xFFF4F4F6),
             borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: Colors.black.withValues(alpha: 0.08)),
+            border: Border.all(
+              color: borderColor ?? Colors.black.withValues(alpha: 0.08),
+            ),
           ),
           alignment: Alignment.center,
           child: Icon(icon, color: color, size: 16),
@@ -1108,6 +1117,18 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                         _builtInKeyboardFocusNode.requestFocus();
                       }
                       _swipeDragDistance = 0.0;
+                    }
+                  }
+                },
+                onHorizontalDragStart: (details) {
+                  _horizontalSwipeDragDistance = 0.0;
+                },
+                onHorizontalDragUpdate: (details) {
+                  if (details.primaryDelta != null) {
+                    _horizontalSwipeDragDistance += details.primaryDelta!;
+                    if (_horizontalSwipeDragDistance > 30.0) {
+                      _scaffoldKey.currentState?.openDrawer();
+                      _horizontalSwipeDragDistance = 0.0;
                     }
                   }
                 },
@@ -1442,6 +1463,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
         _keyboardMode && orientation == Orientation.landscape;
 
     return Scaffold(
+      key: _scaffoldKey,
       appBar: showFullKeyboard
           ? null
           : AppBar(
