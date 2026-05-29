@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -136,7 +137,7 @@ void main() {
         await tester.pumpAndSettle();
 
         // Find the Bluetooth icon button and tap it to open the connection sheet
-        final bluetoothBtn = find.byIcon(Icons.settings_bluetooth);
+        final bluetoothBtn = find.byIcon(CupertinoIcons.bluetooth);
         expect(bluetoothBtn, findsOneWidget);
         await tester.tap(bluetoothBtn);
         await tester.pumpAndSettle();

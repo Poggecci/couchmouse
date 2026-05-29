@@ -7,6 +7,7 @@
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -127,7 +128,8 @@ void main() {
       await tester.pumpAndSettle();
 
       // Verify keyboard accessory bar is now shown (one in AppBar, one in accessory bar)
-      expect(find.byIcon(Icons.keyboard_hide), findsNWidgets(2));
+      expect(find.byIcon(Icons.keyboard_hide), findsOneWidget);
+      expect(find.byIcon(CupertinoIcons.keyboard_chevron_compact_down), findsOneWidget);
     },
   );
 
@@ -178,7 +180,8 @@ void main() {
       await tester.pumpAndSettle();
 
       // Verify keyboard is active
-      expect(find.byIcon(Icons.keyboard_hide), findsNWidgets(2));
+      expect(find.byIcon(Icons.keyboard_hide), findsOneWidget);
+      expect(find.byIcon(CupertinoIcons.keyboard_chevron_compact_down), findsOneWidget);
       expect(find.text('LEFT CLICK'), findsNothing);
 
       // 2. Unfocus the focus node (simulating Android back gesture/soft keyboard dismiss)
@@ -241,7 +244,8 @@ void main() {
       await tester.pumpAndSettle();
 
       // Verify keyboard is active
-      expect(find.byIcon(Icons.keyboard_hide), findsNWidgets(2));
+      expect(find.byIcon(Icons.keyboard_hide), findsOneWidget);
+      expect(find.byIcon(CupertinoIcons.keyboard_chevron_compact_down), findsOneWidget);
       expect(find.text('LEFT CLICK'), findsNothing);
 
       // 2. Simulate keyboard appearing (view insets bottom > 0)
@@ -302,7 +306,8 @@ void main() {
       await tester.pumpAndSettle();
 
       // Verify keyboard is active
-      expect(find.byIcon(Icons.keyboard_hide), findsNWidgets(2));
+      expect(find.byIcon(Icons.keyboard_hide), findsOneWidget);
+      expect(find.byIcon(CupertinoIcons.keyboard_chevron_compact_down), findsOneWidget);
 
       // 2. Simulate app going to background (inactive)
       tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
@@ -313,4 +318,77 @@ void main() {
       expect(find.byIcon(Icons.keyboard_hide), findsNothing);
     },
   );
+
+  testWidgets(
+    'Resuming app when permissions are denied does not request them again',
+    (WidgetTester tester) async {
+      tester.view.physicalSize = const Size(1080, 1920);
+      tester.view.devicePixelRatio = 2.0;
+      addTearDown(() {
+        tester.view.resetPhysicalSize();
+        tester.view.resetDevicePixelRatio();
+      });
+
+      SharedPreferences.setMockInitialValues({});
+      final prefs = await SharedPreferences.getInstance();
+
+      int permissionCheckCount = 0;
+      int permissionRequestCount = 0;
+
+      // Mock Bluetooth/HID channel
+      tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+        const MethodChannel('com.example.couchmouse/hid'),
+        (MethodCall methodCall) async {
+          if (methodCall.method == 'isSupported') return true;
+          if (methodCall.method == 'getSdkVersion') return 31;
+          return null;
+        },
+      );
+
+      // Mock permissions channel
+      tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+        const MethodChannel('flutter.baseflow.com/permissions/methods'),
+        (MethodCall methodCall) async {
+          if (methodCall.method == 'checkPermissionStatus') {
+            permissionCheckCount++;
+            return 0; // PermissionStatus.denied
+          }
+          if (methodCall.method == 'requestPermissions') {
+            permissionRequestCount++;
+            final permissions = methodCall.arguments as List<dynamic>;
+            return Map<int, int>.fromIterable(
+              permissions,
+              key: (p) => p as int,
+              value: (_) => 0, // PermissionStatus.denied
+            );
+          }
+          return null;
+        },
+      );
+
+      // Build app (will trigger initial check and request)
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
+          child: const CouchMouseApp(),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      final initialRequests = permissionRequestCount;
+      expect(initialRequests, greaterThan(0));
+
+      // Simulate app going to background (paused) and then resuming
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
+      await tester.pumpAndSettle();
+
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+      await tester.pumpAndSettle();
+
+      // The request count should NOT have increased
+      expect(permissionRequestCount, equals(initialRequests));
+    },
+  );
 }
+

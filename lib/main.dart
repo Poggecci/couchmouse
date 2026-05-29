@@ -169,7 +169,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     });
   }
 
-  Future<void> _checkSupportAndPermissions() async {
+  Future<void> _checkSupportAndPermissions({bool request = true}) async {
     try {
       final supported =
           await _channel.invokeMethod<bool>('isSupported') ?? false;
@@ -178,7 +178,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
       });
 
       if (supported) {
-        _checkPermissions();
+        _checkPermissions(request: request);
         _checkDiscoverability();
       }
     } catch (e) {
@@ -186,7 +186,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     }
   }
 
-  Future<void> _checkPermissions() async {
+  Future<void> _checkPermissions({bool request = true}) async {
     try {
       final sdkVersion = await _channel.invokeMethod<int>('getSdkVersion') ?? 0;
       bool granted = false;
@@ -203,7 +203,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
             advertiseStatus.isGranted &&
             scanStatus.isGranted;
 
-        if (!granted) {
+        if (!granted && request) {
+          if (connectStatus.isPermanentlyDenied ||
+              advertiseStatus.isPermanentlyDenied ||
+              scanStatus.isPermanentlyDenied) {
+            await openAppSettings();
+            return;
+          }
+
           Map<Permission, PermissionStatus> statuses = await [
             Permission.bluetoothConnect,
             Permission.bluetoothAdvertise,
@@ -219,7 +226,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
         PermissionStatus locationStatus = await Permission.location.status;
         granted = locationStatus.isGranted;
 
-        if (!granted) {
+        if (!granted && request) {
+          if (locationStatus.isPermanentlyDenied) {
+            await openAppSettings();
+            return;
+          }
+
           PermissionStatus reqStatus = await Permission.location.request();
           granted = reqStatus.isGranted;
         }
@@ -291,7 +303,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
 
   Future<void> _requestDiscoverable() async {
     if (!_permissionsGranted) {
-      await _checkPermissions();
+      await _checkPermissions(request: true);
       if (!_permissionsGranted) return;
     }
     try {
@@ -397,7 +409,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
         });
       }
     } else if (state == AppLifecycleState.resumed) {
-      _checkSupportAndPermissions();
+      _checkSupportAndPermissions(request: false);
       _retryLastConnection();
     }
   }
@@ -726,7 +738,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
             ),
             const SizedBox(height: 32),
             ElevatedButton.icon(
-              onPressed: _checkPermissions,
+              onPressed: () => _checkPermissions(request: true),
               icon: const Icon(Icons.check_circle_outline),
               label: const Text("Grant Permissions"),
               style: ElevatedButton.styleFrom(
