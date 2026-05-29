@@ -388,7 +388,7 @@ class ControlDrawer extends ConsumerWidget {
                     "5. Go through the pairing flow. After pairing, you should be connected. On subsequent app opens you can simply connect using the in-app paired devices menu.",
                     style: TextStyle(
                       fontSize: 11,
-                      color: Colors.black.withValues(alpha: 0.35),
+                      color: Colors.black.withValues(alpha: 0.65),
                       height: 1.5,
                     ),
                   ),
