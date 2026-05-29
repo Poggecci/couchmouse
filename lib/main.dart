@@ -81,6 +81,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   KeyboardKind _keyboardKind = KeyboardKind.seventyFive;
   bool _invertTwoFingerScroll = false;
   double _scrollSensitivity = 1.0;
+  double _scrollMomentum = 0.0;
 
   double _fractionalDx = 0.0;
   double _fractionalDy = 0.0;
@@ -1095,6 +1096,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                           height: constraints.maxHeight,
                           scrollSensitivity: _scrollSensitivity,
                           invertScroll: _invertTwoFingerScroll,
+                          scrollMomentum: _scrollMomentum,
                           onScroll: (wheel) {
                             _sendReport(
                               buttons: _lastButtonsState,
@@ -1237,6 +1239,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                         height: constraints.maxHeight,
                         scrollSensitivity: _scrollSensitivity,
                         invertScroll: _invertTwoFingerScroll,
+                        scrollMomentum: _scrollMomentum,
                         onScroll: (wheel) {
                           _sendReport(
                             buttons: _lastButtonsState,
@@ -1414,6 +1417,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     );
   }
 
+  double _getEffectiveScrollSensitivity(double sliderValue) {
+    final double t = (sliderValue - 1.0) / 4.0;
+    return 0.05 + t * (3.0 - 0.05);
+  }
+
   @override
   Widget build(BuildContext context) {
     final settings = ref.watch(settingsProvider);
@@ -1423,7 +1431,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     _trackpadOnLeft = settings.trackpadOnLeft;
     _keyboardKind = settings.keyboardKind;
     _invertTwoFingerScroll = settings.invertTwoFingerScroll;
-    _scrollSensitivity = settings.scrollSensitivity;
+    _scrollSensitivity = _getEffectiveScrollSensitivity(settings.scrollSensitivity);
+    _scrollMomentum = settings.scrollMomentum;
 
     if (!_isSupported) {
       return Scaffold(body: SafeArea(child: _buildUnsupportedView()));

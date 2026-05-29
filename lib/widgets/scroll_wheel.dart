@@ -1,11 +1,13 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 
 class ScrollWheel extends StatefulWidget {
   final double height;
   final double width;
   final double scrollSensitivity;
   final bool invertScroll;
+  final double scrollMomentum;
   final void Function(double wheel) onScroll;
 
   const ScrollWheel({
@@ -14,6 +16,7 @@ class ScrollWheel extends StatefulWidget {
     this.width = 24.0,
     required this.scrollSensitivity,
     required this.invertScroll,
+    required this.scrollMomentum,
     required this.onScroll,
   });
 
@@ -21,20 +24,92 @@ class ScrollWheel extends StatefulWidget {
   State<ScrollWheel> createState() => _ScrollWheelState();
 }
 
-class _ScrollWheelState extends State<ScrollWheel> {
+class _ScrollWheelState extends State<ScrollWheel> with SingleTickerProviderStateMixin {
   double _scrollAngle = 0.0;
   bool _isPressed = false;
+
+  late final Ticker _ticker;
+  double _velocity = 0.0;
+  Duration _lastElapsed = Duration.zero;
+
+  @override
+  void initState() {
+    super.initState();
+    _ticker = createTicker(_onTick);
+  }
+
+  @override
+  void dispose() {
+    _ticker.dispose();
+    super.dispose();
+  }
+
+  void _onTick(Duration elapsed) {
+    if (_lastElapsed == Duration.zero) {
+      _lastElapsed = elapsed;
+      return;
+    }
+    final double dt = (elapsed.inMicroseconds - _lastElapsed.inMicroseconds) / 1000000.0;
+    _lastElapsed = elapsed;
+
+    if (dt <= 0.0) return;
+
+    final double momentum = widget.scrollMomentum;
+    if (momentum <= 0.0) {
+      _ticker.stop();
+      return;
+    }
+
+    // Deceleration/friction coefficient.
+    // Higher momentum values decrease friction, allowing longer slides.
+    final double friction = 1.5 + (1.0 - momentum) * 13.5;
+
+    // Exponential velocity decay
+    final double nextVelocity = _velocity * math.exp(-friction * dt);
+    final double avgVelocity = (_velocity + nextVelocity) / 2.0;
+    final double dy = avgVelocity * dt;
+
+    _velocity = nextVelocity;
+
+    if (_velocity.abs() < 30.0) {
+      _ticker.stop();
+      _velocity = 0.0;
+      return;
+    }
+
+    // Send scroll event
+    final wheelDelta =
+        (widget.invertScroll ? dy : -dy) *
+        0.25 *
+        widget.scrollSensitivity;
+    widget.onScroll(wheelDelta);
+
+    // Update visual rotation angle of the cylinder
+    final double deltaAngle = (dy / (widget.height / 2.0));
+    setState(() {
+      _scrollAngle = (_scrollAngle + deltaAngle) % (2.0 * math.pi);
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
       onVerticalDragStart: (details) {
+        if (_ticker.isActive) {
+          _ticker.stop();
+        }
+        _velocity = 0.0;
         setState(() {
           _isPressed = true;
         });
       },
       onVerticalDragUpdate: (details) {
+        if (_ticker.isActive) {
+          _ticker.stop();
+        }
+        _velocity = 0.0;
+
         final dy = details.primaryDelta ?? 0.0;
         if (dy != 0.0) {
           // Send scroll event
@@ -56,8 +131,22 @@ class _ScrollWheelState extends State<ScrollWheel> {
         setState(() {
           _isPressed = false;
         });
+
+        final double momentum = widget.scrollMomentum;
+        if (momentum > 0.0) {
+          final double vy = details.velocity.pixelsPerSecond.dy;
+          if (vy.abs() > 100.0) {
+            _velocity = vy;
+            _lastElapsed = Duration.zero;
+            _ticker.start();
+          }
+        }
       },
       onVerticalDragCancel: () {
+        if (_ticker.isActive) {
+          _ticker.stop();
+        }
+        _velocity = 0.0;
         setState(() {
           _isPressed = false;
         });

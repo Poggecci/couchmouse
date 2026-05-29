@@ -11,6 +11,7 @@ class CouchMouseSettings {
   final KeyboardKind keyboardKind;
   final bool invertTwoFingerScroll;
   final double scrollSensitivity;
+  final double scrollMomentum;
 
   CouchMouseSettings({
     required this.sensitivity,
@@ -19,6 +20,7 @@ class CouchMouseSettings {
     required this.keyboardKind,
     required this.invertTwoFingerScroll,
     required this.scrollSensitivity,
+    required this.scrollMomentum,
   });
 
   CouchMouseSettings copyWith({
@@ -28,6 +30,7 @@ class CouchMouseSettings {
     KeyboardKind? keyboardKind,
     bool? invertTwoFingerScroll,
     double? scrollSensitivity,
+    double? scrollMomentum,
   }) {
     return CouchMouseSettings(
       sensitivity: sensitivity ?? this.sensitivity,
@@ -37,6 +40,7 @@ class CouchMouseSettings {
       invertTwoFingerScroll:
           invertTwoFingerScroll ?? this.invertTwoFingerScroll,
       scrollSensitivity: scrollSensitivity ?? this.scrollSensitivity,
+      scrollMomentum: scrollMomentum ?? this.scrollMomentum,
     );
   }
 }
@@ -141,6 +145,7 @@ class SettingsNotifier extends Notifier<CouchMouseSettings> {
   static const String _keyGlobalInvertTwoFingerScroll =
       'global_invert_two_finger_scroll';
   static const String _keyGlobalScrollSensitivity = 'global_scroll_sensitivity';
+  static const String _keyGlobalScrollMomentum = 'global_scroll_momentum';
 
   String _deviceKey(String address, String key) => 'device_${address}_$key';
 
@@ -171,7 +176,9 @@ class SettingsNotifier extends Notifier<CouchMouseSettings> {
               prefs.getBool(_deviceKey(address, 'invert_two_finger_scroll')) ??
               false,
           scrollSensitivity:
-              prefs.getDouble(_deviceKey(address, 'scroll_sensitivity')) ?? 1.0,
+              prefs.getDouble(_deviceKey(address, 'scroll_sensitivity')) ?? 2.0,
+          scrollMomentum:
+              prefs.getDouble(_deviceKey(address, 'scroll_momentum')) ?? 0.05,
         );
       }
     }
@@ -185,7 +192,8 @@ class SettingsNotifier extends Notifier<CouchMouseSettings> {
               KeyboardKind.seventyFive.index],
       invertTwoFingerScroll:
           prefs.getBool(_keyGlobalInvertTwoFingerScroll) ?? false,
-      scrollSensitivity: prefs.getDouble(_keyGlobalScrollSensitivity) ?? 1.0,
+      scrollSensitivity: prefs.getDouble(_keyGlobalScrollSensitivity) ?? 2.0,
+      scrollMomentum: prefs.getDouble(_keyGlobalScrollMomentum) ?? 0.05,
     );
   }
 
@@ -215,7 +223,13 @@ class SettingsNotifier extends Notifier<CouchMouseSettings> {
   }
 
   Future<void> updateScrollSensitivity(double value) async {
-    state = state.copyWith(scrollSensitivity: value);
+    final rounded = (value * 10).roundToDouble() / 10.0;
+    state = state.copyWith(scrollSensitivity: rounded);
+    await _saveCurrentState();
+  }
+
+  Future<void> updateScrollMomentum(double value) async {
+    state = state.copyWith(scrollMomentum: value);
     await _saveCurrentState();
   }
 
@@ -249,6 +263,10 @@ class SettingsNotifier extends Notifier<CouchMouseSettings> {
         _deviceKey(address, 'scroll_sensitivity'),
         state.scrollSensitivity,
       );
+      await prefs.setDouble(
+        _deviceKey(address, 'scroll_momentum'),
+        state.scrollMomentum,
+      );
     } else {
       await prefs.setDouble(_keyGlobalSensitivity, state.sensitivity);
       await prefs.setBool(_keyGlobalMouseAcceleration, state.mouseAcceleration);
@@ -261,6 +279,10 @@ class SettingsNotifier extends Notifier<CouchMouseSettings> {
       await prefs.setDouble(
         _keyGlobalScrollSensitivity,
         state.scrollSensitivity,
+      );
+      await prefs.setDouble(
+        _keyGlobalScrollMomentum,
+        state.scrollMomentum,
       );
     }
   }
@@ -277,6 +299,7 @@ class SettingsNotifier extends Notifier<CouchMouseSettings> {
       await prefs.remove(_deviceKey(address, 'keyboard_kind'));
       await prefs.remove(_deviceKey(address, 'invert_two_finger_scroll'));
       await prefs.remove(_deviceKey(address, 'scroll_sensitivity'));
+      await prefs.remove(_deviceKey(address, 'scroll_momentum'));
     } else {
       await prefs.remove(_keyGlobalSensitivity);
       await prefs.remove(_keyGlobalMouseAcceleration);
@@ -284,6 +307,7 @@ class SettingsNotifier extends Notifier<CouchMouseSettings> {
       await prefs.remove(_keyGlobalKeyboardKind);
       await prefs.remove(_keyGlobalInvertTwoFingerScroll);
       await prefs.remove(_keyGlobalScrollSensitivity);
+      await prefs.remove(_keyGlobalScrollMomentum);
     }
 
     ref.invalidateSelf();

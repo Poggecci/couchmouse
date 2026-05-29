@@ -151,15 +151,37 @@ class ControlDrawer extends ConsumerWidget {
                   ),
                   child: BlockSlider(
                     value: settings.scrollSensitivity,
-                    min: 0.2,
+                    min: 1.0,
                     max: 5.0,
                     label: "Scroll Sensitivity",
                     valueText:
-                        "${settings.scrollSensitivity.toStringAsFixed(1)}x",
+                        settings.scrollSensitivity.toStringAsFixed(1),
                     onChanged: (val) {
                       ref
                           .read(settingsProvider.notifier)
                           .updateScrollSensitivity(val);
+                    },
+                  ),
+                ),
+
+                // Scroll Momentum Custom Block Slider
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
+                  child: BlockSlider(
+                    value: settings.scrollMomentum,
+                    min: 0.0,
+                    max: 1.0,
+                    label: "Scroll Momentum",
+                    valueText: settings.scrollMomentum == 0.0
+                        ? "Off"
+                        : "${(settings.scrollMomentum * 100).toStringAsFixed(0)}%",
+                    onChanged: (val) {
+                      ref
+                          .read(settingsProvider.notifier)
+                          .updateScrollMomentum(val);
                     },
                   ),
                 ),
