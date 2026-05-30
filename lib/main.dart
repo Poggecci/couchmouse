@@ -859,14 +859,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
         ),
         child: Row(
           children: [
-            Icon(Icons.refresh, size: compact ? 11 : 13, color: Colors.white54),
+            Icon(Icons.refresh, size: compact ? 11 : 13, color: Colors.black.withValues(alpha: 0.4)),
             SizedBox(width: compact ? 4 : 6),
             Text(
               "Reset",
               style: TextStyle(
                 fontSize: compact ? 10 : 11,
                 fontWeight: FontWeight.bold,
-                color: Colors.white70,
+                color: Colors.black.withValues(alpha: 0.6),
               ),
             ),
           ],
@@ -898,7 +898,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
               fontSize: 10,
               fontWeight: FontWeight.w800,
               letterSpacing: 1.0,
-              color: _fnActive ? Colors.white : Colors.white.withValues(alpha: 0.3),
+              color: _fnActive ? Colors.black : Colors.black.withValues(alpha: 0.3),
             ),
           ),
         ],

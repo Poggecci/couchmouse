@@ -129,7 +129,10 @@ void main() {
 
       // Verify keyboard accessory bar is now shown (one in AppBar, one in accessory bar)
       expect(find.byIcon(Icons.keyboard_hide), findsOneWidget);
-      expect(find.byIcon(CupertinoIcons.keyboard_chevron_compact_down), findsOneWidget);
+      expect(
+        find.byIcon(CupertinoIcons.keyboard_chevron_compact_down),
+        findsOneWidget,
+      );
     },
   );
 
@@ -181,7 +184,10 @@ void main() {
 
       // Verify keyboard is active
       expect(find.byIcon(Icons.keyboard_hide), findsOneWidget);
-      expect(find.byIcon(CupertinoIcons.keyboard_chevron_compact_down), findsOneWidget);
+      expect(
+        find.byIcon(CupertinoIcons.keyboard_chevron_compact_down),
+        findsOneWidget,
+      );
       expect(find.text('LEFT CLICK'), findsNothing);
 
       // 2. Unfocus the focus node (simulating Android back gesture/soft keyboard dismiss)
@@ -245,7 +251,10 @@ void main() {
 
       // Verify keyboard is active
       expect(find.byIcon(Icons.keyboard_hide), findsOneWidget);
-      expect(find.byIcon(CupertinoIcons.keyboard_chevron_compact_down), findsOneWidget);
+      expect(
+        find.byIcon(CupertinoIcons.keyboard_chevron_compact_down),
+        findsOneWidget,
+      );
       expect(find.text('LEFT CLICK'), findsNothing);
 
       // 2. Simulate keyboard appearing (view insets bottom > 0)
@@ -307,7 +316,10 @@ void main() {
 
       // Verify keyboard is active
       expect(find.byIcon(Icons.keyboard_hide), findsOneWidget);
-      expect(find.byIcon(CupertinoIcons.keyboard_chevron_compact_down), findsOneWidget);
+      expect(
+        find.byIcon(CupertinoIcons.keyboard_chevron_compact_down),
+        findsOneWidget,
+      );
 
       // 2. Simulate app going to background (inactive)
       tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
@@ -356,11 +368,7 @@ void main() {
           if (methodCall.method == 'requestPermissions') {
             permissionRequestCount++;
             final permissions = methodCall.arguments as List<dynamic>;
-            return Map<int, int>.fromIterable(
-              permissions,
-              key: (p) => p as int,
-              value: (_) => 0, // PermissionStatus.denied
-            );
+            return {for (var p in permissions) p as int: 0};
           }
           return null;
         },
@@ -388,7 +396,7 @@ void main() {
 
       // The request count should NOT have increased
       expect(permissionRequestCount, equals(initialRequests));
+      expect(permissionCheckCount, greaterThan(0));
     },
   );
 }
-
