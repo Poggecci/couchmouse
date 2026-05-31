@@ -163,8 +163,7 @@ class ControlDrawer extends ConsumerWidget {
                     min: 1.0,
                     max: 5.0,
                     label: "Scroll Sensitivity",
-                    valueText:
-                        settings.scrollSensitivity.toStringAsFixed(1),
+                    valueText: settings.scrollSensitivity.toStringAsFixed(1),
                     onChanged: (val) {
                       ref
                           .read(settingsProvider.notifier)
@@ -343,7 +342,11 @@ class ControlDrawer extends ConsumerWidget {
                   onTap: () {
                     Navigator.pop(context);
                     WidgetsBinding.instance.addPostFrameCallback((_) {
-                      WalkthroughDialog.show(context, isFirstStart: false, ref: ref);
+                      WalkthroughDialog.show(
+                        context,
+                        isFirstStart: false,
+                        ref: ref,
+                      );
                     });
                   },
                 ),

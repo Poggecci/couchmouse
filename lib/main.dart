@@ -765,7 +765,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
               onPressed: _openBluetoothSettings,
               child: Text(
                 "Open System Settings",
-                style: TextStyle(color: Colors.black.withValues(alpha: 0.6), fontSize: 15),
+                style: TextStyle(
+                  color: Colors.black.withValues(alpha: 0.6),
+                  fontSize: 15,
+                ),
               ),
             ),
           ],
@@ -786,10 +789,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     return Container(
       width: 10,
       height: 10,
-      decoration: BoxDecoration(
-        color: dotColor,
-        shape: BoxShape.circle,
-      ),
+      decoration: BoxDecoration(color: dotColor, shape: BoxShape.circle),
     );
   }
 
@@ -811,9 +811,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
           vertical: compact ? 4 : 6,
         ),
         decoration: BoxDecoration(
-          color: _holdLockActive
-              ? Colors.black
-              : const Color(0xFFF4F4F6),
+          color: _holdLockActive ? Colors.black : const Color(0xFFF4F4F6),
           borderRadius: BorderRadius.circular(compact ? 6 : 8),
           border: Border.all(
             color: _holdLockActive
@@ -827,7 +825,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
             Icon(
               _holdLockActive ? Icons.lock : Icons.lock_open,
               size: compact ? 11 : 13,
-              color: _holdLockActive ? Colors.white : Colors.black.withValues(alpha: 0.4),
+              color: _holdLockActive
+                  ? Colors.white
+                  : Colors.black.withValues(alpha: 0.4),
             ),
             SizedBox(width: compact ? 4 : 6),
             Text(
@@ -857,11 +857,18 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
         decoration: BoxDecoration(
           color: const Color(0xFFF4F4F6),
           borderRadius: BorderRadius.circular(compact ? 6 : 8),
-          border: Border.all(color: Colors.black.withValues(alpha: 0.08), width: 1),
+          border: Border.all(
+            color: Colors.black.withValues(alpha: 0.08),
+            width: 1,
+          ),
         ),
         child: Row(
           children: [
-            Icon(Icons.refresh, size: compact ? 11 : 13, color: Colors.black.withValues(alpha: 0.4)),
+            Icon(
+              Icons.refresh,
+              size: compact ? 11 : 13,
+              color: Colors.black.withValues(alpha: 0.4),
+            ),
             SizedBox(width: compact ? 4 : 6),
             Text(
               "Reset",
@@ -882,7 +889,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
         color: const Color(0xFFFFFFFF),
-        border: Border(bottom: BorderSide(color: Colors.black.withValues(alpha: 0.08))),
+        border: Border(
+          bottom: BorderSide(color: Colors.black.withValues(alpha: 0.08)),
+        ),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -900,7 +909,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
               fontSize: 10,
               fontWeight: FontWeight.w800,
               letterSpacing: 1.0,
-              color: _fnActive ? Colors.black : Colors.black.withValues(alpha: 0.3),
+              color: _fnActive
+                  ? Colors.black
+                  : Colors.black.withValues(alpha: 0.3),
             ),
           ),
         ],
@@ -993,12 +1004,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
           duration: const Duration(milliseconds: 100),
           padding: const EdgeInsets.symmetric(horizontal: 12),
           decoration: BoxDecoration(
-            color: isActive
-                ? Colors.black
-                : const Color(0xFFF4F4F6),
+            color: isActive ? Colors.black : const Color(0xFFF4F4F6),
             borderRadius: BorderRadius.circular(8),
             border: Border.all(
-              color: isActive ? Colors.black : Colors.black.withValues(alpha: 0.08),
+              color: isActive
+                  ? Colors.black
+                  : Colors.black.withValues(alpha: 0.08),
               width: 1.0,
             ),
           ),
@@ -1345,7 +1356,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
       decoration: BoxDecoration(
         color: const Color(0xFFF4F4F6),
-        border: Border(bottom: BorderSide(color: Colors.black.withValues(alpha: 0.08))),
+        border: Border(
+          bottom: BorderSide(color: Colors.black.withValues(alpha: 0.08)),
+        ),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -1377,7 +1390,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                   fontSize: 9,
                   fontWeight: FontWeight.w800,
                   letterSpacing: 0.8,
-                  color: _fnActive ? Colors.black : Colors.black.withValues(alpha: 0.3),
+                  color: _fnActive
+                      ? Colors.black
+                      : Colors.black.withValues(alpha: 0.3),
                 ),
               ),
               const SizedBox(width: 12),
@@ -1433,7 +1448,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     _trackpadOnLeft = settings.trackpadOnLeft;
     _keyboardKind = settings.keyboardKind;
     _invertTwoFingerScroll = settings.invertTwoFingerScroll;
-    _scrollSensitivity = _getEffectiveScrollSensitivity(settings.scrollSensitivity);
+    _scrollSensitivity = _getEffectiveScrollSensitivity(
+      settings.scrollSensitivity,
+    );
     _scrollMomentum = settings.scrollMomentum;
 
     if (!_isSupported) {
@@ -1542,7 +1559,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                   )
                 else if (orientation == Orientation.landscape)
                   IconButton(
-                    icon: const Icon(CupertinoIcons.keyboard, color: Colors.black54),
+                    icon: const Icon(
+                      CupertinoIcons.keyboard,
+                      color: Colors.black54,
+                    ),
                     onPressed: _toggleKeyboardMode,
                     tooltip: "Full Keyboard Mode",
                   ),

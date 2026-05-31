@@ -24,7 +24,8 @@ class ScrollWheel extends StatefulWidget {
   State<ScrollWheel> createState() => _ScrollWheelState();
 }
 
-class _ScrollWheelState extends State<ScrollWheel> with SingleTickerProviderStateMixin {
+class _ScrollWheelState extends State<ScrollWheel>
+    with SingleTickerProviderStateMixin {
   double _scrollAngle = 0.0;
   bool _isPressed = false;
 
@@ -49,7 +50,8 @@ class _ScrollWheelState extends State<ScrollWheel> with SingleTickerProviderStat
       _lastElapsed = elapsed;
       return;
     }
-    final double dt = (elapsed.inMicroseconds - _lastElapsed.inMicroseconds) / 1000000.0;
+    final double dt =
+        (elapsed.inMicroseconds - _lastElapsed.inMicroseconds) / 1000000.0;
     _lastElapsed = elapsed;
 
     if (dt <= 0.0) return;
@@ -79,9 +81,7 @@ class _ScrollWheelState extends State<ScrollWheel> with SingleTickerProviderStat
 
     // Send scroll event
     final wheelDelta =
-        (widget.invertScroll ? dy : -dy) *
-        0.25 *
-        widget.scrollSensitivity;
+        (widget.invertScroll ? dy : -dy) * 0.25 * widget.scrollSensitivity;
     widget.onScroll(wheelDelta);
 
     // Update visual rotation angle of the cylinder

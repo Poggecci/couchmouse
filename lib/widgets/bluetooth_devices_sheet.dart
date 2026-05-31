@@ -58,7 +58,11 @@ class BluetoothDevicesSheet extends ConsumerWidget {
               children: [
                 Row(
                   children: [
-                    Icon(CupertinoIcons.bluetooth, color: Colors.black.withValues(alpha: 0.8), size: 24),
+                    Icon(
+                      CupertinoIcons.bluetooth,
+                      color: Colors.black.withValues(alpha: 0.8),
+                      size: 24,
+                    ),
                     const SizedBox(width: 10),
                     const Text(
                       "Bluetooth Connections",
@@ -275,9 +279,7 @@ class BluetoothDevicesSheet extends ConsumerWidget {
                   child: Padding(
                     padding: EdgeInsets.symmetric(vertical: 24),
                     child: CircularProgressIndicator(
-                      valueColor: AlwaysStoppedAnimation<Color>(
-                        Colors.black,
-                      ),
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.black),
                     ),
                   ),
                 ),
@@ -376,7 +378,9 @@ class _PulsatingGlowButtonState extends State<PulsatingGlowButton>
               borderRadius: BorderRadius.circular(12),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.08 + (glowValue * 0.12)),
+                  color: Colors.black.withValues(
+                    alpha: 0.08 + (glowValue * 0.12),
+                  ),
                   blurRadius: 10 + (glowValue * 10),
                   spreadRadius: 1 + (glowValue * 2),
                 ),
@@ -428,7 +432,11 @@ class _PulsatingGlowButtonState extends State<PulsatingGlowButton>
         width: double.infinity,
         child: ElevatedButton.icon(
           onPressed: widget.onPressed,
-          icon: const Icon(CupertinoIcons.search, size: 18, color: Colors.white),
+          icon: const Icon(
+            CupertinoIcons.search,
+            size: 18,
+            color: Colors.white,
+          ),
           label: Text(widget.label),
           style: ElevatedButton.styleFrom(
             backgroundColor: Colors.black,

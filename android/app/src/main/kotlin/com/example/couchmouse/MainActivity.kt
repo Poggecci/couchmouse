@@ -99,7 +99,7 @@ class MainActivity : FlutterActivity() {
 
         val sdpSettings = BluetoothHidDeviceAppSdpSettings(
             "CouchMouse",
-            "CouchMouse Premium Controller",
+            "CouchMouse Controller",
             "CouchMouseDev",
             0xC0.toByte(), // Subclass descriptor code representing Combo Keyboard/Mouse
             HidDescriptors.COMPOSITE_DESCRIPTOR

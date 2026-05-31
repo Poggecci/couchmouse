@@ -90,7 +90,9 @@ class VirtualKeyboard extends StatelessWidget {
                           label,
                           style: TextStyle(
                             fontSize: keyFontSize,
-                            fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
+                            fontWeight: isActive
+                                ? FontWeight.w700
+                                : FontWeight.w500,
                             color: isActive
                                 ? Colors.white
                                 : Colors.black.withValues(alpha: 0.7),

@@ -158,7 +158,8 @@ class SettingsNotifier extends Notifier<CouchMouseSettings> {
   CouchMouseSettings build() {
     final connection = ref.watch(connectionStateProvider);
     final prefs = ref.watch(sharedPreferencesProvider);
-    final String tutorialStatus = prefs.getString(_keyGlobalTutorialStatus) ?? 'none';
+    final String tutorialStatus =
+        prefs.getString(_keyGlobalTutorialStatus) ?? 'none';
 
     if (connection.isConnected && connection.connectedDeviceAddress != null) {
       final address = connection.connectedDeviceAddress!;
@@ -166,7 +167,8 @@ class SettingsNotifier extends Notifier<CouchMouseSettings> {
         _deviceKey(address, 'sensitivity'),
       );
       if (hasDeviceSettings) {
-        double sens = prefs.getDouble(_deviceKey(address, 'sensitivity')) ?? 800.0;
+        double sens =
+            prefs.getDouble(_deviceKey(address, 'sensitivity')) ?? 800.0;
         if (sens < 150.0) {
           sens = (sens * 160.0).clamp(200.0, 8000.0);
           prefs.setDouble(_deviceKey(address, 'sensitivity'), sens);
@@ -304,10 +306,7 @@ class SettingsNotifier extends Notifier<CouchMouseSettings> {
         _keyGlobalScrollSensitivity,
         state.scrollSensitivity,
       );
-      await prefs.setDouble(
-        _keyGlobalScrollMomentum,
-        state.scrollMomentum,
-      );
+      await prefs.setDouble(_keyGlobalScrollMomentum, state.scrollMomentum);
     }
   }
 

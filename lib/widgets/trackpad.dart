@@ -122,7 +122,9 @@ class _TrackpadState extends State<Trackpad> {
                     fontSize: widget.height < 200 ? 14 : 16,
                     fontWeight: FontWeight.w600,
                     letterSpacing: 0.5,
-                    color: _touchPos != null ? Colors.black : Colors.black.withValues(alpha: 0.4),
+                    color: _touchPos != null
+                        ? Colors.black
+                        : Colors.black.withValues(alpha: 0.4),
                   ),
                 ),
                 if (widget.height >= 180) ...[

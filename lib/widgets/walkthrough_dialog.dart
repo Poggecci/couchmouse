@@ -9,7 +9,11 @@ class WalkthroughDialog extends ConsumerStatefulWidget {
 
   const WalkthroughDialog({super.key, required this.isFirstStart});
 
-  static void show(BuildContext context, {required bool isFirstStart, required WidgetRef ref}) {
+  static void show(
+    BuildContext context, {
+    required bool isFirstStart,
+    required WidgetRef ref,
+  }) {
     showGeneralDialog(
       context: context,
       barrierColor: Colors.black.withValues(alpha: 0.5),
@@ -20,7 +24,10 @@ class WalkthroughDialog extends ConsumerStatefulWidget {
       },
       transitionBuilder: (context, anim1, anim2, child) {
         return BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 5.0 * anim1.value, sigmaY: 5.0 * anim1.value),
+          filter: ImageFilter.blur(
+            sigmaX: 5.0 * anim1.value,
+            sigmaY: 5.0 * anim1.value,
+          ),
           child: FadeTransition(
             opacity: anim1,
             child: ScaleTransition(
@@ -39,7 +46,8 @@ class WalkthroughDialog extends ConsumerStatefulWidget {
   ConsumerState<WalkthroughDialog> createState() => _WalkthroughDialogState();
 }
 
-class _WalkthroughDialogState extends ConsumerState<WalkthroughDialog> with TickerProviderStateMixin {
+class _WalkthroughDialogState extends ConsumerState<WalkthroughDialog>
+    with TickerProviderStateMixin {
   late PageController _pageController;
   late AnimationController _animationController;
   bool _showWelcome = true;
@@ -50,7 +58,7 @@ class _WalkthroughDialogState extends ConsumerState<WalkthroughDialog> with Tick
     super.initState();
     _pageController = PageController();
     _showWelcome = widget.isFirstStart;
-    
+
     // Animation controller for custom illustrations
     _animationController = AnimationController(
       vsync: this,
@@ -93,10 +101,10 @@ class _WalkthroughDialogState extends ConsumerState<WalkthroughDialog> with Tick
             maxHeight: orientation == Orientation.portrait ? 560 : 340,
           ),
           margin: EdgeInsets.only(
-            left: 20, 
-            right: 20, 
-            top: 20, 
-            bottom: 20 + keyboardHeight
+            left: 20,
+            right: 20,
+            top: 20,
+            bottom: 20 + keyboardHeight,
           ),
           decoration: BoxDecoration(
             color: Colors.white,
@@ -167,7 +175,7 @@ class _WalkthroughDialogState extends ConsumerState<WalkthroughDialog> with Tick
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    "Turn your phone into a premium Bluetooth mouse, keyboard, and trackpad for your computer.\n\nWould you like a quick walkthrough of how to pair and control your device?",
+                    "Turn your phone into a mouse and keyboard for your computer over Bluetooth.\n\nWould you like a quick walkthrough of how to pair and control your device?",
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       fontSize: 14,
@@ -215,7 +223,9 @@ class _WalkthroughDialogState extends ConsumerState<WalkthroughDialog> with Tick
                       onPressed: _showLater,
                       style: OutlinedButton.styleFrom(
                         foregroundColor: Colors.black87,
-                        side: BorderSide(color: Colors.black.withValues(alpha: 0.12)),
+                        side: BorderSide(
+                          color: Colors.black.withValues(alpha: 0.12),
+                        ),
                         padding: const EdgeInsets.symmetric(vertical: 14),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
@@ -223,17 +233,23 @@ class _WalkthroughDialogState extends ConsumerState<WalkthroughDialog> with Tick
                       ),
                       child: const Text(
                         "Show Later",
-                        style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                     ),
                   ),
                   const SizedBox(width: 8),
                   // Don't Show Again
                   Expanded(
-                    child: TextButton(
+                    child: OutlinedButton(
                       onPressed: _dismissTutorial,
-                      style: TextButton.styleFrom(
+                      style: OutlinedButton.styleFrom(
                         foregroundColor: Colors.black54,
+                        side: BorderSide(
+                          color: Colors.black.withValues(alpha: 0.12),
+                        ),
                         padding: const EdgeInsets.symmetric(vertical: 14),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
@@ -241,7 +257,10 @@ class _WalkthroughDialogState extends ConsumerState<WalkthroughDialog> with Tick
                       ),
                       child: const Text(
                         "Don't Show Again",
-                        style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                     ),
                   ),
@@ -260,30 +279,38 @@ class _WalkthroughDialogState extends ConsumerState<WalkthroughDialog> with Tick
     final List<Map<String, dynamic>> steps = [
       {
         'title': '1. Bluetooth Connection',
-        'desc': 'Pair CouchMouse with your computer (PC, Mac, Linux):\n\n'
+        'desc':
+            'Pair CouchMouse with your host computer (PC, Mac, Linux):\n\n'
             '• Unpair previous connections on both devices.\n'
             '• Tap the Bluetooth connection bar on the main screen.\n'
-            '• Tap "Make Discoverable" and select your phone on your host computer to pair.',
+            '• Tap "Make Discoverable" on the app.\n'
+            '• On your host computer, select your phone in the Bluetooth settings to pair.\n'
+            '• After initial pairing, you can always connect/reconnect using the in-app connection menu.',
         'illustration': _buildConnectionIllustration(),
       },
       {
         'title': '2. Mouse Controls & Gestures',
-        'desc': 'Navigate your screen using intuitive gestures:\n\n'
+        'desc':
             '• Slide one finger on the trackpad to move mouse cursor.\n'
             '• Single tap with one finger to Left-Click.\n'
-            '• Tap the tactile buttons at the bottom to Left/Right Click.',
+            '• Tap the tactile buttons at the bottom to Left/Right Click.\n'
+            '• Swipe up below the trackpad area to bring up the keyboard.\n'
+            '• Swipe right below the trackpad area to bring up the settings.',
         'illustration': _buildTrackpadIllustration(),
       },
       {
         'title': '3. Scrolling & Settings Swipe',
-        'desc': 'Quickly navigate pages and configuration:\n\n'
+        'desc':
+            'Quickly navigate pages and configuration:\n\n'
             '• Scroll by dragging on the right-side Scroll Wheel, or swipe with two fingers anywhere on the trackpad.\n'
-            '• Swipe from the left edge of the screen to open settings settings drawer.',
+            '• Swipe from the left edge of the screen to open settings settings drawer.\n'
+            '• You can control mouse sensitivity, keyboard layout, and many other bits in the settings.',
         'illustration': _buildScrollIllustration(),
       },
       {
         'title': '4. Virtual Keyboard',
-        'desc': 'Conveniently type text on your computer:\n\n'
+        'desc':
+            'Conveniently type text on your computer:\n\n'
             '• Swipe up from the bottom of the screen or tap the keyboard icon to toggle the keyboard.\n'
             '• Use the accessory toolbar to toggle Ctrl, Alt, Shift, and Lock modifier keys.',
         'illustration': _buildKeyboardIllustration(),
@@ -317,7 +344,7 @@ class _WalkthroughDialogState extends ConsumerState<WalkthroughDialog> with Tick
             ],
           ),
         ),
-        
+
         // Page view content
         Expanded(
           child: PageView.builder(
@@ -333,54 +360,13 @@ class _WalkthroughDialogState extends ConsumerState<WalkthroughDialog> with Tick
               return Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 24.0),
                 child: orientation == Orientation.portrait
-                  ? Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        // Illustration card
-                        Container(
-                          height: 140,
-                          width: double.infinity,
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFF4F4F6),
-                            borderRadius: BorderRadius.circular(16),
-                            border: Border.all(
-                              color: Colors.black.withValues(alpha: 0.04),
-                              width: 1,
-                            ),
-                          ),
-                          alignment: Alignment.center,
-                          child: step['illustration'],
-                        ),
-                        const SizedBox(height: 20),
-                        // Title
-                        Text(
-                          step['title'],
-                          style: const TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w800,
-                            color: Colors.black,
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                        // Description
-                        Text(
-                          step['desc'],
-                          style: TextStyle(
-                            fontSize: 13,
-                            color: Colors.black.withValues(alpha: 0.6),
-                            height: 1.5,
-                          ),
-                        ),
-                      ],
-                    )
-                  : Row(
-                      children: [
-                        // Left column: Illustration
-                        Expanded(
-                          flex: 5,
-                          child: Container(
-                            height: double.infinity,
-                            margin: const EdgeInsets.symmetric(vertical: 8),
+                    ? Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          // Illustration card
+                          Container(
+                            height: 140,
+                            width: double.infinity,
                             decoration: BoxDecoration(
                               color: const Color(0xFFF4F4F6),
                               borderRadius: BorderRadius.circular(16),
@@ -392,40 +378,83 @@ class _WalkthroughDialogState extends ConsumerState<WalkthroughDialog> with Tick
                             alignment: Alignment.center,
                             child: step['illustration'],
                           ),
-                        ),
-                        const SizedBox(width: 16),
-                        // Right column: Text content
-                        Expanded(
-                          flex: 6,
-                          child: SingleChildScrollView(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Text(
-                                  step['title'],
-                                  style: const TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w800,
-                                    color: Colors.black,
-                                  ),
-                                ),
-                                const SizedBox(height: 6),
-                                Text(
-                                  step['desc'],
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: Colors.black.withValues(alpha: 0.6),
-                                    height: 1.4,
-                                  ),
-                                ),
-                              ],
+                          const SizedBox(height: 20),
+                          // Title
+                          Text(
+                            step['title'],
+                            style: const TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w800,
+                              color: Colors.black,
                             ),
                           ),
-                        ),
-                      ],
-                    ),
-                  );
+                          const SizedBox(height: 12),
+                          // Description
+                          Text(
+                            step['desc'],
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: Colors.black.withValues(alpha: 0.6),
+                              height: 1.5,
+                            ),
+                          ),
+                        ],
+                      )
+                    : Row(
+                        children: [
+                          // Left column: Illustration
+                          Expanded(
+                            flex: 5,
+                            child: Container(
+                              height: double.infinity,
+                              margin: const EdgeInsets.symmetric(vertical: 8),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFF4F4F6),
+                                borderRadius: BorderRadius.circular(16),
+                                border: Border.all(
+                                  color: Colors.black.withValues(alpha: 0.04),
+                                  width: 1,
+                                ),
+                              ),
+                              alignment: Alignment.center,
+                              child: step['illustration'],
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                          // Right column: Text content
+                          Expanded(
+                            flex: 6,
+                            child: SingleChildScrollView(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Text(
+                                    step['title'],
+                                    style: const TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w800,
+                                      color: Colors.black,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 6),
+                                  Text(
+                                    step['desc'],
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: Colors.black.withValues(
+                                        alpha: 0.6,
+                                      ),
+                                      height: 1.4,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+              );
             },
           ),
         ),
@@ -446,9 +475,9 @@ class _WalkthroughDialogState extends ConsumerState<WalkthroughDialog> with Tick
                     height: 8,
                     width: _currentPage == index ? 20 : 8,
                     decoration: BoxDecoration(
-                      color: _currentPage == index 
-                        ? Colors.black 
-                        : Colors.black.withValues(alpha: 0.15),
+                      color: _currentPage == index
+                          ? Colors.black
+                          : Colors.black.withValues(alpha: 0.15),
                       borderRadius: BorderRadius.circular(4),
                     ),
                   ),
@@ -484,7 +513,10 @@ class _WalkthroughDialogState extends ConsumerState<WalkthroughDialog> with Tick
                     style: ElevatedButton.styleFrom(
                       foregroundColor: Colors.white,
                       backgroundColor: Colors.black,
-                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 20,
+                        vertical: 12,
+                      ),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(10),
                       ),
@@ -517,7 +549,11 @@ class _WalkthroughDialogState extends ConsumerState<WalkthroughDialog> with Tick
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             // Phone Icon
-            const Icon(CupertinoIcons.device_phone_portrait, size: 48, color: Colors.black87),
+            const Icon(
+              CupertinoIcons.device_phone_portrait,
+              size: 48,
+              color: Colors.black87,
+            ),
             const SizedBox(width: 8),
             // Pulsing dot signals
             SizedBox(
@@ -525,37 +561,46 @@ class _WalkthroughDialogState extends ConsumerState<WalkthroughDialog> with Tick
               height: 48,
               child: Stack(
                 alignment: Alignment.center,
-                children: List.generate(3, (index) {
-                  // Phase shift the waves
-                  final double waveVal = (pulse + index / 3.0) % 1.0;
-                  final double opacity = (1.0 - waveVal) * 0.8;
-                  final double scale = 0.2 + waveVal * 0.8;
-                  return Positioned(
-                    left: 10.0 + (waveVal * 70.0),
-                    child: Opacity(
-                      opacity: opacity,
-                      child: Transform.scale(
-                        scale: scale,
-                        child: Container(
-                          width: 12,
-                          height: 12,
-                          decoration: const BoxDecoration(
-                            color: Colors.blueAccent,
-                            shape: BoxShape.circle,
+                children:
+                    List.generate(3, (index) {
+                      // Phase shift the waves
+                      final double waveVal = (pulse + index / 3.0) % 1.0;
+                      final double opacity = (1.0 - waveVal) * 0.8;
+                      final double scale = 0.2 + waveVal * 0.8;
+                      return Positioned(
+                        left: 10.0 + (waveVal * 70.0),
+                        child: Opacity(
+                          opacity: opacity,
+                          child: Transform.scale(
+                            scale: scale,
+                            child: Container(
+                              width: 12,
+                              height: 12,
+                              decoration: const BoxDecoration(
+                                color: Colors.blueAccent,
+                                shape: BoxShape.circle,
+                              ),
+                            ),
                           ),
                         ),
+                      );
+                    })..add(
+                      // Centered static blue tooth glyph outline overlay
+                      const Icon(
+                        CupertinoIcons.bluetooth,
+                        color: Colors.blueAccent,
+                        size: 24,
                       ),
                     ),
-                  );
-                })..add(
-                  // Centered static blue tooth glyph outline overlay
-                  const Icon(CupertinoIcons.bluetooth, color: Colors.blueAccent, size: 24)
-                ),
               ),
             ),
             const SizedBox(width: 8),
             // Laptop Icon
-            const Icon(CupertinoIcons.device_laptop, size: 54, color: Colors.black87),
+            const Icon(
+              CupertinoIcons.device_laptop,
+              size: 54,
+              color: Colors.black87,
+            ),
           ],
         );
       },
@@ -569,7 +614,7 @@ class _WalkthroughDialogState extends ConsumerState<WalkthroughDialog> with Tick
       builder: (context, child) {
         // Animate a finger dot swiping in a small loop and tapping
         final double t = _animationController.value;
-        
+
         // Loop phases
         // 0.0 - 0.5: finger moves around in loop
         // 0.5 - 0.7: finger lifts up
@@ -629,12 +674,35 @@ class _WalkthroughDialogState extends ConsumerState<WalkthroughDialog> with Tick
                     height: 24,
                     child: Row(
                       children: [
-                        const Expanded(child: Center(child: Text("Left", style: TextStyle(fontSize: 9, color: Colors.black38)))),
-                        Container(width: 1, color: Colors.black.withValues(alpha: 0.08)),
-                        const Expanded(child: Center(child: Text("Right", style: TextStyle(fontSize: 9, color: Colors.black38)))),
+                        const Expanded(
+                          child: Center(
+                            child: Text(
+                              "Left",
+                              style: TextStyle(
+                                fontSize: 9,
+                                color: Colors.black38,
+                              ),
+                            ),
+                          ),
+                        ),
+                        Container(
+                          width: 1,
+                          color: Colors.black.withValues(alpha: 0.08),
+                        ),
+                        const Expanded(
+                          child: Center(
+                            child: Text(
+                              "Right",
+                              style: TextStyle(
+                                fontSize: 9,
+                                color: Colors.black38,
+                              ),
+                            ),
+                          ),
+                        ),
                       ],
                     ),
-                  )
+                  ),
                 ],
               ),
             ),
@@ -689,8 +757,9 @@ class _WalkthroughDialogState extends ConsumerState<WalkthroughDialog> with Tick
       builder: (context, child) {
         final double t = _animationController.value;
         // Scroll Wheel moves up/down
-        final double scrollOffset = ((t < 0.5) ? t * 2.0 : (1.0 - (t - 0.5) * 2.0)) * 30.0 - 15.0;
-        
+        final double scrollOffset =
+            ((t < 0.5) ? t * 2.0 : (1.0 - (t - 0.5) * 2.0)) * 30.0 - 15.0;
+
         // Edge swipe opens drawer on left
         // Drawer opens during t = 0.5 to 1.0
         double drawerSlide = -40; // fully closed
@@ -736,11 +805,17 @@ class _WalkthroughDialogState extends ConsumerState<WalkthroughDialog> with Tick
                       bottomLeft: Radius.circular(11),
                     ),
                     border: Border(
-                      right: BorderSide(color: Colors.black.withValues(alpha: 0.08)),
+                      right: BorderSide(
+                        color: Colors.black.withValues(alpha: 0.08),
+                      ),
                     ),
                   ),
                   child: const Center(
-                    child: Icon(CupertinoIcons.settings, size: 16, color: Colors.black54),
+                    child: Icon(
+                      CupertinoIcons.settings,
+                      size: 16,
+                      color: Colors.black54,
+                    ),
                   ),
                 ),
               ),
@@ -798,9 +873,20 @@ class _WalkthroughDialogState extends ConsumerState<WalkthroughDialog> with Tick
                 opacity: t > 0.5 ? 0.9 : 0.2,
                 child: const Row(
                   children: [
-                    Icon(CupertinoIcons.arrow_right, size: 10, color: Colors.blueAccent),
+                    Icon(
+                      CupertinoIcons.arrow_right,
+                      size: 10,
+                      color: Colors.blueAccent,
+                    ),
                     SizedBox(width: 2),
-                    Text("Swipe Drawer", style: TextStyle(fontSize: 7, fontWeight: FontWeight.bold, color: Colors.black87)),
+                    Text(
+                      "Swipe Drawer",
+                      style: TextStyle(
+                        fontSize: 7,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black87,
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -812,10 +898,25 @@ class _WalkthroughDialogState extends ConsumerState<WalkthroughDialog> with Tick
                 opacity: t <= 0.5 ? 0.9 : 0.2,
                 child: const Row(
                   children: [
-                    Icon(CupertinoIcons.up_arrow, size: 8, color: Colors.blueAccent),
-                    Icon(CupertinoIcons.down_arrow, size: 8, color: Colors.blueAccent),
+                    Icon(
+                      CupertinoIcons.up_arrow,
+                      size: 8,
+                      color: Colors.blueAccent,
+                    ),
+                    Icon(
+                      CupertinoIcons.down_arrow,
+                      size: 8,
+                      color: Colors.blueAccent,
+                    ),
                     SizedBox(width: 2),
-                    Text("Scroll Wheel", style: TextStyle(fontSize: 7, fontWeight: FontWeight.bold, color: Colors.black87)),
+                    Text(
+                      "Scroll Wheel",
+                      style: TextStyle(
+                        fontSize: 7,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black87,
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -860,7 +961,9 @@ class _WalkthroughDialogState extends ConsumerState<WalkthroughDialog> with Tick
                     decoration: BoxDecoration(
                       color: const Color(0xFFF4F4F6),
                       borderRadius: BorderRadius.circular(4),
-                      border: Border.all(color: Colors.black.withValues(alpha: 0.05)),
+                      border: Border.all(
+                        color: Colors.black.withValues(alpha: 0.05),
+                      ),
                     ),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -869,21 +972,39 @@ class _WalkthroughDialogState extends ConsumerState<WalkthroughDialog> with Tick
                           width: 24,
                           height: 10,
                           decoration: BoxDecoration(
-                            color: activeKeyIndex < 4 ? Colors.black87 : Colors.black12,
+                            color: activeKeyIndex < 4
+                                ? Colors.black87
+                                : Colors.black12,
                             borderRadius: BorderRadius.circular(2),
                           ),
                           alignment: Alignment.center,
-                          child: const Text("Ctrl", style: TextStyle(fontSize: 5, color: Colors.white, fontWeight: FontWeight.bold)),
+                          child: const Text(
+                            "Ctrl",
+                            style: TextStyle(
+                              fontSize: 5,
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
                         ),
                         Container(
                           width: 24,
                           height: 10,
                           decoration: BoxDecoration(
-                            color: activeKeyIndex >= 4 && activeKeyIndex < 8 ? Colors.black87 : Colors.black12,
+                            color: activeKeyIndex >= 4 && activeKeyIndex < 8
+                                ? Colors.black87
+                                : Colors.black12,
                             borderRadius: BorderRadius.circular(2),
                           ),
                           alignment: Alignment.center,
-                          child: const Text("Shift", style: TextStyle(fontSize: 5, color: Colors.white, fontWeight: FontWeight.bold)),
+                          child: const Text(
+                            "Shift",
+                            style: TextStyle(
+                              fontSize: 5,
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
                         ),
                         Container(
                           width: 24,
@@ -893,7 +1014,14 @@ class _WalkthroughDialogState extends ConsumerState<WalkthroughDialog> with Tick
                             borderRadius: BorderRadius.circular(2),
                           ),
                           alignment: Alignment.center,
-                          child: const Text("Alt", style: TextStyle(fontSize: 5, color: Colors.black54, fontWeight: FontWeight.bold)),
+                          child: const Text(
+                            "Alt",
+                            style: TextStyle(
+                              fontSize: 5,
+                              color: Colors.black54,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
                         ),
                       ],
                     ),
@@ -903,31 +1031,36 @@ class _WalkthroughDialogState extends ConsumerState<WalkthroughDialog> with Tick
                   Expanded(
                     child: GridView.builder(
                       physics: const NeverScrollableScrollPhysics(),
-                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: 6,
-                        crossAxisSpacing: 3,
-                        mainAxisSpacing: 3,
-                        childAspectRatio: 1.5,
-                      ),
+                      gridDelegate:
+                          const SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: 6,
+                            crossAxisSpacing: 3,
+                            mainAxisSpacing: 3,
+                            childAspectRatio: 1.5,
+                          ),
                       itemCount: 12,
                       itemBuilder: (context, index) {
                         final bool isActive = index == activeKeyIndex;
                         return Container(
                           decoration: BoxDecoration(
-                            color: isActive ? Colors.black87 : const Color(0xFFF4F4F6),
+                            color: isActive
+                                ? Colors.black87
+                                : const Color(0xFFF4F4F6),
                             borderRadius: BorderRadius.circular(3),
                             border: Border.all(
-                              color: Colors.black.withValues(alpha: isActive ? 0.0 : 0.06),
+                              color: Colors.black.withValues(
+                                alpha: isActive ? 0.0 : 0.06,
+                              ),
                             ),
                           ),
                           alignment: Alignment.center,
                           child: Text(
-                            "A", 
+                            "A",
                             style: TextStyle(
-                              fontSize: 8, 
-                              color: isActive ? Colors.white : Colors.black54, 
-                              fontWeight: FontWeight.bold
-                            )
+                              fontSize: 8,
+                              color: isActive ? Colors.white : Colors.black54,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
                         );
                       },
@@ -957,7 +1090,7 @@ class MathExt {
     }
     return sum;
   }
-  
+
   static double sin(double x) {
     // Simple Taylor series approximation for sine
     x = x % (2 * 3.14159265);
