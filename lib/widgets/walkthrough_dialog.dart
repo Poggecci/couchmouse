@@ -280,7 +280,6 @@ class _WalkthroughDialogState extends ConsumerState<WalkthroughDialog>
       {
         'title': '1. Bluetooth Connection',
         'desc':
-            'Pair CouchMouse with your host computer (PC, Mac, Linux):\n\n'
             '• Unpair previous connections on both devices.\n'
             '• Tap the Bluetooth connection bar on the main screen.\n'
             '• Tap "Make Discoverable" on the app.\n'
@@ -301,7 +300,6 @@ class _WalkthroughDialogState extends ConsumerState<WalkthroughDialog>
       {
         'title': '3. Scrolling & Settings Swipe',
         'desc':
-            'Quickly navigate pages and configuration:\n\n'
             '• Scroll by dragging on the right-side Scroll Wheel, or swipe with two fingers anywhere on the trackpad.\n'
             '• Swipe from the left edge of the screen to open settings settings drawer.\n'
             '• You can control mouse sensitivity, keyboard layout, and many other bits in the settings.',
@@ -310,9 +308,9 @@ class _WalkthroughDialogState extends ConsumerState<WalkthroughDialog>
       {
         'title': '4. Virtual Keyboard',
         'desc':
-            'Conveniently type text on your computer:\n\n'
             '• Swipe up from the bottom of the screen or tap the keyboard icon to toggle the keyboard.\n'
-            '• Use the accessory toolbar to toggle Ctrl, Alt, Shift, and Lock modifier keys.',
+            '• Use the accessory toolbar to toggle Ctrl, Alt, Shift, and Lock modifier keys\n.'
+            '• Flip to landscape mode to view a wider emulated keyboard.',
         'illustration': _buildKeyboardIllustration(),
       },
     ];
