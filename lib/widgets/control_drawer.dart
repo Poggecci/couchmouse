@@ -4,6 +4,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../settings_providers.dart';
 import '../keyboard_layouts.dart';
+import 'walkthrough_dialog.dart';
 
 class ControlDrawer extends ConsumerWidget {
   final bool holdLockActive;
@@ -312,6 +313,39 @@ class ControlDrawer extends ConsumerWidget {
                     value: holdLockActive,
                     onChanged: onHoldLockChanged,
                   ),
+                ),
+
+                _buildDivider(),
+
+                // Replay Onboarding Walkthrough Tutorial
+                ListTile(
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+                  leading: Icon(
+                    CupertinoIcons.play_circle,
+                    color: Colors.black.withValues(alpha: 0.8),
+                    size: 20,
+                  ),
+                  title: const Text(
+                    "App Walkthrough Tutorial",
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.black,
+                    ),
+                  ),
+                  subtitle: Text(
+                    "Guide on connection and gestures",
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: Colors.black.withValues(alpha: 0.4),
+                    ),
+                  ),
+                  onTap: () {
+                    Navigator.pop(context);
+                    WidgetsBinding.instance.addPostFrameCallback((_) {
+                      WalkthroughDialog.show(context, isFirstStart: false, ref: ref);
+                    });
+                  },
                 ),
 
                 _buildDivider(),

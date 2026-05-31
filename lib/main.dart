@@ -16,6 +16,7 @@ import 'widgets/virtual_keyboard.dart';
 import 'widgets/connection_dashboard.dart';
 import 'widgets/control_drawer.dart';
 import 'widgets/bluetooth_devices_sheet.dart';
+import 'widgets/walkthrough_dialog.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -72,6 +73,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   bool _isSupported = true;
   bool _permissionsGranted = false;
   bool _isRegistered = false;
+  bool _walkthroughChecked = false;
 
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
@@ -1440,6 +1442,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
 
     if (!_permissionsGranted) {
       return Scaffold(body: SafeArea(child: _buildPermissionsView()));
+    }
+
+    if (!_walkthroughChecked && settings.tutorialStatus == 'none') {
+      _walkthroughChecked = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        WalkthroughDialog.show(context, isFirstStart: true, ref: ref);
+      });
     }
 
     final orientation = MediaQuery.of(context).orientation;

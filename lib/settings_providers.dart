@@ -12,6 +12,7 @@ class CouchMouseSettings {
   final bool invertTwoFingerScroll;
   final double scrollSensitivity;
   final double scrollMomentum;
+  final String tutorialStatus;
 
   CouchMouseSettings({
     required this.sensitivity,
@@ -21,6 +22,7 @@ class CouchMouseSettings {
     required this.invertTwoFingerScroll,
     required this.scrollSensitivity,
     required this.scrollMomentum,
+    required this.tutorialStatus,
   });
 
   CouchMouseSettings copyWith({
@@ -31,6 +33,7 @@ class CouchMouseSettings {
     bool? invertTwoFingerScroll,
     double? scrollSensitivity,
     double? scrollMomentum,
+    String? tutorialStatus,
   }) {
     return CouchMouseSettings(
       sensitivity: sensitivity ?? this.sensitivity,
@@ -41,6 +44,7 @@ class CouchMouseSettings {
           invertTwoFingerScroll ?? this.invertTwoFingerScroll,
       scrollSensitivity: scrollSensitivity ?? this.scrollSensitivity,
       scrollMomentum: scrollMomentum ?? this.scrollMomentum,
+      tutorialStatus: tutorialStatus ?? this.tutorialStatus,
     );
   }
 }
@@ -146,6 +150,7 @@ class SettingsNotifier extends Notifier<CouchMouseSettings> {
       'global_invert_two_finger_scroll';
   static const String _keyGlobalScrollSensitivity = 'global_scroll_sensitivity';
   static const String _keyGlobalScrollMomentum = 'global_scroll_momentum';
+  static const String _keyGlobalTutorialStatus = 'global_tutorial_status';
 
   String _deviceKey(String address, String key) => 'device_${address}_$key';
 
@@ -153,6 +158,7 @@ class SettingsNotifier extends Notifier<CouchMouseSettings> {
   CouchMouseSettings build() {
     final connection = ref.watch(connectionStateProvider);
     final prefs = ref.watch(sharedPreferencesProvider);
+    final String tutorialStatus = prefs.getString(_keyGlobalTutorialStatus) ?? 'none';
 
     if (connection.isConnected && connection.connectedDeviceAddress != null) {
       final address = connection.connectedDeviceAddress!;
@@ -183,6 +189,7 @@ class SettingsNotifier extends Notifier<CouchMouseSettings> {
               prefs.getDouble(_deviceKey(address, 'scroll_sensitivity')) ?? 2.0,
           scrollMomentum:
               prefs.getDouble(_deviceKey(address, 'scroll_momentum')) ?? 0.05,
+          tutorialStatus: tutorialStatus,
         );
       }
     }
@@ -204,6 +211,7 @@ class SettingsNotifier extends Notifier<CouchMouseSettings> {
           prefs.getBool(_keyGlobalInvertTwoFingerScroll) ?? false,
       scrollSensitivity: prefs.getDouble(_keyGlobalScrollSensitivity) ?? 2.0,
       scrollMomentum: prefs.getDouble(_keyGlobalScrollMomentum) ?? 0.05,
+      tutorialStatus: tutorialStatus,
     );
   }
 
@@ -241,6 +249,12 @@ class SettingsNotifier extends Notifier<CouchMouseSettings> {
   Future<void> updateScrollMomentum(double value) async {
     state = state.copyWith(scrollMomentum: value);
     await _saveCurrentState();
+  }
+
+  Future<void> updateTutorialStatus(String status) async {
+    state = state.copyWith(tutorialStatus: status);
+    final prefs = ref.read(sharedPreferencesProvider);
+    await prefs.setString(_keyGlobalTutorialStatus, status);
   }
 
   Future<void> _saveCurrentState() async {
@@ -318,6 +332,7 @@ class SettingsNotifier extends Notifier<CouchMouseSettings> {
       await prefs.remove(_keyGlobalInvertTwoFingerScroll);
       await prefs.remove(_keyGlobalScrollSensitivity);
       await prefs.remove(_keyGlobalScrollMomentum);
+      await prefs.remove(_keyGlobalTutorialStatus);
     }
 
     ref.invalidateSelf();
