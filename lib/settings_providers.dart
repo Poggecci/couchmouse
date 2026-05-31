@@ -160,9 +160,13 @@ class SettingsNotifier extends Notifier<CouchMouseSettings> {
         _deviceKey(address, 'sensitivity'),
       );
       if (hasDeviceSettings) {
+        double sens = prefs.getDouble(_deviceKey(address, 'sensitivity')) ?? 800.0;
+        if (sens < 150.0) {
+          sens = (sens * 160.0).clamp(200.0, 8000.0);
+          prefs.setDouble(_deviceKey(address, 'sensitivity'), sens);
+        }
         return CouchMouseSettings(
-          sensitivity:
-              prefs.getDouble(_deviceKey(address, 'sensitivity')) ?? 5.0,
+          sensitivity: sens,
           mouseAcceleration:
               prefs.getBool(_deviceKey(address, 'mouse_acceleration')) ?? false,
           trackpadOnLeft:
@@ -183,8 +187,14 @@ class SettingsNotifier extends Notifier<CouchMouseSettings> {
       }
     }
 
+    double globalSens = prefs.getDouble(_keyGlobalSensitivity) ?? 800.0;
+    if (globalSens < 150.0) {
+      globalSens = (globalSens * 160.0).clamp(200.0, 8000.0);
+      prefs.setDouble(_keyGlobalSensitivity, globalSens);
+    }
+
     return CouchMouseSettings(
-      sensitivity: prefs.getDouble(_keyGlobalSensitivity) ?? 5.0,
+      sensitivity: globalSens,
       mouseAcceleration: prefs.getBool(_keyGlobalMouseAcceleration) ?? false,
       trackpadOnLeft: prefs.getBool(_keyGlobalTrackpadOnLeft) ?? false,
       keyboardKind:

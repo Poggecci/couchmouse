@@ -60,8 +60,8 @@ class _TrackpadState extends State<Trackpad> {
               double rawDx = details.focalPointDelta.dx;
               double rawDy = details.focalPointDelta.dy;
 
-              double scaledDx = rawDx * widget.sensitivity;
-              double scaledDy = rawDy * widget.sensitivity;
+              double scaledDx = rawDx * (widget.sensitivity / 160.0);
+              double scaledDy = rawDy * (widget.sensitivity / 160.0);
 
               if (widget.mouseAcceleration) {
                 scaledDx = scaledDx * (1.0 + scaledDx.abs() * 0.05);

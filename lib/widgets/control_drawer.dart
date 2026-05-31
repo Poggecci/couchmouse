@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -129,16 +130,23 @@ class ControlDrawer extends ConsumerWidget {
                     horizontal: 16,
                     vertical: 8,
                   ),
-                  child: BlockSlider(
-                    value: settings.sensitivity,
-                    min: 1,
-                    max: 30,
-                    label: "Sensitivity",
-                    valueText: "${settings.sensitivity.toStringAsFixed(1)}x",
-                    onChanged: (val) {
-                      ref
-                          .read(settingsProvider.notifier)
-                          .updateSensitivity(val);
+                  child: Builder(
+                    builder: (context) {
+                      final double sensDpi = settings.sensitivity;
+                      final double sensSliderVal = _dpiToSlider(sensDpi);
+                      return BlockSlider(
+                        value: sensSliderVal,
+                        min: 0.0,
+                        max: 1.0,
+                        label: "Sensitivity: ${_getDpiLabel(sensDpi)}",
+                        valueText: "${sensDpi.toInt()} DPI",
+                        onChanged: (val) {
+                          final targetDpi = _sliderToDpi(val);
+                          ref
+                              .read(settingsProvider.notifier)
+                              .updateSensitivity(targetDpi);
+                        },
+                      );
                     },
                   ),
                 ),
@@ -529,4 +537,22 @@ class BlockSlider extends StatelessWidget {
       ),
     );
   }
+}
+
+double _dpiToSlider(double dpi) {
+  final double fraction = ((dpi - 200.0) / 7800.0).clamp(0.0, 1.0);
+  return math.pow(fraction, 1.0 / 2.5).toDouble();
+}
+
+double _sliderToDpi(double t) {
+  final double dpi = 200.0 + math.pow(t.clamp(0.0, 1.0), 2.5) * 7800.0;
+  return ((dpi / 50.0).round() * 50.0).toDouble();
+}
+
+String _getDpiLabel(double dpi) {
+  if (dpi < 600) return "Precision";
+  if (dpi < 1200) return "Laptop";
+  if (dpi < 2400) return "Desktop";
+  if (dpi < 4800) return "4K Monitor";
+  return "Couch TV";
 }
