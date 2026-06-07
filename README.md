@@ -1,9 +1,24 @@
-# CouchMouse
+<p align="center">
+  <img src="assets/icon/icon.png" alt="CouchMouse Logo" width="128" height="128" style="border-radius: 24px;" />
+</p>
 
-[![Platform](https://img.shields.io/badge/platform-Android%209%2B-green.svg)](https://developer.android.com/reference/android/bluetooth/BluetoothHidDevice)
-[![Framework](https://img.shields.io/badge/platform-Flutter-blue.svg)](https://flutter.dev)
+<h1 align="center">CouchMouse</h1>
 
-CouchMouse is an Android application that turns your device into a Bluetooth HID keyboard and trackpad. It emulates physical hardware over Bluetooth, which means it works without any client or server software on the host computer. Your computer, tablet, or smart TV treats it as a standard Bluetooth receiver device.
+<p align="center">
+  <a href="https://developer.android.com/reference/android/bluetooth/BluetoothHidDevice">
+    <img src="https://img.shields.io/badge/Platform-Android%209%2B-green.svg?style=flat-square" alt="Platform" />
+  </a>
+  <a href="https://flutter.dev">
+    <img src="https://img.shields.io/badge/Framework-Flutter-blue.svg?style=flat-square" alt="Framework" />
+  </a>
+</p>
+
+<p align="center">
+  <strong>CouchMouse</strong> is an Android application that turns your device into a driverless Bluetooth HID keyboard and trackpad. It emulates physical hardware over Bluetooth, working without any client or server software on the host computer.
+</p>
+
+---
+
 
 ## Features
 
