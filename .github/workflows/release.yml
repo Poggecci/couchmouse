@@ -1,0 +1,98 @@
+name: Draft Release APK
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag_name:
+        description: 'Tag name for the release (e.g., v1.0.0)'
+        required: true
+        default: 'v1.0.0'
+      release_title:
+        description: 'Title of the release (e.g., Release v1.0.0)'
+        required: true
+        default: 'Release v1.0.0'
+      release_body:
+        description: 'Release description / release notes'
+        required: false
+        default: 'Manual release build'
+      draft:
+        description: 'Create the release as a Draft'
+        type: boolean
+        required: false
+        default: false
+      prerelease:
+        description: 'Create the release as a Pre-release'
+        type: boolean
+        required: false
+        default: false
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-release:
+    name: Build and Release Android APK
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. Checkout the repository at the manually selected ref/commit
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      # 2. Set up Java JDK 17 (required for building Android)
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+          cache: 'gradle'
+
+      # 3. Set up Flutter environment
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          cache: true
+          cache-key: "flutter-:os:-:channel:-:version:-:arch:-:hash:"
+
+      # 4. Get dependencies
+      - name: Install Dependencies
+        run: flutter pub get
+
+      # Optional Step: Decode Keystore for Release Signing (if secrets are set up)
+      - name: Decode Android Keystore
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+        run: |
+          if [ -n "$ANDROID_KEYSTORE_BASE64" ]; then
+            echo "$ANDROID_KEYSTORE_BASE64" | base64 --decode > android/app/upload-keystore.jks
+          else
+            echo "No keystore secret found, skipping decode."
+          fi
+
+      # 5. Build Flutter release APK
+      - name: Build Release APK
+        run: flutter build apk --release
+        env:
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+
+      # 6. Rename APK for professional distribution
+      - name: Rename APK
+        run: |
+          cp build/app/outputs/flutter-apk/app-release.apk build/app/outputs/flutter-apk/couchmouse-${{ github.event.inputs.tag_name }}.apk
+
+      # 7. Create GitHub Release and upload APK
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.event.inputs.tag_name }}
+          name: ${{ github.event.inputs.release_title }}
+          body: ${{ github.event.inputs.release_body }}
+          draft: ${{ github.event.inputs.draft }}
+          prerelease: ${{ github.event.inputs.prerelease }}
+          files: |
+            build/app/outputs/flutter-apk/couchmouse-${{ github.event.inputs.tag_name }}.apk
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
