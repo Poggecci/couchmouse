@@ -97,6 +97,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   int _modifiersBitmask = 0;
   bool _fnActive = false;
   bool _holdLockActive = false;
+  bool _isPasting = false;
+  bool _cancelPasteRequested = false;
 
   bool _keyboardMode = false;
   bool _keyboardDidOpen = false;
@@ -132,6 +134,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
 
   @override
   void dispose() {
+    _cancelPaste();
     WidgetsBinding.instance.removeObserver(this);
     _builtInKeyboardFocusNode.dispose();
     _builtInKeyboardController.dispose();
@@ -529,6 +532,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   }
 
   void _resetHidState() {
+    _cancelPaste();
     setState(() {
       _activeScancodes.clear();
       _modifiersBitmask = 0;
@@ -884,6 +888,257 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     );
   }
 
+  void _cancelPaste() {
+    if (_isPasting) {
+      _cancelPasteRequested = true;
+    }
+  }
+
+  Future<void> _pasteClipboard() async {
+    if (_isPasting) return;
+
+    final messenger = ScaffoldMessenger.of(context);
+
+    final connection = ref.read(connectionStateProvider);
+    if (!connection.isConnected) {
+      messenger.showSnackBar(
+        const SnackBar(
+          content: Text("No Bluetooth host connected"),
+          backgroundColor: Colors.redAccent,
+          behavior: SnackBarBehavior.floating,
+          duration: Duration(seconds: 2),
+        ),
+      );
+      return;
+    }
+
+    final data = await Clipboard.getData(Clipboard.kTextPlain);
+    if (!mounted) return;
+
+    final rawText = data?.text;
+    if (rawText == null || rawText.isEmpty) {
+      messenger.showSnackBar(
+        const SnackBar(
+          content: Text("Clipboard is empty"),
+          behavior: SnackBarBehavior.floating,
+          duration: Duration(seconds: 2),
+        ),
+      );
+      return;
+    }
+
+    // Normalize newlines (CRLF and CR -> LF)
+    final text = rawText.replaceAll('\r\n', '\n').replaceAll('\r', '\n');
+
+    // Pre-validate that all characters can be typed
+    final chars = text.runes.map(String.fromCharCode).toList();
+    final unsupported = <String>{};
+    for (final char in chars) {
+      if (!KeyboardLayouts.charToScancode.containsKey(char) &&
+          !KeyboardLayouts.shiftCharToScancode.containsKey(char)) {
+        unsupported.add(char);
+      }
+    }
+
+    if (unsupported.isNotEmpty) {
+      final sample = unsupported.map((c) => "'$c'").take(5).join(', ');
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(
+            "Cannot paste: contains characters that cannot be typed ($sample)",
+          ),
+          backgroundColor: Colors.redAccent,
+          behavior: SnackBarBehavior.floating,
+          duration: const Duration(seconds: 4),
+        ),
+      );
+      return;
+    }
+
+    if (chars.length > 1000) {
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(
+            "Text is too long to paste (${chars.length} chars). Limit is 1,000 characters.",
+          ),
+          backgroundColor: Colors.redAccent,
+          behavior: SnackBarBehavior.floating,
+          duration: const Duration(seconds: 3),
+        ),
+      );
+      return;
+    }
+
+    setState(() {
+      _isPasting = true;
+      _cancelPasteRequested = false;
+    });
+
+    final statusNotifier = ValueNotifier<String>("Pasting 0/${chars.length}...");
+
+    messenger.clearSnackBars();
+    final snackBarController = messenger.showSnackBar(
+      SnackBar(
+        content: ValueListenableBuilder<String>(
+          valueListenable: statusNotifier,
+          builder: (context, status, _) {
+            return Row(
+              children: [
+                const SizedBox(
+                  width: 14,
+                  height: 14,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF00E5FF)),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    status,
+                    style: const TextStyle(color: Colors.white, fontSize: 13),
+                  ),
+                ),
+              ],
+            );
+          },
+        ),
+        action: SnackBarAction(
+          label: 'CANCEL',
+          textColor: const Color(0xFF00E5FF),
+          onPressed: _cancelPaste,
+        ),
+        behavior: SnackBarBehavior.floating,
+        duration: const Duration(minutes: 5),
+      ),
+    );
+
+    int typedCount = 0;
+    bool wasCancelled = false;
+
+    try {
+      for (final char in chars) {
+        if (_cancelPasteRequested || !mounted) {
+          wasCancelled = true;
+          break;
+        }
+
+        int scancode;
+        bool shift;
+        if (KeyboardLayouts.charToScancode.containsKey(char)) {
+          scancode = KeyboardLayouts.charToScancode[char]!;
+          shift = false;
+        } else {
+          scancode = KeyboardLayouts.shiftCharToScancode[char]!;
+          shift = true;
+        }
+
+        int origModifiers = _modifiersBitmask;
+        if (shift) {
+          _modifiersBitmask |= 0x02; // Left Shift
+        }
+
+        _activeScancodes.add(scancode);
+        await _sendKeyboardReport();
+
+        await Future.delayed(const Duration(milliseconds: 15));
+
+        _activeScancodes.remove(scancode);
+        _modifiersBitmask = origModifiers;
+        await _sendKeyboardReport();
+
+        await Future.delayed(const Duration(milliseconds: 10));
+
+        typedCount++;
+        statusNotifier.value = "Pasting $typedCount/${chars.length}...";
+      }
+    } catch (e) {
+      debugPrint("Error during faux clipboard paste: $e");
+    } finally {
+      _activeScancodes.clear();
+      await _sendKeyboardReport();
+
+      if (mounted) {
+        setState(() {
+          _isPasting = false;
+        });
+      }
+
+      snackBarController.close();
+      statusNotifier.dispose();
+
+      if (mounted) {
+        if (wasCancelled) {
+          messenger.showSnackBar(
+            SnackBar(
+              content: Text(
+                "Paste cancelled ($typedCount/${chars.length} characters typed)",
+              ),
+              behavior: SnackBarBehavior.floating,
+              duration: const Duration(seconds: 2),
+            ),
+          );
+        } else {
+          messenger.showSnackBar(
+            SnackBar(
+              content: Text("Pasted ${chars.length} characters"),
+              behavior: SnackBarBehavior.floating,
+              duration: const Duration(seconds: 2),
+            ),
+          );
+        }
+      }
+    }
+  }
+
+  Widget _buildPasteButton({bool compact = false}) {
+    return GestureDetector(
+      onTap: _isPasting ? _cancelPaste : _pasteClipboard,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 150),
+        padding: EdgeInsets.symmetric(
+          horizontal: compact ? 8 : 10,
+          vertical: compact ? 4 : 6,
+        ),
+        decoration: BoxDecoration(
+          color: _isPasting
+              ? const Color(0xFFD32F2F)
+              : const Color(0xFFF4F4F6),
+          borderRadius: BorderRadius.circular(compact ? 6 : 8),
+          border: Border.all(
+            color: _isPasting
+                ? const Color(0xFFD32F2F)
+                : Colors.black.withValues(alpha: 0.08),
+            width: 1,
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              _isPasting ? Icons.close : Icons.paste_rounded,
+              size: compact ? 11 : 13,
+              color: _isPasting
+                  ? Colors.white
+                  : Colors.black.withValues(alpha: 0.4),
+            ),
+            SizedBox(width: compact ? 4 : 6),
+            Text(
+              _isPasting ? "Cancel" : "Paste",
+              style: TextStyle(
+                fontSize: compact ? 10 : 11,
+                fontWeight: FontWeight.bold,
+                color: _isPasting
+                    ? Colors.white
+                    : Colors.black.withValues(alpha: 0.6),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildKeyboardToolbar() {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
@@ -901,6 +1156,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
               _buildHoldLockButton(compact: false),
               const SizedBox(width: 8),
               _buildResetButton(compact: false),
+              const SizedBox(width: 8),
+              _buildPasteButton(compact: false),
             ],
           ),
           Text(
@@ -939,6 +1196,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
             color: Colors.white,
             backgroundColor: Colors.redAccent.withValues(alpha: 0.7),
             borderColor: Colors.transparent,
+          ),
+          _buildAccessoryDivider(),
+          _buildAccessoryButton(
+            icon: _isPasting ? Icons.close : Icons.paste_rounded,
+            onTap: _isPasting ? _cancelPaste : _pasteClipboard,
+            color: _isPasting ? Colors.white : Colors.black,
+            backgroundColor: _isPasting
+                ? const Color(0xFFD32F2F)
+                : const Color(0xFFF4F4F6),
+            borderColor: Colors.black.withValues(alpha: 0.08),
           ),
           _buildAccessoryDivider(),
           _buildAccessoryKey("Esc", 0x29),
@@ -1380,6 +1647,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
               _buildHoldLockButton(compact: true),
               const SizedBox(width: 6),
               _buildResetButton(compact: true),
+              const SizedBox(width: 6),
+              _buildPasteButton(compact: true),
             ],
           ),
           Row(
