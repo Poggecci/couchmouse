@@ -133,9 +133,9 @@ Exit criteria: analyze + tests green.
       `joy.cpl`, Android TV) incl. the Accelerator/Brake-on-Windows check.
 - [x] Final review of the whole diff; commit per phase.
 
-## Phase 6 — Publish `[!]` blocked on fork
-- [ ] User creates fork `xyzz5/couchmouse` (session can't create forks).
-- [ ] Attach fork, add as `origin`, push branch.
+## Phase 6 — Publish `[x]`
+- [x] User created fork `xyzz5/couchmouse-controller-addon` (session can't create forks).
+- [x] Attach fork, add as `origin`, push branch.
 - [ ] Optionally trigger the release workflow on the fork to get an APK.
 - [ ] PR only if the user asks.
 
@@ -261,4 +261,12 @@ phones · per-host trigger-usage preset · foreground service for screen-off use
 - **Still unverified (needs hardware / Android SDK):** a real AGP build +
   R8, Bluetooth behaviour on actual hosts, Brake/Accelerator on Windows,
   real handheld key/axis layouts, latency. See TESTING.md.
+
+### Phase 6 (done)
+- Fork: https://github.com/xyzz5/couchmouse-controller-addon (`origin`);
+  `upstream` = Poggecci/couchmouse. Branch `feature/gamepad-controller`
+  pushed. First push needed the Claude GitHub App to be granted access to
+  the new repo.
+- Not done (only if asked): running the release workflow on the fork for
+  an APK; opening a PR.
 
