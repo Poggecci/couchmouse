@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../settings_providers.dart';
+import '../gamepad_state.dart';
 import '../keyboard_layouts.dart';
 import 'walkthrough_dialog.dart';
 
@@ -88,6 +89,7 @@ class ControlDrawer extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final connection = ref.watch(connectionStateProvider);
     final settings = ref.watch(settingsProvider);
+    final gamepadMode = ref.watch(gamepadModeProvider);
 
     return Drawer(
       backgroundColor: const Color(0xFFFFFFFF),
@@ -297,6 +299,22 @@ class ControlDrawer extends ConsumerWidget {
                         }).toList(),
                       ),
                     ),
+                  ),
+                ),
+
+                _buildDivider(),
+                _buildSectionHeader("GAMEPAD"),
+
+                _buildSettingsRow(
+                  title: "Gamepad Mode",
+                  subtitle: "Send this device's physical controls as a gamepad",
+                  control: Switch.adaptive(
+                    key: const Key('gamepadModeSwitch'),
+                    activeThumbColor: Colors.black,
+                    value: gamepadMode,
+                    onChanged: (value) => ref
+                        .read(gamepadModeProvider.notifier)
+                        .setEnabled(value),
                   ),
                 ),
 

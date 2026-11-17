@@ -7,17 +7,25 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.os.Build
+import android.hardware.input.InputManager
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.provider.Settings
 import android.util.Log
 import android.view.InputDevice
 import android.view.KeyEvent
 import android.view.MotionEvent
+import android.view.WindowManager
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
 
 class MainActivity : FlutterActivity() {
+    private companion object {
+        const val GAMEPAD_UI_INTERVAL_MS = 33L // ~30 Hz is plenty for a status display
+    }
+
     private val CHANNEL = "com.example.couchmouse/hid"
     private val TAG = "RemoteMouseHID"
 
@@ -35,6 +43,28 @@ class MainActivity : FlutterActivity() {
     // Axis layout per InputDevice id. Android assigns a new id when a
     // controller reconnects, and the cache is cleared whenever the mode toggles.
     private val gamepadLayouts = HashMap<Int, GamepadAxisLayout>()
+
+    // Live gamepad state for the Flutter UI, throttled so the UI bridge is
+    // never in the input -> HID hot path.
+    private val mainHandler = Handler(Looper.getMainLooper())
+    private var pendingUiGamepadState: GamepadState? = null
+    private val flushGamepadUi = Runnable {
+        val state = pendingUiGamepadState ?: return@Runnable
+        pendingUiGamepadState = null
+        notifyFlutter("onGamepadState", gamepadStateToMap(state))
+    }
+
+    private val inputDeviceListener = object : InputManager.InputDeviceListener {
+        override fun onInputDeviceAdded(deviceId: Int) = onControllersChanged()
+        override fun onInputDeviceRemoved(deviceId: Int) {
+            gamepadLayouts.remove(deviceId)
+            onControllersChanged()
+        }
+        override fun onInputDeviceChanged(deviceId: Int) {
+            gamepadLayouts.remove(deviceId)
+            onControllersChanged()
+        }
+    }
 
     private var isRegistered = false
     private var cachedFlutterEngine: FlutterEngine? = null
@@ -65,6 +95,8 @@ class MainActivity : FlutterActivity() {
         } else {
             registerReceiver(bluetoothReceiver, filter)
         }
+        (getSystemService(Context.INPUT_SERVICE) as? InputManager)
+            ?.registerInputDeviceListener(inputDeviceListener, mainHandler)
     }
 
     private fun initBluetoothHID() {
@@ -478,10 +510,19 @@ class MainActivity : FlutterActivity() {
                     if (!enabled) releaseGamepad()
                     gamepadModeEnabled = enabled
                     gamepadLayouts.clear()
+                    // The handheld sits idle as a controller: don't let the screen sleep.
+                    if (enabled) {
+                        window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+                    } else {
+                        window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+                    }
                     result.success(gamepadModeEnabled)
                 }
                 "getGamepadMode" -> {
                     result.success(gamepadModeEnabled)
+                }
+                "getGamepadControllers" -> {
+                    result.success(physicalControllerNames())
                 }
                 else -> {
                     result.notImplemented()
@@ -539,6 +580,7 @@ class MainActivity : FlutterActivity() {
      */
     private fun releaseGamepad() {
         gamepadMapper.reset()
+        if (gamepadModeEnabled) publishGamepadStateToUi(GamepadState.NEUTRAL)
         val neutral = GamepadState.NEUTRAL.toReport()
         if (lastGamepadReport.contentEquals(neutral)) return
         if (sendReport(GamepadReport.REPORT_ID, neutral)) {
@@ -559,11 +601,11 @@ class MainActivity : FlutterActivity() {
             when (event.action) {
                 KeyEvent.ACTION_DOWN -> if (event.repeatCount == 0) {
                     gamepadMapper.onKey(event.keyCode, true, layout)
-                    sendGamepadState(gamepadMapper.state)
+                    onGamepadInput()
                 }
                 KeyEvent.ACTION_UP -> {
                     gamepadMapper.onKey(event.keyCode, false, layout)
-                    sendGamepadState(gamepadMapper.state)
+                    onGamepadInput()
                 }
             }
             // Consume so Flutter UI navigation and the B -> Back fallback don't fire.
@@ -580,10 +622,43 @@ class MainActivity : FlutterActivity() {
         ) {
             // Batched samples are skipped on purpose: only the latest position matters.
             gamepadMapper.onMotion(layoutFor(event.device)) { axis -> event.getAxisValue(axis) }
-            sendGamepadState(gamepadMapper.state)
+            onGamepadInput()
             return true
         }
         return super.dispatchGenericMotionEvent(event)
+    }
+
+    private fun onGamepadInput() {
+        val state = gamepadMapper.state
+        sendGamepadState(state)
+        publishGamepadStateToUi(state)
+    }
+
+    private fun publishGamepadStateToUi(state: GamepadState) {
+        if (pendingUiGamepadState == null) mainHandler.postDelayed(flushGamepadUi, GAMEPAD_UI_INTERVAL_MS)
+        pendingUiGamepadState = state
+    }
+
+    private fun gamepadStateToMap(state: GamepadState): Map<String, Any> = mapOf(
+        "buttons" to state.buttons,
+        "hat" to state.hat,
+        "leftX" to state.leftX.toDouble(),
+        "leftY" to state.leftY.toDouble(),
+        "rightX" to state.rightX.toDouble(),
+        "rightY" to state.rightY.toDouble(),
+        "leftTrigger" to state.leftTrigger.toDouble(),
+        "rightTrigger" to state.rightTrigger.toDouble(),
+    )
+
+    private fun physicalControllerNames(): List<String> =
+        InputDevice.getDeviceIds().toList()
+            .mapNotNull { InputDevice.getDevice(it) }
+            .filter { isPhysicalController(it) }
+            .map { it.name }
+            .distinct()
+
+    private fun onControllersChanged() {
+        notifyFlutter("onGamepadControllersChanged", mapOf("controllers" to physicalControllerNames()))
     }
 
     private fun isPhysicalController(device: InputDevice?): Boolean {
@@ -632,6 +707,9 @@ class MainActivity : FlutterActivity() {
     override fun onDestroy() {
         releaseKeyboard()
         releaseGamepad()
+        mainHandler.removeCallbacks(flushGamepadUi)
+        (getSystemService(Context.INPUT_SERVICE) as? InputManager)
+            ?.unregisterInputDeviceListener(inputDeviceListener)
         cachedFlutterEngine = null
         try {
             unregisterReceiver(bluetoothReceiver)

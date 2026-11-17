@@ -111,15 +111,15 @@ Kotlin harness still green.
 Exit criteria: mapper tests green; MainActivity type-checks in the
 compile-only harness (see Phase 2 log).
 
-## Phase 4 — Flutter UI `[ ]`
-- [ ] Persisted `gamepadMode` setting in `settings_providers.dart`.
-- [ ] Toggle in `ControlDrawer`; on change call `setGamepadMode` natively.
-- [ ] Gamepad mode screen: big status (connected host, "controller active"),
+## Phase 4 — Flutter UI `[x]`
+- [x] Persisted `gamepadMode` setting in `settings_providers.dart`.
+- [x] Toggle in `ControlDrawer`; on change call `setGamepadMode` natively.
+- [x] Gamepad mode screen: big status (connected host, "controller active"),
       live button/stick indicator fed by a throttled (~30 Hz) native event,
       exit button; keep screen on while active.
-- [ ] Keyboard/mouse reports are not sent while gamepad mode is active
+- [x] Keyboard/mouse reports are not sent while gamepad mode is active
       (screen replaces trackpad/keyboard).
-- [ ] Widget/provider tests; `flutter analyze` clean (no new warnings vs
+- [x] Widget/provider tests; `flutter analyze` clean (no new warnings vs
       baseline).
 
 Exit criteria: analyze + tests green.
@@ -220,4 +220,28 @@ phones · per-host trigger-usage preset · foreground service for screen-off use
   constants. Full app Kotlin type-checks against API 34 + flutter.jar.
 - Known limitation: input from multiple physical controllers is merged into
   one virtual pad (last axis sample wins). Fine for a handheld; noted.
+
+### Phase 4 (done)
+- `lib/gamepad_state.dart`: `GamepadSnapshot` (+ button/hat constants that
+  mirror Kotlin), `gamepadModeProvider` (persisted globally as
+  `global_gamepad_mode`, not per host), `gamepadLiveStateProvider`,
+  `gamepadControllersProvider`.
+- `lib/widgets/gamepad_view.dart`: connection card, detected-controller
+  card (warns if none), live `GamepadVisualizer` (fixed 360×190 design in a
+  FittedBox), re-pair hint, Exit button. Replaces trackpad/keyboard in both
+  orientations; keyboard toggle hidden from the app bar.
+- Drawer: new GAMEPAD section with a Gamepad Mode switch.
+- `main.dart`: syncs mode to native at start and on change; entering the
+  mode resets HID state (releases keys/mouse) and leaves keyboard mode.
+- Native additions: `onGamepadState` throttled to ~30 Hz via Handler
+  (never in the HID hot path), `getGamepadControllers` +
+  `onGamepadControllersChanged` (InputDeviceListener; also invalidates the
+  axis-layout cache), FLAG_KEEP_SCREEN_ON while gamepad mode is on.
+- **Pre-existing bug found & fixed (separate commit 088aebb):**
+  `_resetHidState()` never actually released held mouse buttons
+  (`_lastButtonsState` zeroed before the send → send skipped).
+- Tests: `test/gamepad_mode_test.dart` 10/10 pass (bounded pumps). Full
+  suite: 21 pass / 6 fail — the *same* 6 baseline failures, no regressions.
+  Analyzer: only the repo-wide material/cupertino deprecation infos (+2 for
+  the new file's imports, same convention as every other widget).
 

@@ -8,6 +8,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import 'settings_providers.dart';
+import 'gamepad_state.dart';
 import 'keyboard_layouts.dart';
 import 'widgets/trackpad.dart';
 import 'widgets/scroll_wheel.dart';
@@ -17,6 +18,7 @@ import 'widgets/connection_dashboard.dart';
 import 'widgets/control_drawer.dart';
 import 'widgets/bluetooth_devices_sheet.dart';
 import 'widgets/walkthrough_dialog.dart';
+import 'widgets/gamepad_view.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -132,6 +134,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     _builtInKeyboardController = TextEditingController(text: " ");
     _checkSupportAndPermissions();
     _setupPlatformChannel();
+    _syncGamepadModeToNative(ref.read(gamepadModeProvider));
   }
 
   @override
@@ -175,6 +178,17 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
           ref
               .read(discoverableProvider.notifier)
               .setDiscoverable(isDiscoverable);
+          break;
+        case 'onGamepadState':
+          ref
+              .read(gamepadLiveStateProvider.notifier)
+              .update(GamepadSnapshot.fromMap(call.arguments as Map));
+          break;
+        case 'onGamepadControllersChanged':
+          final names = (call.arguments['controllers'] as List?) ?? const [];
+          ref
+              .read(gamepadControllersProvider.notifier)
+              .update(names.cast<String>());
           break;
       }
     });
@@ -572,6 +586,41 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
         _isPasting || _activeScancodes.isNotEmpty || _modifiersBitmask != 0;
     _discardKeyboardInput();
     if (shouldRelease) unawaited(_sendKeyboardReport());
+  }
+
+  /// Tells the native side whether to capture controller input, and refreshes
+  /// the list of physical controllers when turning it on.
+  Future<void> _syncGamepadModeToNative(bool enabled) async {
+    try {
+      await _channel.invokeMethod('setGamepadMode', {'enabled': enabled});
+      if (!enabled) {
+        ref
+            .read(gamepadLiveStateProvider.notifier)
+            .update(GamepadSnapshot.neutral);
+        return;
+      }
+      final names =
+          await _channel.invokeListMethod<String>('getGamepadControllers') ??
+          const <String>[];
+      if (!mounted) return;
+      ref.read(gamepadControllersProvider.notifier).update(names);
+    } catch (e) {
+      debugPrint("Error updating gamepad mode: $e");
+    }
+  }
+
+  void _onGamepadModeChanged(bool enabled) {
+    if (enabled) {
+      // The gamepad screen replaces the trackpad and keyboard: release
+      // anything they might still be holding on the host.
+      _resetHidState();
+      setState(() {
+        _keyboardMode = false;
+        _keyboardDidOpen = false;
+      });
+      _builtInKeyboardFocusNode.unfocus();
+    }
+    _syncGamepadModeToNative(enabled);
   }
 
   void _resetHidState() {
@@ -1729,6 +1778,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   @override
   Widget build(BuildContext context) {
     final settings = ref.watch(settingsProvider);
+    final gamepadMode = ref.watch(gamepadModeProvider);
+    ref.listen<bool>(gamepadModeProvider, (previous, next) {
+      if (previous != next) _onGamepadModeChanged(next);
+    });
 
     _sensitivity = settings.sensitivity;
     _mouseAcceleration = settings.mouseAcceleration;
@@ -1794,7 +1847,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     }
 
     bool showFullKeyboard =
-        _keyboardMode && orientation == Orientation.landscape;
+        !gamepadMode && _keyboardMode && orientation == Orientation.landscape;
 
     return Scaffold(
       key: _scaffoldKey,
@@ -1812,7 +1865,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Icon(
-                    orientation == Orientation.portrait
+                    gamepadMode
+                        ? CupertinoIcons.game_controller
+                        : orientation == Orientation.portrait
                         ? Icons.mouse_outlined
                         : CupertinoIcons.keyboard,
                     color: Colors.black,
@@ -1833,7 +1888,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
               backgroundColor: Colors.transparent,
               elevation: 0,
               actions: [
-                if (orientation == Orientation.portrait)
+                if (gamepadMode)
+                  const SizedBox.shrink()
+                else if (orientation == Orientation.portrait)
                   IconButton(
                     icon: Icon(
                       _builtInKeyboardActive
@@ -1872,7 +1929,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
               },
             ),
       body: SafeArea(
-        child: showFullKeyboard
+        child: gamepadMode
+            ? GamepadModeView(
+                isRegistered: _isRegistered,
+                onConnectionTap: _showBluetoothDevicesBottomSheet,
+                onExit: () =>
+                    ref.read(gamepadModeProvider.notifier).setEnabled(false),
+              )
+            : showFullKeyboard
             ? _buildForcedLandscapeKeyboardLayout()
             : (orientation == Orientation.portrait
                   ? _buildPortraitLayout()
