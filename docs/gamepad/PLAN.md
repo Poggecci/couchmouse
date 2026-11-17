@@ -66,16 +66,16 @@ Purpose: make every later phase verifiable in this container.
 
 Exit criteria: baseline results recorded below; harness compiles a hello test.
 
-## Phase 1 — Pure-Kotlin gamepad core `[ ]`
+## Phase 1 — Pure-Kotlin gamepad core `[x]`
 No Android imports, so it's unit-testable on the JVM.
-- [ ] `GamepadDescriptor` bytes (report ID 3) per decision 3/4.
-- [ ] `GamepadState` (buttons bitmask, hat, 4 stick axes as floats −1..1,
+- [x] `GamepadDescriptor` bytes (report ID 3) per decision 3/4.
+- [x] `GamepadState` (buttons bitmask, hat, 4 stick axes as floats −1..1,
       2 triggers 0..1) + `toReport(): ByteArray` (13 bytes).
-- [ ] Helpers: float→int16 / uint8 clamping, D-pad booleans → hat value,
+- [x] Helpers: float→int16 / uint8 clamping, D-pad booleans → hat value,
       radial deadzone.
-- [ ] Unit tests: report length, endianness, clamping, hat for all 9
+- [x] Unit tests: report length, endianness, clamping, hat for all 9
       states, opposing D-pad directions cancel, button bit positions.
-- [ ] Validate descriptor with `hid-decode`; parse a sample report with
+- [x] Validate descriptor with `hid-decode`; parse a sample report with
       hid-tools and confirm field values match.
 
 Exit criteria: tests green; hid-tools decodes descriptor with expected usages.
@@ -169,3 +169,17 @@ phones · per-host trigger-usage preset · foreground service for screen-off use
 - Kotlin JVM harness (Gradle 8.14 / Kotlin 2.0.21, JVM 17 target) runs JUnit
   against selected pure-Kotlin repo files via `-PpureSources=File.kt,...`.
 - Maven Central intermittently returns 429 through the proxy; retrying works.
+
+### Phase 1 (done)
+- `GamepadReport.kt`: `GamepadButton` bit indices, `Hat`, `GamepadState`,
+  `GamepadReport.encode/axisToInt16/triggerToUint8/applyRadialDeadzone`.
+- `HidDescriptors.GAMEPAD_COLLECTION` (93 bytes) — *not yet* in the composite.
+- hid-tools: descriptor decodes cleanly; report 3 = 13 B payload. Encoded
+  sample reports parsed back by hid-tools give exactly the intended values
+  (A=Button1, Start=Button12, hat 5, X −32767, Y 16384, Z 8192, Rz 32767,
+  Accelerator 51, Brake 255).
+- 11 JUnit tests committed in `android/app/src/test/.../GamepadReportTest.kt`
+  (+ `testImplementation junit:4.13.2` in `app/build.gradle.kts`); all pass
+  in the JVM harness. Not yet run through AGP itself (no Android SDK here).
+- Gotcha: Kotlin `roundToInt` rounds .5 toward +∞ (−16383.5 → −16383).
+
