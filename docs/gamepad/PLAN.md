@@ -124,14 +124,14 @@ compile-only harness (see Phase 2 log).
 
 Exit criteria: analyze + tests green.
 
-## Phase 5 — Docs & hand-off `[ ]`
-- [ ] README: gamepad section, report 3 layout, host compatibility table,
+## Phase 5 — Docs & hand-off `[x]`
+- [x] README: gamepad section, report 3 layout, host compatibility table,
       XInput caveat (use Steam Input / wrapper), "unpair & re-pair after
       updating" note.
-- [ ] `docs/gamepad/TESTING.md`: manual test checklist for real hardware
+- [x] `docs/gamepad/TESTING.md`: manual test checklist for real hardware
       (Linux `evtest`/`jstest`, gamepad-tester.com, Steam, Windows
       `joy.cpl`, Android TV) incl. the Accelerator/Brake-on-Windows check.
-- [ ] Final review of the whole diff; commit per phase.
+- [x] Final review of the whole diff; commit per phase.
 
 ## Phase 6 — Publish `[!]` blocked on fork
 - [ ] User creates fork `xyzz5/couchmouse` (session can't create forks).
@@ -244,4 +244,21 @@ phones · per-host trigger-usage preset · foreground service for screen-off use
   suite: 21 pass / 6 fail — the *same* 6 baseline failures, no regressions.
   Analyzer: only the repo-wide material/cupertino deprecation infos (+2 for
   the new file's imports, same convention as every other widget).
+
+### Phase 5 (done)
+- README: intro, Gamepad Mode feature section, architecture (0xC8 subclass,
+  native capture path), Report ID 3 layout, host compatibility table with
+  the XInput / Apple GameController / console caveats, re-pair warning,
+  handheld usage steps, Testing section.
+- `docs/gamepad/TESTING.md`: hardware checklist (build, pairing, host
+  detection, full mapping table, Windows trigger check, stuck-input cases,
+  screen-on, hot-plug, persistence, latency).
+- UI rendered headlessly in 540×960 and 960×540; tightened the diagram
+  (190 → 124 px design height) to remove an empty band.
+- Final verification (clean builds): 29/29 JVM tests; Android type check 0
+  errors; composite descriptor IDs 1/2/3 = 8/4/13 B; Flutter tests 21 pass
+  / 6 baseline failures (unchanged); analyzer 0 errors/warnings.
+- **Still unverified (needs hardware / Android SDK):** a real AGP build +
+  R8, Bluetooth behaviour on actual hosts, Brake/Accelerator on Windows,
+  real handheld key/axis layouts, latency. See TESTING.md.
 
