@@ -10,7 +10,10 @@ import android.os.Build
 import android.hardware.input.InputManager
 import android.os.Bundle
 import android.os.Handler
+import android.os.HandlerThread
 import android.os.Looper
+import android.os.Process
+import android.os.SystemClock
 import android.provider.Settings
 import android.util.Log
 import android.view.InputDevice
@@ -30,16 +33,41 @@ class MainActivity : FlutterActivity() {
     private val TAG = "RemoteMouseHID"
 
     private var bluetoothAdapter: BluetoothAdapter? = null
-    private var bluetoothHidDevice: BluetoothHidDevice? = null
-    private var hostDevice: BluetoothDevice? = null
+    // Volatile: also read by the gamepad sender thread (see sendReport).
+    @Volatile private var bluetoothHidDevice: BluetoothHidDevice? = null
+    @Volatile private var hostDevice: BluetoothDevice? = null
     private var keyboardReportHost: BluetoothDevice? = null
     private var keyboardInputResumed = false
 
-    // Gamepad forwarding (Report ID 3). All access happens on the main thread:
-    // input events, method-channel calls and HID callbacks (mainExecutor).
+    // Gamepad forwarding (Report ID 3). Input events, method-channel calls and
+    // HID callbacks (mainExecutor) run on the main thread; reports are sent at a
+    // fixed rate from a dedicated sender thread via [gamepadPump].
     private var gamepadModeEnabled = false
-    private var lastGamepadReport: ByteArray = GamepadState.NEUTRAL.toReport()
+    private var windowFocused = false
     private val gamepadMapper = GamepadInputMapper()
+
+    // Fixed-rate sender. Its own thread keeps main-thread work (UI, input
+    // dispatch) from delaying or bunching reports.
+    private val gamepadSenderThread =
+        HandlerThread("GamepadReportPump", Process.THREAD_PRIORITY_DISPLAY).apply { start() }
+    private val gamepadSender = Handler(gamepadSenderThread.looper)
+    private val gamepadPump = GamepadReportPump(send = { report -> sendReport(GamepadReport.REPORT_ID, report) })
+    // Confined to the sender thread.
+    private var gamepadTickScheduled = false
+    private var nextGamepadTickAt = 0L
+    private val gamepadTick = object : Runnable {
+        override fun run() {
+            if (!gamepadPump.tick()) {
+                gamepadTickScheduled = false
+                return
+            }
+            nextGamepadTickAt += GamepadReportPump.INTERVAL_MS
+            // If the thread fell behind, send one catch-up report rather than a burst.
+            val now = SystemClock.uptimeMillis()
+            if (nextGamepadTickAt < now) nextGamepadTickAt = now
+            gamepadSender.postAtTime(this, nextGamepadTickAt)
+        }
+    }
     // Axis layout per InputDevice id. Android assigns a new id when a
     // controller reconnects, and the cache is cleared whenever the mode toggles.
     private val gamepadLayouts = HashMap<Int, GamepadAxisLayout>()
@@ -130,7 +158,7 @@ class MainActivity : FlutterActivity() {
                         hostDevice = null
                         isRegistered = false
                         keyboardReportHost = null
-                        resetGamepadReport()
+                        updateGamepadStreaming()
                         notifyFlutter("onRegistrationChanged", mapOf("registered" to false))
                         notifyFlutter("onConnectionStateChanged", mapOf("connected" to false))
                     }
@@ -167,10 +195,8 @@ class MainActivity : FlutterActivity() {
                     override fun onAppStatusChanged(pluggedDevice: BluetoothDevice?, registered: Boolean) {
                         Log.d(TAG, "Application HID Profile registration state: $registered")
                         isRegistered = registered
-                        if (!registered) {
-                            keyboardReportHost = null
-                            resetGamepadReport()
-                        }
+                        if (!registered) keyboardReportHost = null
+                        updateGamepadStreaming()
                         notifyFlutter("onRegistrationChanged", mapOf("registered" to registered))
                     }
 
@@ -189,14 +215,13 @@ class MainActivity : FlutterActivity() {
                             BluetoothProfile.STATE_CONNECTED -> {
                                 Log.i(TAG, "Connected to host: $deviceName")
                                 hostDevice = device
-                                // A new host starts from a neutral controller.
-                                resetGamepadReport()
+                                updateGamepadStreaming()
                             }
                             BluetoothProfile.STATE_DISCONNECTED -> {
                                 Log.i(TAG, "Disconnected from host")
                                 hostDevice = null
                                 keyboardReportHost = null
-                                resetGamepadReport()
+                                updateGamepadStreaming()
                             }
                         }
 
@@ -216,7 +241,7 @@ class MainActivity : FlutterActivity() {
                             val data = when (id.toInt()) {
                                 1 -> ByteArray(8) // Keyboard
                                 2 -> ByteArray(4) // Mouse
-                                GamepadReport.REPORT_ID -> lastGamepadReport.copyOf() // Gamepad
+                                GamepadReport.REPORT_ID -> gamepadPump.currentReport() // Gamepad
                                 else -> ByteArray(bufferSize.coerceAtLeast(1))
                             }
                             try {
@@ -438,7 +463,7 @@ class MainActivity : FlutterActivity() {
                         if (device != null) {
                             if (device == hostDevice) {
                                 releaseKeyboard()
-                                releaseGamepad()
+                                sendNeutralGamepadNow()
                             }
                             val success = hid.disconnect(device)
                             result.success(success)
@@ -507,9 +532,9 @@ class MainActivity : FlutterActivity() {
                         result.error("INVALID_ARGUMENT", "enabled must be a boolean", null)
                         return@setMethodCallHandler
                     }
-                    if (!enabled) releaseGamepad()
                     gamepadModeEnabled = enabled
                     gamepadLayouts.clear()
+                    updateGamepadStreaming()
                     // The handheld sits idle as a controller: don't let the screen sleep.
                     if (enabled) {
                         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
@@ -560,37 +585,31 @@ class MainActivity : FlutterActivity() {
     }
 
     /**
-     * Sends [state] as a gamepad report if gamepad mode is on and the encoded
-     * report differs from the last one the host received. Returns true when
-     * the host is up to date with [state].
+     * Starts the fixed-rate gamepad stream when it should run (gamepad mode on,
+     * host connected, app resumed and focused) and stops it otherwise.
+     * Stopping releases everything: locally (key-up events for held buttons
+     * will go elsewhere now) and on the host (the pump flushes neutral reports).
      */
-    private fun sendGamepadState(state: GamepadState): Boolean {
-        if (!gamepadModeEnabled) return false
-        val report = state.toReport()
-        if (report.contentEquals(lastGamepadReport)) return true
-        if (!sendReport(GamepadReport.REPORT_ID, report)) return false
-        lastGamepadReport = report
-        return true
-    }
-
-    /**
-     * Releases every button/axis on the host. Mirrors [releaseKeyboard].
-     * Also forgets locally held input: once focus is lost the matching
-     * key-up events go elsewhere, so held state could otherwise get stuck.
-     */
-    private fun releaseGamepad() {
-        gamepadMapper.reset()
-        if (gamepadModeEnabled) publishGamepadStateToUi(GamepadState.NEUTRAL)
-        val neutral = GamepadState.NEUTRAL.toReport()
-        if (lastGamepadReport.contentEquals(neutral)) return
-        if (sendReport(GamepadReport.REPORT_ID, neutral)) {
-            lastGamepadReport = neutral
+    private fun updateGamepadStreaming() {
+        val stream = gamepadModeEnabled && isRegistered && hostDevice != null &&
+            keyboardInputResumed && windowFocused
+        if (!stream) {
+            gamepadMapper.reset()
+            gamepadPump.update(GamepadState.NEUTRAL)
+            if (gamepadModeEnabled) publishGamepadStateToUi(GamepadState.NEUTRAL)
+        }
+        gamepadSender.post {
+            if (gamepadPump.setStreaming(stream) && !gamepadTickScheduled) {
+                gamepadTickScheduled = true
+                nextGamepadTickAt = SystemClock.uptimeMillis()
+                gamepadTick.run()
+            }
         }
     }
 
-    /** Forgets what the host last saw (e.g. new host or no host); sends nothing. */
-    private fun resetGamepadReport() {
-        lastGamepadReport = GamepadState.NEUTRAL.toReport()
+    /** One synchronous neutral report, for when the host link is about to go away. */
+    private fun sendNeutralGamepadNow() {
+        if (gamepadModeEnabled) sendReport(GamepadReport.REPORT_ID, GamepadState.NEUTRAL.toReport())
     }
 
     // ---- Physical controller capture (gamepad mode) ----
@@ -630,7 +649,7 @@ class MainActivity : FlutterActivity() {
 
     private fun onGamepadInput() {
         val state = gamepadMapper.state
-        sendGamepadState(state)
+        gamepadPump.update(state) // sent on the next tick (<= 8 ms)
         publishGamepadStateToUi(state)
     }
 
@@ -687,26 +706,28 @@ class MainActivity : FlutterActivity() {
     override fun onResume() {
         super.onResume()
         keyboardInputResumed = true
+        updateGamepadStreaming()
     }
 
     override fun onPause() {
         keyboardInputResumed = false
         releaseKeyboard()
-        releaseGamepad()
+        updateGamepadStreaming()
         super.onPause()
     }
 
     override fun onWindowFocusChanged(hasFocus: Boolean) {
-        if (!hasFocus) {
-            releaseKeyboard()
-            releaseGamepad()
-        }
+        windowFocused = hasFocus
+        if (!hasFocus) releaseKeyboard()
+        updateGamepadStreaming()
         super.onWindowFocusChanged(hasFocus)
     }
 
     override fun onDestroy() {
         releaseKeyboard()
-        releaseGamepad()
+        gamepadSender.removeCallbacksAndMessages(null)
+        gamepadSenderThread.quitSafely()
+        if (gamepadPump.isStreaming) sendNeutralGamepadNow()
         mainHandler.removeCallbacks(flushGamepadUi)
         (getSystemService(Context.INPUT_SERVICE) as? InputManager)
             ?.unregisterInputDeviceListener(inputDeviceListener)

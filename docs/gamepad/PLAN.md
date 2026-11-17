@@ -270,3 +270,27 @@ phones · per-host trigger-usage preset · foreground service for screen-off use
 - Not done (only if asked): running the release workflow on the fork for
   an APK; opening a PR.
 
+## Phase 7 — Dropped inputs on real hardware `[x]`
+User report after the first hardware test: "mostly works, but drops a LOT of
+inputs sometimes; feels like the connection goes to sleep."
+- **Root cause (from AOSP source via LineageOS lineage-21.0 mirror):**
+  - `hidd_conn_send_data()` returns `HID_ERR_CONGESTED` when the L2CAP
+    channel is congested; the report is discarded, not queued.
+  - `bta_hd_send_report_act()` ignores that return value, and btif
+    `send_report()` already returned `BT_STATUS_SUCCESS` → the app's
+    `sendReport()` returns true for dropped reports.
+  - HD power profile (`bta_dm_cfg.cc`): active sniff 10–18 slots
+    (6.25–11.25 ms); SSR `hid_device` {360, 160, 1600} → after ~1 s idle,
+    up to 225 ms latency; idle sniff (18.75–33.75 ms) after 5 s.
+  - Our send-on-change design meant a dropped press/release was never
+    re-sent, and bursts after idle (stick + button) were the most likely
+    to congest. ⇒ matches "drops a lot sometimes" + "goes to sleep".
+- **Fix:** `GamepadReportPump` streams the full state at 125 Hz (8 ms) from
+  a dedicated `HandlerThread` while gamepad mode is on, a host is connected
+  and the app is resumed + focused; on stop it flushes 3 neutral reports.
+  Drops self-heal within one tick; constant traffic keeps the link out of
+  sniff subrating. Input events only update the pump's state.
+- Verification: 10 new JVM tests (39 total) pass; app Kotlin type-checks.
+  Needs re-test on hardware (TESTING.md §4b). If 125 Hz turns out to
+  congest a particular host, `GamepadReportPump.INTERVAL_MS` is the knob.
+

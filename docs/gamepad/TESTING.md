@@ -60,6 +60,18 @@ Pick at least one:
       controller card updates.
 - [ ] Gamepad mode is still on after closing and reopening the app.
 
+## 4b. Dropped inputs (fixed-rate streaming, 125 Hz)
+- [ ] Spin both sticks continuously while mashing face buttons for ~30 s
+      → every press and release shows up in the gamepad tester, and nothing
+      stays stuck after letting go.
+- [ ] Leave the controller untouched for 10+ s, then tap A once → the host
+      registers it immediately (no first-input delay).
+- [ ] Linux (optional): `sudo btmon` shows an incoming ACL data packet from
+      the handheld roughly every 8 ms while gamepad mode is on, even with no
+      input. (`evtest` won't show this: the kernel only reports changes.)
+- [ ] Battery: note % drop over 30 min of play (constant streaming costs
+      some power; the handheld screen will dominate).
+
 ## 5. Feel
 - [ ] Play a fast game for 10+ minutes: no noticeable lag, dropped
       inputs or disconnects. Note the host OS and Bluetooth adapter.

@@ -51,6 +51,7 @@ On devices with built-in controls, such as the AYN Odin and Thor or Retroid hand
 - Turn it on from the menu (**Gamepad Mode**). The trackpad and keyboard are replaced by a status screen showing the host connection, the detected controller and a live view of buttons, sticks and triggers.
 - Forwards 15 buttons, the D-pad, both analog sticks and both analog triggers. Controllers without analog triggers send a full pull when L2/R2 is pressed.
 - Input is captured and sent natively. The Flutter UI is only a status display, so it adds no latency.
+- The full controller state is streamed to the host at a fixed 125 Hz, like a real Bluetooth controller, rather than only when something changes. Android's Bluetooth stack can silently drop a report when the link is busy, and the next report (≤ 8 ms later) carries the complete state again, so nothing stays lost or stuck. The constant traffic also stops the Bluetooth link from dropping into its slower power-saving mode between inputs.
 - The screen stays on while gamepad mode is active. Keep CouchMouse in the foreground while playing, because Android only delivers controller input to the focused app.
 - The Back, Home and volume keys keep their normal function.
 
