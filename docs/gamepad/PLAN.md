@@ -80,15 +80,15 @@ No Android imports, so it's unit-testable on the JVM.
 
 Exit criteria: tests green; hid-tools decodes descriptor with expected usages.
 
-## Phase 2 — Native HID plumbing `[ ]`
-- [ ] Append gamepad collection to `HidDescriptors.COMPOSITE_DESCRIPTOR`.
-- [ ] SDP subclass `0xC0` → `0xC8` (combo + gamepad).
-- [ ] `onGetReport` returns a neutral 13-byte report for ID 3.
-- [ ] `sendGamepadReport(state)` + `releaseGamepad()` (neutral report) wired
+## Phase 2 — Native HID plumbing `[x]`
+- [x] Append gamepad collection to `HidDescriptors.COMPOSITE_DESCRIPTOR`.
+- [x] SDP subclass `0xC0` → `0xC8` (combo + gamepad).
+- [x] `onGetReport` returns a neutral 13-byte report for ID 3.
+- [x] `sendGamepadReport(state)` + `releaseGamepad()` (neutral report) wired
       into `onPause`, focus loss, disconnect, `onDestroy`, mirroring
       `releaseKeyboard()`.
-- [ ] Method-channel: `setGamepadMode(bool)`, `getGamepadMode`.
-- [ ] Re-validate the full composite descriptor with hid-tools.
+- [x] Method-channel: `setGamepadMode(bool)`, `getGamepadMode`.
+- [x] Re-validate the full composite descriptor with hid-tools.
 
 Exit criteria: composite descriptor decodes cleanly with 3 collections;
 Kotlin harness still green.
@@ -108,8 +108,8 @@ Kotlin harness still green.
       batches to the latest sample.
 - [ ] Unit tests for mapper (pure-logic portion) in the JVM harness.
 
-Exit criteria: mapper tests green; MainActivity changes reviewed line-by-line
-(cannot compile Android code here — flag that explicitly).
+Exit criteria: mapper tests green; MainActivity type-checks in the
+compile-only harness (see Phase 2 log).
 
 ## Phase 4 — Flutter UI `[ ]`
 - [ ] Persisted `gamepadMode` setting in `settings_providers.dart`.
@@ -182,4 +182,21 @@ phones · per-host trigger-usage preset · foreground service for screen-off use
   (+ `testImplementation junit:4.13.2` in `app/build.gradle.kts`); all pass
   in the JVM harness. Not yet run through AGP itself (no Android SDK here).
 - Gotcha: Kotlin `roundToInt` rounds .5 toward +∞ (−16383.5 → −16383).
+
+### Phase 2 (done)
+- `COMPOSITE_DESCRIPTOR = KEYBOARD_AND_MOUSE + GAMEPAD_COLLECTION`, declared
+  last in the object (Kotlin object init order). Runtime bytes (194) dumped
+  from the JVM and decoded by hid-tools: IDs 1/2/3 = 8/4/13-byte payloads.
+- SDP subclass 0xC0 → 0xC8. `onGetReport(3)` answers with the last sent report.
+- `MainActivity`: `gamepadModeEnabled`, `lastGamepadReport`,
+  `sendGamepadState()` (send-on-change), `releaseGamepad()` (neutral report,
+  mirrors `releaseKeyboard()`), `resetGamepadReport()` on host connect /
+  disconnect / unregister / service loss. Released on pause, focus loss,
+  disconnectDevice, destroy. Channel: `setGamepadMode{enabled}`, `getGamepadMode`.
+- **New verification tool — Android type check:** scratchpad `typecheck/`
+  compiles *all* app Kotlin (`compileOnly`) against Robolectric
+  `android-all` API 34 + Flutter 3.50 `flutter.jar` + a 2-class
+  `androidx.lifecycle` stub (dl.google.com is blocked, maven.google.com
+  redirects there). MainActivity compiles cleanly. Not a substitute for an
+  AGP build/R8, but catches API/type errors.
 

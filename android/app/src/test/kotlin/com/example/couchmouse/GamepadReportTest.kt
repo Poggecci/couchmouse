@@ -94,4 +94,15 @@ class GamepadReportTest {
         val i = (0 until d.size - 1).first { d[it] == 0x85.toByte() }
         assertEquals(GamepadReport.REPORT_ID, d[i + 1].toInt())
     }
+
+    @Test fun compositeDescriptorEndsWithGamepadAndHasAllReportIds() {
+        val composite = HidDescriptors.COMPOSITE_DESCRIPTOR
+        val gamepad = HidDescriptors.GAMEPAD_COLLECTION
+        assertTrue(composite.size > gamepad.size)
+        assertArrayEquals(gamepad, composite.copyOfRange(composite.size - gamepad.size, composite.size))
+        val reportIds = (0 until composite.size - 1)
+            .filter { composite[it] == 0x85.toByte() }
+            .map { composite[it + 1].toInt() }
+        assertEquals(listOf(1, 2, 3), reportIds)
+    }
 }

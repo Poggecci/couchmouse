@@ -24,6 +24,11 @@ class MainActivity : FlutterActivity() {
     private var keyboardReportHost: BluetoothDevice? = null
     private var keyboardInputResumed = false
 
+    // Gamepad forwarding (Report ID 3). All access happens on the main thread:
+    // input events, method-channel calls and HID callbacks (mainExecutor).
+    private var gamepadModeEnabled = false
+    private var lastGamepadReport: ByteArray = GamepadState.NEUTRAL.toReport()
+
     private var isRegistered = false
     private var cachedFlutterEngine: FlutterEngine? = null
 
@@ -86,6 +91,7 @@ class MainActivity : FlutterActivity() {
                         hostDevice = null
                         isRegistered = false
                         keyboardReportHost = null
+                        resetGamepadReport()
                         notifyFlutter("onRegistrationChanged", mapOf("registered" to false))
                         notifyFlutter("onConnectionStateChanged", mapOf("connected" to false))
                     }
@@ -106,7 +112,9 @@ class MainActivity : FlutterActivity() {
             "CouchMouse",
             "CouchMouse Controller",
             "CouchMouseDev",
-            0xC0.toByte(), // Subclass descriptor code representing Combo Keyboard/Mouse
+            // HIDDeviceSubclass: 0xC0 (combo keyboard/pointing) | 0x08 (gamepad).
+            // Most hosts rely on the report descriptor rather than this value.
+            0xC8.toByte(),
             HidDescriptors.COMPOSITE_DESCRIPTOR
         )
 
@@ -120,7 +128,10 @@ class MainActivity : FlutterActivity() {
                     override fun onAppStatusChanged(pluggedDevice: BluetoothDevice?, registered: Boolean) {
                         Log.d(TAG, "Application HID Profile registration state: $registered")
                         isRegistered = registered
-                        if (!registered) keyboardReportHost = null
+                        if (!registered) {
+                            keyboardReportHost = null
+                            resetGamepadReport()
+                        }
                         notifyFlutter("onRegistrationChanged", mapOf("registered" to registered))
                     }
 
@@ -139,11 +150,14 @@ class MainActivity : FlutterActivity() {
                             BluetoothProfile.STATE_CONNECTED -> {
                                 Log.i(TAG, "Connected to host: $deviceName")
                                 hostDevice = device
+                                // A new host starts from a neutral controller.
+                                resetGamepadReport()
                             }
                             BluetoothProfile.STATE_DISCONNECTED -> {
                                 Log.i(TAG, "Disconnected from host")
                                 hostDevice = null
                                 keyboardReportHost = null
+                                resetGamepadReport()
                             }
                         }
 
@@ -163,6 +177,7 @@ class MainActivity : FlutterActivity() {
                             val data = when (id.toInt()) {
                                 1 -> ByteArray(8) // Keyboard
                                 2 -> ByteArray(4) // Mouse
+                                GamepadReport.REPORT_ID -> lastGamepadReport.copyOf() // Gamepad
                                 else -> ByteArray(bufferSize.coerceAtLeast(1))
                             }
                             try {
@@ -382,7 +397,10 @@ class MainActivity : FlutterActivity() {
                             hostDevice
                         }
                         if (device != null) {
-                            if (device == hostDevice) releaseKeyboard()
+                            if (device == hostDevice) {
+                                releaseKeyboard()
+                                releaseGamepad()
+                            }
                             val success = hid.disconnect(device)
                             result.success(success)
                         } else {
@@ -444,6 +462,19 @@ class MainActivity : FlutterActivity() {
                         result.error("UNAVAILABLE", "No Bluetooth device currently connected.", null)
                     }
                 }
+                "setGamepadMode" -> {
+                    val enabled = call.argument<Boolean>("enabled")
+                    if (enabled == null) {
+                        result.error("INVALID_ARGUMENT", "enabled must be a boolean", null)
+                        return@setMethodCallHandler
+                    }
+                    if (!enabled) releaseGamepad()
+                    gamepadModeEnabled = enabled
+                    result.success(gamepadModeEnabled)
+                }
+                "getGamepadMode" -> {
+                    result.success(gamepadModeEnabled)
+                }
                 else -> {
                     result.notImplemented()
                 }
@@ -479,6 +510,34 @@ class MainActivity : FlutterActivity() {
         }
     }
 
+    /**
+     * Sends [state] as a gamepad report if gamepad mode is on and the encoded
+     * report differs from the last one the host received. Returns true when
+     * the host is up to date with [state].
+     */
+    private fun sendGamepadState(state: GamepadState): Boolean {
+        if (!gamepadModeEnabled) return false
+        val report = state.toReport()
+        if (report.contentEquals(lastGamepadReport)) return true
+        if (!sendReport(GamepadReport.REPORT_ID, report)) return false
+        lastGamepadReport = report
+        return true
+    }
+
+    /** Releases every button/axis on the host. Mirrors [releaseKeyboard]. */
+    private fun releaseGamepad() {
+        val neutral = GamepadState.NEUTRAL.toReport()
+        if (lastGamepadReport.contentEquals(neutral)) return
+        if (sendReport(GamepadReport.REPORT_ID, neutral)) {
+            lastGamepadReport = neutral
+        }
+    }
+
+    /** Forgets what the host last saw (e.g. new host or no host); sends nothing. */
+    private fun resetGamepadReport() {
+        lastGamepadReport = GamepadState.NEUTRAL.toReport()
+    }
+
     private fun notifyFlutter(method: String, arguments: Map<String, Any?>) {
         cachedFlutterEngine?.dartExecutor?.binaryMessenger?.let { messenger ->
             MethodChannel(messenger, CHANNEL).invokeMethod(method, arguments)
@@ -493,16 +552,21 @@ class MainActivity : FlutterActivity() {
     override fun onPause() {
         keyboardInputResumed = false
         releaseKeyboard()
+        releaseGamepad()
         super.onPause()
     }
 
     override fun onWindowFocusChanged(hasFocus: Boolean) {
-        if (!hasFocus) releaseKeyboard()
+        if (!hasFocus) {
+            releaseKeyboard()
+            releaseGamepad()
+        }
         super.onWindowFocusChanged(hasFocus)
     }
 
     override fun onDestroy() {
         releaseKeyboard()
+        releaseGamepad()
         cachedFlutterEngine = null
         try {
             unregisterReceiver(bluetoothReceiver)

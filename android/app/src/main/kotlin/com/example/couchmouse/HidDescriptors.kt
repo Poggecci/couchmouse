@@ -1,7 +1,7 @@
 package com.example.couchmouse
 
 object HidDescriptors {
-    val COMPOSITE_DESCRIPTOR = byteArrayOf(
+    private val KEYBOARD_AND_MOUSE = byteArrayOf(
         // KEYBOARD
         0x05.toByte(), 0x01.toByte(), // USAGE_PAGE (Generic Desktop)
         0x09.toByte(), 0x06.toByte(), // USAGE (Keyboard)
@@ -131,4 +131,12 @@ object HidDescriptors {
         0x81.toByte(), 0x02.toByte(), //   INPUT (Data,Var,Abs)
         0xc0.toByte()                 // END_COLLECTION
     )
+
+    /**
+     * Registered with the HID Device profile. Keyboard (ID 1), mouse (ID 2) and
+     * gamepad (ID 3) are always registered together because hosts cache the
+     * descriptor per pairing; changing it would force users to re-pair.
+     * Declared last so the arrays above are initialised first.
+     */
+    val COMPOSITE_DESCRIPTOR: ByteArray = KEYBOARD_AND_MOUSE + GAMEPAD_COLLECTION
 }
