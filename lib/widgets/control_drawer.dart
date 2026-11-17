@@ -90,6 +90,7 @@ class ControlDrawer extends ConsumerWidget {
     final connection = ref.watch(connectionStateProvider);
     final settings = ref.watch(settingsProvider);
     final gamepadMode = ref.watch(gamepadModeProvider);
+    final gamepadRate = ref.watch(gamepadReportRateProvider);
 
     return Drawer(
       backgroundColor: const Color(0xFFFFFFFF),
@@ -315,6 +316,47 @@ class ControlDrawer extends ConsumerWidget {
                     onChanged: (value) => ref
                         .read(gamepadModeProvider.notifier)
                         .setEnabled(value),
+                  ),
+                ),
+
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 4, 16, 12),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        "Report Rate",
+                        style: TextStyle(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 14,
+                          color: Colors.black,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        "Lower it if inputs lag or drop; raise it for smoother sticks",
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: Colors.black.withValues(alpha: 0.5),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          for (final hz in GamepadReportRateNotifier.options)
+                            Expanded(
+                              child: _RateOption(
+                                key: Key('gamepadRate_$hz'),
+                                hz: hz,
+                                selected: hz == gamepadRate,
+                                onTap: () => ref
+                                    .read(gamepadReportRateProvider.notifier)
+                                    .setRate(hz),
+                              ),
+                            ),
+                        ],
+                      ),
+                    ],
                   ),
                 ),
 
@@ -610,4 +652,43 @@ String _getDpiLabel(double dpi) {
   if (dpi < 2400) return "Desktop";
   if (dpi < 4800) return "4K Monitor";
   return "Couch TV";
+}
+
+class _RateOption extends StatelessWidget {
+  final int hz;
+  final bool selected;
+  final VoidCallback onTap;
+
+  const _RateOption({
+    super.key,
+    required this.hz,
+    required this.selected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 120),
+        margin: const EdgeInsets.symmetric(horizontal: 3),
+        height: 32,
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: selected ? Colors.black : const Color(0xFFF4F4F6),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: Colors.black.withValues(alpha: 0.08)),
+        ),
+        child: Text(
+          "$hz Hz",
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w700,
+            color: selected ? Colors.white : Colors.black87,
+          ),
+        ),
+      ),
+    );
+  }
 }

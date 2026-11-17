@@ -46,28 +46,13 @@ class MainActivity : FlutterActivity() {
     private var windowFocused = false
     private val gamepadMapper = GamepadInputMapper()
 
-    // Fixed-rate sender. Its own thread keeps main-thread work (UI, input
-    // dispatch) from delaying or bunching reports.
+    // Report sender (see GamepadReportPump for the policy). Its own thread
+    // keeps main-thread work (UI, input dispatch) from delaying reports.
     private val gamepadSenderThread =
         HandlerThread("GamepadReportPump", Process.THREAD_PRIORITY_DISPLAY).apply { start() }
     private val gamepadSender = Handler(gamepadSenderThread.looper)
     private val gamepadPump = GamepadReportPump(send = { report -> sendReport(GamepadReport.REPORT_ID, report) })
-    // Confined to the sender thread.
-    private var gamepadTickScheduled = false
-    private var nextGamepadTickAt = 0L
-    private val gamepadTick = object : Runnable {
-        override fun run() {
-            if (!gamepadPump.tick()) {
-                gamepadTickScheduled = false
-                return
-            }
-            nextGamepadTickAt += GamepadReportPump.INTERVAL_MS
-            // If the thread fell behind, send one catch-up report rather than a burst.
-            val now = SystemClock.uptimeMillis()
-            if (nextGamepadTickAt < now) nextGamepadTickAt = now
-            gamepadSender.postAtTime(this, nextGamepadTickAt)
-        }
-    }
+    private val gamepadTick = Runnable { runGamepadPump() }
     // Axis layout per InputDevice id. Android assigns a new id when a
     // controller reconnects, and the cache is cleared whenever the mode toggles.
     private val gamepadLayouts = HashMap<Int, GamepadAxisLayout>()
@@ -534,6 +519,13 @@ class MainActivity : FlutterActivity() {
                     }
                     gamepadModeEnabled = enabled
                     gamepadLayouts.clear()
+                    // Deliver stick events as they arrive instead of once per display
+                    // frame (saves up to a frame of latency). API 30+.
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                        window.decorView.requestUnbufferedDispatch(
+                            if (enabled) InputDevice.SOURCE_CLASS_JOYSTICK else InputDevice.SOURCE_CLASS_NONE
+                        )
+                    }
                     updateGamepadStreaming()
                     // The handheld sits idle as a controller: don't let the screen sleep.
                     if (enabled) {
@@ -545,6 +537,15 @@ class MainActivity : FlutterActivity() {
                 }
                 "getGamepadMode" -> {
                     result.success(gamepadModeEnabled)
+                }
+                "setGamepadReportRate" -> {
+                    val hz = call.argument<Int>("hz")
+                    if (hz == null || hz <= 0) {
+                        result.error("INVALID_ARGUMENT", "hz must be a positive integer", null)
+                        return@setMethodCallHandler
+                    }
+                    gamepadSender.post { gamepadPump.setMaxRateHz(hz) }
+                    result.success(true)
                 }
                 "getGamepadControllers" -> {
                     result.success(physicalControllerNames())
@@ -599,12 +600,15 @@ class MainActivity : FlutterActivity() {
             if (gamepadModeEnabled) publishGamepadStateToUi(GamepadState.NEUTRAL)
         }
         gamepadSender.post {
-            if (gamepadPump.setStreaming(stream) && !gamepadTickScheduled) {
-                gamepadTickScheduled = true
-                nextGamepadTickAt = SystemClock.uptimeMillis()
-                gamepadTick.run()
-            }
+            if (gamepadPump.setStreaming(stream)) runGamepadPump()
         }
+    }
+
+    /** Sender thread only: sends whatever is due and schedules the next wake-up. */
+    private fun runGamepadPump() {
+        gamepadSender.removeCallbacks(gamepadTick)
+        val next = gamepadPump.tick(SystemClock.uptimeMillis()) ?: return
+        gamepadSender.postAtTime(gamepadTick, next)
     }
 
     /** One synchronous neutral report, for when the host link is about to go away. */
@@ -649,7 +653,8 @@ class MainActivity : FlutterActivity() {
 
     private fun onGamepadInput() {
         val state = gamepadMapper.state
-        gamepadPump.update(state) // sent on the next tick (<= 8 ms)
+        // A change wakes the sender at once instead of waiting for the next keepalive.
+        if (gamepadPump.update(state)) gamepadSender.post(gamepadTick)
         publishGamepadStateToUi(state)
     }
 

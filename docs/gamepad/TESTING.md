@@ -60,15 +60,22 @@ Pick at least one:
       controller card updates.
 - [ ] Gamepad mode is still on after closing and reopening the app.
 
-## 4b. Dropped inputs (fixed-rate streaming, 125 Hz)
-- [ ] Spin both sticks continuously while mashing face buttons for ~30 s
-      → every press and release shows up in the gamepad tester, and nothing
-      stays stuck after letting go.
+## 4b. Responsiveness and dropped inputs (send-on-change + keepalive)
+Run these at the default **60 Hz** first, then at 30 and 90 Hz (Menu →
+Gamepad → Report Rate) and note which feels best on your host.
 - [ ] Leave the controller untouched for 10+ s, then tap A once → the host
-      registers it immediately (no first-input delay).
-- [ ] Linux (optional): `sudo btmon` shows an incoming ACL data packet from
-      the handheld roughly every 8 ms while gamepad mode is on, even with no
-      input. (`evtest` won't show this: the kernel only reports changes.)
+      registers it immediately.
+- [ ] Hold the stick in one direction for a few seconds, then flick it the
+      other way → the host follows right away (no "lazy" delay).
+- [ ] Very quick taps of A and of the D-pad (as fast as you can) → each
+      tap registers on the host.
+- [ ] Spin both sticks continuously while mashing face buttons for ~30 s
+      → every press and release shows up, nothing stays stuck afterwards.
+- [ ] Linux (optional): `sudo btmon` shows packets from the handheld about
+      every 50 ms while idle, and at roughly the chosen rate while moving a
+      stick. If they arrive noticeably slower than the chosen rate while
+      moving, the link can't keep up: lower the rate. (`evtest` won't show
+      this: the kernel only reports changes.)
 - [ ] Battery: note % drop over 30 min of play (constant streaming costs
       some power; the handheld screen will dominate).
 

@@ -294,3 +294,42 @@ inputs sometimes; feels like the connection goes to sleep."
   Needs re-test on hardware (TESTING.md §4b). If 125 Hz turns out to
   congest a particular host, `GamepadReportPump.INTERVAL_MS` is the knob.
 
+## Phase 8 — "Lazy" reactions after static input `[x]`
+Hardware feedback on the 125 Hz stream: latency much better, but after a
+static period (no input, or a stick held steady) quick inputs and direction
+changes react late or get lost; continuous spinning feels great.
+- **Analysis:** a fixed 125 Hz stream generates identical traffic whether
+  input changes or not, so "lazy after static" can't be change detection.
+  It fits a saturated queue: if the link drains fewer than 125 reports/s
+  (host sniff parameters, 2.4 GHz Wi-Fi coexistence), reports back up in
+  L2CAP/controller buffers → every input waits behind stale reports
+  (constant lag; invisible during smooth circles, obvious on reversals and
+  taps), and the congested channel drops quick inputs entirely. Hypothesis,
+  not measured: Android exposes neither congestion nor capacity.
+- **Fix (`GamepadReportPump` rewrite):**
+  - Changes are sent immediately; change reports are capped at a
+    user-selectable rate (30/60/90/125 Hz, default 60).
+  - Keepalive re-sends the unchanged state every 50 ms (link stays awake:
+    subrating needs ~1 s silence; drops repaired within 50 ms).
+  - Keepalives don't delay the next change (caught by a unit test: the cap
+    had added up to 16 ms to the first input after idle).
+  - Tap latching: a button or D-pad tap pressed and released between
+    reports is sent as a press, then the release.
+  - "Changed" is decided on encoded reports, so sub-resolution stick noise
+    doesn't generate traffic.
+  - Event-driven scheduling: an input that dirties the state wakes the
+    sender thread at once; otherwise it sleeps until the next keepalive.
+- **Unbuffered joystick dispatch:** `decorView.requestUnbufferedDispatch(
+  SOURCE_CLASS_JOYSTICK)` while gamepad mode is on (API 30+). Verified in
+  AOSP `ViewRootImpl.onBatchedInputEventPending` that joystick motion is
+  otherwise batched to the next frame.
+- **Flutter:** `gamepadReportRateProvider` (persisted
+  `global_gamepad_report_rate_hz`), Report Rate selector in the drawer,
+  synced via `setGamepadReportRate`.
+- **Pre-existing, not fixed:** the drawer's `BlockSlider` label rows
+  overflow under the test font (confirmed identical on upstream main); the
+  drawer test tolerates only that overflow.
+- Verification: 42/42 JVM tests (13 pump tests incl. fake-clock timing);
+  type check 0 errors; Flutter 26 pass / same 6 baseline failures;
+  analyzer 0 errors/warnings. Needs hardware re-test (TESTING.md §4b).
+

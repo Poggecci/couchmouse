@@ -134,6 +134,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     _builtInKeyboardController = TextEditingController(text: " ");
     _checkSupportAndPermissions();
     _setupPlatformChannel();
+    _syncGamepadReportRateToNative(ref.read(gamepadReportRateProvider));
     _syncGamepadModeToNative(ref.read(gamepadModeProvider));
   }
 
@@ -606,6 +607,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
       ref.read(gamepadControllersProvider.notifier).update(names);
     } catch (e) {
       debugPrint("Error updating gamepad mode: $e");
+    }
+  }
+
+  Future<void> _syncGamepadReportRateToNative(int hz) async {
+    try {
+      await _channel.invokeMethod('setGamepadReportRate', {'hz': hz});
+    } catch (e) {
+      debugPrint("Error setting gamepad report rate: $e");
     }
   }
 
@@ -1781,6 +1790,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     final gamepadMode = ref.watch(gamepadModeProvider);
     ref.listen<bool>(gamepadModeProvider, (previous, next) {
       if (previous != next) _onGamepadModeChanged(next);
+    });
+    ref.listen<int>(gamepadReportRateProvider, (previous, next) {
+      if (previous != next) _syncGamepadReportRateToNative(next);
     });
 
     _sensitivity = settings.sensitivity;

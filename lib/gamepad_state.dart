@@ -110,6 +110,35 @@ final gamepadModeProvider = NotifierProvider<GamepadModeNotifier, bool>(
   GamepadModeNotifier.new,
 );
 
+/// Maximum rate (Hz) at which changed controller state is sent to the host.
+///
+/// The Bluetooth link's real capacity depends on the host and on Wi-Fi
+/// sharing the radio, and Android gives no feedback about it. Sending faster
+/// than the link drains makes inputs lag and drop, so this is user-tunable.
+class GamepadReportRateNotifier extends Notifier<int> {
+  static const String _key = 'global_gamepad_report_rate_hz';
+  static const List<int> options = [30, 60, 90, 125];
+  static const int defaultHz =
+      60; // must match GamepadReportPump.DEFAULT_RATE_HZ
+
+  @override
+  int build() {
+    final saved = ref.watch(sharedPreferencesProvider).getInt(_key);
+    return options.contains(saved) ? saved! : defaultHz;
+  }
+
+  Future<void> setRate(int hz) async {
+    if (!options.contains(hz)) return;
+    state = hz;
+    await ref.read(sharedPreferencesProvider).setInt(_key, hz);
+  }
+}
+
+final gamepadReportRateProvider =
+    NotifierProvider<GamepadReportRateNotifier, int>(
+      GamepadReportRateNotifier.new,
+    );
+
 class GamepadLiveStateNotifier extends Notifier<GamepadSnapshot> {
   @override
   GamepadSnapshot build() => GamepadSnapshot.neutral;

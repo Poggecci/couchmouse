@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -78,6 +79,38 @@ void main() {
     expect(prefs.getBool('global_gamepad_mode'), isTrue);
   });
 
+  group('GamepadReportRateNotifier', () {
+    Future<ProviderContainer> containerWith(Map<String, Object> prefs) async {
+      SharedPreferences.setMockInitialValues(prefs);
+      final sp = await SharedPreferences.getInstance();
+      final c = ProviderContainer(
+        overrides: [sharedPreferencesProvider.overrideWithValue(sp)],
+      );
+      addTearDown(c.dispose);
+      return c;
+    }
+
+    test('defaults to 60 Hz and persists a new rate', () async {
+      final c = await containerWith({});
+      expect(c.read(gamepadReportRateProvider), 60);
+      await c.read(gamepadReportRateProvider.notifier).setRate(90);
+      expect(c.read(gamepadReportRateProvider), 90);
+      final sp = await SharedPreferences.getInstance();
+      expect(sp.getInt('global_gamepad_report_rate_hz'), 90);
+    });
+
+    test('ignores rates that are not offered', () async {
+      final c = await containerWith({});
+      await c.read(gamepadReportRateProvider.notifier).setRate(1000);
+      expect(c.read(gamepadReportRateProvider), 60);
+    });
+
+    test('falls back to the default for an invalid saved value', () async {
+      final c = await containerWith({'global_gamepad_report_rate_hz': 7});
+      expect(c.read(gamepadReportRateProvider), 60);
+    });
+  });
+
   testWidgets('GamepadVisualizer renders neutral and active states', (
     tester,
   ) async {
@@ -120,6 +153,7 @@ void main() {
     Future<SharedPreferences> setUpApp(
       WidgetTester tester, {
       required bool gamepadMode,
+      int? rateHz,
     }) async {
       tester.view.physicalSize = const Size(1080, 1920);
       tester.view.devicePixelRatio = 2.0;
@@ -131,6 +165,7 @@ void main() {
       SharedPreferences.setMockInitialValues({
         'global_tutorial_status': 'completed',
         'global_gamepad_mode': gamepadMode,
+        'global_gamepad_report_rate_hz': ?rateHz,
       });
       final prefs = await SharedPreferences.getInstance();
 
@@ -231,6 +266,61 @@ void main() {
       expect(find.byType(GamepadModeView), findsNothing);
       expect(prefs.getBool('global_gamepad_mode'), isFalse);
       expect(gamepadModeCalls(), [true, false]);
+    });
+
+    List<int> rateCalls() => calls
+        .where((c) => c.method == 'setGamepadReportRate')
+        .map((c) => c.arguments['hz'] as int)
+        .toList();
+
+    testWidgets('saved report rate is sent to native at startup', (
+      tester,
+    ) async {
+      await setUpApp(tester, gamepadMode: true, rateHz: 90);
+      expect(rateCalls(), [90]);
+    });
+
+    testWidgets('choosing a rate in the drawer saves it and updates native', (
+      tester,
+    ) async {
+      final prefs = await setUpApp(tester, gamepadMode: true);
+      expect(rateCalls(), [60]);
+
+      // The drawer's existing BlockSlider label rows overflow under the test
+      // font (every glyph is a full square). This also happens on upstream
+      // main without any gamepad changes, so tolerate exactly those errors.
+      final tolerated = <String>[];
+      final originalOnError = FlutterError.onError;
+      FlutterError.onError = (details) {
+        final text = details.toString();
+        if (text.contains('RenderFlex overflowed') &&
+            text.contains('control_drawer.dart')) {
+          tolerated.add(text);
+          return;
+        }
+        originalOnError?.call(details);
+      };
+
+      await tester.tap(find.byIcon(CupertinoIcons.bars));
+      for (var i = 0; i < 10; i++) {
+        await tester.pump(const Duration(milliseconds: 50));
+      }
+      final option = find.byKey(const Key('gamepadRate_30'));
+      await tester.ensureVisible(option);
+      await tester.pump(const Duration(milliseconds: 50));
+      await tester.tap(option);
+      for (var i = 0; i < 5; i++) {
+        await tester.pump(const Duration(milliseconds: 50));
+      }
+
+      FlutterError.onError = originalOnError;
+
+      expect(prefs.getInt('global_gamepad_report_rate_hz'), 30);
+      expect(rateCalls(), [60, 30]);
+      // Only the known slider overflow was tolerated, nothing from the new UI.
+      for (final t in tolerated) {
+        expect(t, isNot(contains('_RateOption')));
+      }
     });
 
     testWidgets('gamepad mode off by default keeps the trackpad UI', (
