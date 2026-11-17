@@ -13,7 +13,6 @@ import android.util.Log
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
-import java.util.concurrent.Executors
 
 class MainActivity : FlutterActivity() {
     private val CHANNEL = "com.example.couchmouse/hid"
@@ -22,6 +21,8 @@ class MainActivity : FlutterActivity() {
     private var bluetoothAdapter: BluetoothAdapter? = null
     private var bluetoothHidDevice: BluetoothHidDevice? = null
     private var hostDevice: BluetoothDevice? = null
+    private var keyboardReportHost: BluetoothDevice? = null
+    private var keyboardInputResumed = false
 
     private var isRegistered = false
     private var cachedFlutterEngine: FlutterEngine? = null
@@ -82,7 +83,11 @@ class MainActivity : FlutterActivity() {
                 override fun onServiceDisconnected(profile: Int) {
                     if (profile == BluetoothProfile.HID_DEVICE) {
                         bluetoothHidDevice = null
+                        hostDevice = null
                         isRegistered = false
+                        keyboardReportHost = null
+                        notifyFlutter("onRegistrationChanged", mapOf("registered" to false))
+                        notifyFlutter("onConnectionStateChanged", mapOf("connected" to false))
                     }
                 }
             }, BluetoothProfile.HID_DEVICE)
@@ -105,26 +110,18 @@ class MainActivity : FlutterActivity() {
             HidDescriptors.COMPOSITE_DESCRIPTOR
         )
 
-        val executor = Executors.newSingleThreadExecutor()
-
         try {
             bluetoothHidDevice?.registerApp(
                 sdpSettings,
                 null, // QoS Incoming settings (Optional)
                 null, // QoS Outgoing settings (Optional)
-                executor,
+                mainExecutor,
                 object : BluetoothHidDevice.Callback() {
                     override fun onAppStatusChanged(pluggedDevice: BluetoothDevice?, registered: Boolean) {
                         Log.d(TAG, "Application HID Profile registration state: $registered")
                         isRegistered = registered
-                        runOnUiThread {
-                            cachedFlutterEngine?.dartExecutor?.binaryMessenger?.let { messenger ->
-                                MethodChannel(messenger, CHANNEL).invokeMethod(
-                                    "onRegistrationChanged", 
-                                    mapOf("registered" to registered)
-                                )
-                            }
-                        }
+                        if (!registered) keyboardReportHost = null
+                        notifyFlutter("onRegistrationChanged", mapOf("registered" to registered))
                     }
 
                     override fun onConnectionStateChanged(device: BluetoothDevice?, state: Int) {
@@ -146,21 +143,18 @@ class MainActivity : FlutterActivity() {
                             BluetoothProfile.STATE_DISCONNECTED -> {
                                 Log.i(TAG, "Disconnected from host")
                                 hostDevice = null
+                                keyboardReportHost = null
                             }
                         }
 
-                        runOnUiThread {
-                            cachedFlutterEngine?.dartExecutor?.binaryMessenger?.let { messenger ->
-                                MethodChannel(messenger, CHANNEL).invokeMethod(
-                                    "onConnectionStateChanged", 
-                                    mapOf(
-                                        "connected" to isConnected, 
-                                        "deviceName" to deviceName,
-                                        "deviceAddress" to device?.address
-                                    )
-                                )
-                            }
-                        }
+                        notifyFlutter(
+                            "onConnectionStateChanged",
+                            mapOf(
+                                "connected" to isConnected,
+                                "deviceName" to deviceName,
+                                "deviceAddress" to device?.address
+                            )
+                        )
                     }
 
                     override fun onGetReport(device: BluetoothDevice?, type: Byte, id: Byte, bufferSize: Int) {
@@ -388,6 +382,7 @@ class MainActivity : FlutterActivity() {
                             hostDevice
                         }
                         if (device != null) {
+                            if (device == hostDevice) releaseKeyboard()
                             val success = hid.disconnect(device)
                             result.success(success)
                         } else {
@@ -436,8 +431,14 @@ class MainActivity : FlutterActivity() {
                     for (i in 0 until 8) {
                         report[i] = bytesList[i].toByte()
                     }
+                    val holdsKeys = report.any { it != 0.toByte() }
+                    if (holdsKeys && (!keyboardInputResumed || !hasWindowFocus())) {
+                        result.error("UNAVAILABLE", "Couch Mouse has lost window focus.", null)
+                        return@setMethodCallHandler
+                    }
                     val success = sendReport(1, report)
                     if (success) {
+                        keyboardReportHost = if (holdsKeys) hostDevice else null
                         result.success(null)
                     } else {
                         result.error("UNAVAILABLE", "No Bluetooth device currently connected.", null)
@@ -471,7 +472,37 @@ class MainActivity : FlutterActivity() {
         }
     }
 
+    private fun releaseKeyboard() {
+        val device = hostDevice ?: return
+        if (keyboardReportHost == device && sendReport(1, ByteArray(8))) {
+            keyboardReportHost = null
+        }
+    }
+
+    private fun notifyFlutter(method: String, arguments: Map<String, Any?>) {
+        cachedFlutterEngine?.dartExecutor?.binaryMessenger?.let { messenger ->
+            MethodChannel(messenger, CHANNEL).invokeMethod(method, arguments)
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        keyboardInputResumed = true
+    }
+
+    override fun onPause() {
+        keyboardInputResumed = false
+        releaseKeyboard()
+        super.onPause()
+    }
+
+    override fun onWindowFocusChanged(hasFocus: Boolean) {
+        if (!hasFocus) releaseKeyboard()
+        super.onWindowFocusChanged(hasFocus)
+    }
+
     override fun onDestroy() {
+        releaseKeyboard()
         cachedFlutterEngine = null
         try {
             unregisterReceiver(bluetoothReceiver)

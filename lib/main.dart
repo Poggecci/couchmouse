@@ -108,6 +108,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   double _swipeDragDistance = 0.0;
   double _horizontalSwipeDragDistance = 0.0;
   Future<void> _keystrokeQueue = Future.value();
+  int _keyboardQueueGeneration = 0;
+  bool _keyboardInputFocused = true;
 
   @override
   void initState() {
@@ -134,7 +136,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
 
   @override
   void dispose() {
-    _cancelPaste();
+    _interruptKeyboardInput();
     WidgetsBinding.instance.removeObserver(this);
     _builtInKeyboardFocusNode.dispose();
     _builtInKeyboardController.dispose();
@@ -143,11 +145,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
 
   void _setupPlatformChannel() {
     _channel.setMethodCallHandler((call) async {
+      if (!mounted) return;
       switch (call.method) {
         case 'onConnectionStateChanged':
           final connected = call.arguments['connected'] as bool;
           final deviceName = call.arguments['deviceName'] as String?;
           final deviceAddress = call.arguments['deviceAddress'] as String?;
+          if (!connected) _discardKeyboardInput();
           await ref
               .read(connectionStateProvider.notifier)
               .updateConnectionState(
@@ -158,6 +162,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
           break;
         case 'onRegistrationChanged':
           final registered = call.arguments['registered'] as bool;
+          if (!registered) _discardKeyboardInput();
           setState(() {
             _isRegistered = registered;
           });
@@ -383,6 +388,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   }
 
   Future<void> _disconnectDevice() async {
+    _discardKeyboardInput();
     try {
       final success =
           await _channel.invokeMethod<bool>('disconnectDevice') ?? false;
@@ -405,18 +411,18 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.paused ||
-        state == AppLifecycleState.inactive) {
-      if (_keyboardMode) {
-        setState(() {
-          _keyboardMode = false;
-          _keyboardDidOpen = false;
-          _builtInKeyboardFocusNode.unfocus();
-        });
-      }
-    } else if (state == AppLifecycleState.resumed) {
+    if (state == AppLifecycleState.resumed) {
+      _keyboardInputFocused = true;
       _checkSupportAndPermissions(request: false);
       _retryLastConnection();
+    } else if (_keyboardInputFocused) {
+      _keyboardInputFocused = false;
+      _interruptKeyboardInput();
+      setState(() {
+        _keyboardMode = false;
+        _keyboardDidOpen = false;
+      });
+      _builtInKeyboardFocusNode.unfocus();
     }
   }
 
@@ -511,7 +517,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     }
   }
 
-  Future<void> _sendKeyboardReport() async {
+  Future<bool> _sendKeyboardReport() {
     List<int> bytes = List.filled(8, 0);
     bytes[0] = _modifiersBitmask;
     bytes[1] = 0;
@@ -524,24 +530,59 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
       }
     }
 
+    return _sendKeyboardBytes(bytes);
+  }
+
+  Future<bool> _sendKeyboardBytes(List<int> bytes) async {
     try {
       await _channel.invokeMethod('sendKeyboardReport', {'bytes': bytes});
+      return true;
     } on PlatformException catch (e) {
       debugPrint("Error sending HID keyboard report: ${e.message}");
+      return false;
+    } on MissingPluginException {
+      return false;
     }
   }
 
+  Future<void> _enqueueKeyboardOperation(Future<void> Function() operation) {
+    if (!_keyboardInputFocused) return Future.value();
+    final generation = _keyboardQueueGeneration;
+    _keystrokeQueue = _keystrokeQueue.then((_) async {
+      if (!mounted || generation != _keyboardQueueGeneration) return;
+      try {
+        await operation();
+      } catch (e) {
+        debugPrint("Error processing keyboard input: $e");
+      }
+    });
+    return _keystrokeQueue;
+  }
+
+  void _discardKeyboardInput() {
+    _keyboardQueueGeneration++;
+    _activeScancodes.clear();
+    _modifiersBitmask = 0;
+  }
+
+  void _interruptKeyboardInput() {
+    final shouldRelease =
+        _isPasting || _activeScancodes.isNotEmpty || _modifiersBitmask != 0;
+    _discardKeyboardInput();
+    if (shouldRelease) unawaited(_sendKeyboardReport());
+  }
+
   void _resetHidState() {
-    _cancelPaste();
+    _discardKeyboardInput();
     setState(() {
-      _activeScancodes.clear();
-      _modifiersBitmask = 0;
       _lastButtonsState = 0;
       _leftActive = false;
       _rightActive = false;
       _fnActive = false;
     });
-    _sendKeyboardReport();
+    _enqueueKeyboardOperation(() async {
+      await _sendKeyboardReport();
+    });
     _sendReport(buttons: 0, dx: 0, dy: 0);
   }
 
@@ -551,48 +592,51 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     await _sendReport(buttons: 0x00, dx: 0, dy: 0, wheel: 0);
   }
 
-  Future<void> _handleKeyTap(KeyInfo key) async {
-    if (key.scancode == -1) {
-      setState(() {
-        _fnActive = !_fnActive;
-      });
-      return;
-    }
+  Future<void> _handleKeyTap(KeyInfo key) =>
+      _enqueueKeyboardOperation(() async {
+        if (key.scancode == -1) {
+          setState(() {
+            _fnActive = !_fnActive;
+          });
+          return;
+        }
 
-    if (key.isModifier) {
-      setState(() {
-        _modifiersBitmask ^= key.modifierMask;
-      });
-      await _sendKeyboardReport();
-      return;
-    }
+        if (key.isModifier) {
+          await _toggleModifier(key.modifierMask);
+          return;
+        }
 
-    int scancode = (_fnActive && key.fnScancode != null)
-        ? key.fnScancode!
-        : key.scancode;
+        int scancode = (_fnActive && key.fnScancode != null)
+            ? key.fnScancode!
+            : key.scancode;
 
-    if (_holdLockActive) {
-      setState(() {
-        if (_activeScancodes.contains(scancode)) {
-          _activeScancodes.remove(scancode);
+        if (_holdLockActive) {
+          setState(() {
+            if (_activeScancodes.contains(scancode)) {
+              _activeScancodes.remove(scancode);
+            } else {
+              if (_activeScancodes.length < 6) {
+                _activeScancodes.add(scancode);
+              }
+            }
+          });
+          await _sendKeyboardReport();
         } else {
-          if (_activeScancodes.length < 6) {
-            _activeScancodes.add(scancode);
-          }
+          await _typeKeyStroke(scancode);
         }
       });
-      await _sendKeyboardReport();
-    } else {
-      setState(() {
-        _activeScancodes.add(scancode);
-      });
-      await _sendKeyboardReport();
-      await Future.delayed(const Duration(milliseconds: 15));
-      setState(() {
-        _activeScancodes.remove(scancode);
-      });
-      await _sendKeyboardReport();
-    }
+
+  Future<void> _toggleModifier(int mask) async {
+    setState(() => _modifiersBitmask ^= mask);
+    await _sendKeyboardReport();
+  }
+
+  Future<void> _setHoldLock(bool enabled) async {
+    setState(() {
+      _holdLockActive = enabled;
+      if (!enabled) _activeScancodes.clear();
+    });
+    if (!enabled) await _sendKeyboardReport();
   }
 
   void _toggleKeyboardMode() {
@@ -605,30 +649,27 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     });
   }
 
-  Future<void> _queueKeyStroke(int scancode, {bool shift = false}) {
-    _keystrokeQueue = _keystrokeQueue.then((_) async {
-      int originalModifiers = _modifiersBitmask;
+  Future<void> _queueKeyStroke(int scancode, {bool shift = false}) =>
+      _enqueueKeyboardOperation(() => _typeKeyStroke(scancode, shift: shift));
 
-      if (shift) {
-        _modifiersBitmask |= 0x02;
-      }
-
-      setState(() {
-        _activeScancodes.add(scancode);
-      });
-      await _sendKeyboardReport();
-
-      await Future.delayed(const Duration(milliseconds: 15));
-
-      setState(() {
-        _activeScancodes.remove(scancode);
-        _modifiersBitmask = originalModifiers;
-      });
-      await _sendKeyboardReport();
-
-      await Future.delayed(const Duration(milliseconds: 10));
+  Future<void> _typeKeyStroke(int scancode, {bool shift = false}) async {
+    final generation = _keyboardQueueGeneration;
+    final originalModifiers = _modifiersBitmask;
+    final alreadyHeld = _activeScancodes.contains(scancode);
+    setState(() {
+      if (shift) _modifiersBitmask |= 0x02;
+      _activeScancodes.add(scancode);
     });
-    return _keystrokeQueue;
+    await _sendKeyboardReport();
+    await Future.delayed(const Duration(milliseconds: 15));
+
+    if (!mounted || generation != _keyboardQueueGeneration) return;
+    setState(() {
+      if (!alreadyHeld) _activeScancodes.remove(scancode);
+      _modifiersBitmask = originalModifiers;
+    });
+    await _sendKeyboardReport();
+    await Future.delayed(const Duration(milliseconds: 10));
   }
 
   Widget _buildHiddenTextField() {
@@ -644,34 +685,34 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
           enableSuggestions: false,
           keyboardType: TextInputType.visiblePassword,
           textInputAction: TextInputAction.send,
-          onChanged: (val) async {
+          onChanged: (val) {
             if (val.length > 1) {
               String typed = val.substring(1);
               for (int i = 0; i < typed.length; i++) {
                 String char = typed[i];
                 if (KeyboardLayouts.charToScancode.containsKey(char)) {
-                  await _queueKeyStroke(
+                  _queueKeyStroke(
                     KeyboardLayouts.charToScancode[char]!,
                     shift: false,
                   );
                 } else if (KeyboardLayouts.shiftCharToScancode.containsKey(
                   char,
                 )) {
-                  await _queueKeyStroke(
+                  _queueKeyStroke(
                     KeyboardLayouts.shiftCharToScancode[char]!,
                     shift: true,
                   );
                 }
               }
             } else if (val.isEmpty) {
-              await _queueKeyStroke(0x2A);
+              _queueKeyStroke(0x2A);
             }
             _builtInKeyboardController.text = " ";
             _builtInKeyboardController.selection =
                 const TextSelection.collapsed(offset: 1);
           },
-          onSubmitted: (_) async {
-            await _queueKeyStroke(0x28);
+          onSubmitted: (_) {
+            _queueKeyStroke(0x28);
             _builtInKeyboardFocusNode.requestFocus();
           },
         ),
@@ -799,15 +840,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
 
   Widget _buildHoldLockButton({bool compact = false}) {
     return GestureDetector(
-      onTap: () {
-        setState(() {
-          _holdLockActive = !_holdLockActive;
-          if (!_holdLockActive) {
-            _activeScancodes.clear();
-            _sendKeyboardReport();
-          }
-        });
-      },
+      onTap: () =>
+          _enqueueKeyboardOperation(() => _setHoldLock(!_holdLockActive)),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 150),
         padding: EdgeInsets.symmetric(
@@ -895,7 +929,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   }
 
   Future<void> _pasteClipboard() async {
-    if (_isPasting) return;
+    if (_isPasting || !_keyboardInputFocused) return;
 
     final messenger = ScaffoldMessenger.of(context);
 
@@ -912,8 +946,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
       return;
     }
 
+    final generation = _keyboardQueueGeneration;
     final data = await Clipboard.getData(Clipboard.kTextPlain);
-    if (!mounted) return;
+    if (!mounted || _isPasting || generation != _keyboardQueueGeneration) {
+      return;
+    }
 
     final rawText = data?.text;
     if (rawText == null || rawText.isEmpty) {
@@ -955,26 +992,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
       return;
     }
 
-    if (chars.length > 1000) {
-      messenger.showSnackBar(
-        SnackBar(
-          content: Text(
-            "Text is too long to paste (${chars.length} chars). Limit is 1,000 characters.",
-          ),
-          backgroundColor: Colors.redAccent,
-          behavior: SnackBarBehavior.floating,
-          duration: const Duration(seconds: 3),
-        ),
-      );
-      return;
-    }
-
     setState(() {
       _isPasting = true;
       _cancelPasteRequested = false;
     });
 
-    final statusNotifier = ValueNotifier<String>("Pasting 0/${chars.length}...");
+    final statusNotifier = ValueNotifier<String>(
+      "Pasting 0/${chars.length}...",
+    );
 
     messenger.clearSnackBars();
     final snackBarController = messenger.showSnackBar(
@@ -989,7 +1014,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                   height: 14,
                   child: CircularProgressIndicator(
                     strokeWidth: 2,
-                    valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF00E5FF)),
+                    valueColor: AlwaysStoppedAnimation<Color>(
+                      Color(0xFF00E5FF),
+                    ),
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -1009,86 +1036,80 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
           onPressed: _cancelPaste,
         ),
         behavior: SnackBarBehavior.floating,
-        duration: const Duration(minutes: 5),
+        persist: true,
+        dismissDirection: DismissDirection.none,
       ),
     );
 
     int typedCount = 0;
-    bool wasCancelled = false;
+    bool reportFailed = false;
+    await _enqueueKeyboardOperation(() async {
+      bool sessionIsCurrent() =>
+          mounted && generation == _keyboardQueueGeneration;
+      if (_cancelPasteRequested) return;
 
-    try {
+      final releaseReport = List<int>.filled(8, 0);
+      final restoreKeyboard =
+          _modifiersBitmask != 0 || _activeScancodes.isNotEmpty;
+      reportFailed =
+          restoreKeyboard && !await _sendKeyboardBytes(releaseReport);
+
       for (final char in chars) {
-        if (_cancelPasteRequested || !mounted) {
-          wasCancelled = true;
+        if (reportFailed || _cancelPasteRequested || !sessionIsCurrent()) break;
+
+        final unshiftedScancode = KeyboardLayouts.charToScancode[char];
+        final pressReport = List<int>.filled(8, 0)
+          ..[0] = unshiftedScancode == null ? 0x02 : 0
+          ..[2] =
+              unshiftedScancode ?? KeyboardLayouts.shiftCharToScancode[char]!;
+        if (!await _sendKeyboardBytes(pressReport)) {
+          reportFailed = true;
           break;
         }
-
-        int scancode;
-        bool shift;
-        if (KeyboardLayouts.charToScancode.containsKey(char)) {
-          scancode = KeyboardLayouts.charToScancode[char]!;
-          shift = false;
-        } else {
-          scancode = KeyboardLayouts.shiftCharToScancode[char]!;
-          shift = true;
-        }
-
-        int origModifiers = _modifiersBitmask;
-        if (shift) {
-          _modifiersBitmask |= 0x02; // Left Shift
-        }
-
-        _activeScancodes.add(scancode);
-        await _sendKeyboardReport();
-
         await Future.delayed(const Duration(milliseconds: 15));
+        if (!sessionIsCurrent()) return;
 
-        _activeScancodes.remove(scancode);
-        _modifiersBitmask = origModifiers;
-        await _sendKeyboardReport();
-
-        await Future.delayed(const Duration(milliseconds: 10));
-
+        if (!await _sendKeyboardBytes(releaseReport)) {
+          reportFailed = true;
+          break;
+        }
         typedCount++;
         statusNotifier.value = "Pasting $typedCount/${chars.length}...";
-      }
-    } catch (e) {
-      debugPrint("Error during faux clipboard paste: $e");
-    } finally {
-      _activeScancodes.clear();
-      await _sendKeyboardReport();
-
-      if (mounted) {
-        setState(() {
-          _isPasting = false;
-        });
+        await Future.delayed(const Duration(milliseconds: 10));
       }
 
-      snackBarController.close();
-      statusNotifier.dispose();
-
-      if (mounted) {
-        if (wasCancelled) {
-          messenger.showSnackBar(
-            SnackBar(
-              content: Text(
-                "Paste cancelled ($typedCount/${chars.length} characters typed)",
-              ),
-              behavior: SnackBarBehavior.floating,
-              duration: const Duration(seconds: 2),
-            ),
-          );
-        } else {
-          messenger.showSnackBar(
-            SnackBar(
-              content: Text("Pasted ${chars.length} characters"),
-              behavior: SnackBarBehavior.floating,
-              duration: const Duration(seconds: 2),
-            ),
-          );
-        }
+      if (!sessionIsCurrent()) return;
+      if (!reportFailed && restoreKeyboard) {
+        reportFailed = !await _sendKeyboardReport();
       }
+      if (reportFailed && sessionIsCurrent()) {
+        _discardKeyboardInput();
+        await _sendKeyboardBytes(releaseReport);
+      }
+    });
+
+    unawaited(snackBarController.closed.then((_) => statusNotifier.dispose()));
+    if (!messenger.mounted) return;
+    messenger.clearSnackBars();
+    if (!mounted) return;
+    setState(() => _isPasting = false);
+
+    final String message;
+    if (reportFailed) {
+      message = "Paste stopped after $typedCount/${chars.length} characters";
+    } else if (typedCount == chars.length) {
+      message = "Pasted $typedCount characters";
+    } else {
+      message =
+          "Paste cancelled ($typedCount/${chars.length} characters typed)";
     }
+    messenger.showSnackBar(
+      SnackBar(
+        content: Text(message),
+        behavior: SnackBarBehavior.floating,
+        duration: const Duration(seconds: 2),
+      ),
+    );
   }
 
   Widget _buildPasteButton({bool compact = false}) {
@@ -1101,9 +1122,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
           vertical: compact ? 4 : 6,
         ),
         decoration: BoxDecoration(
-          color: _isPasting
-              ? const Color(0xFFD32F2F)
-              : const Color(0xFFF4F4F6),
+          color: _isPasting ? const Color(0xFFD32F2F) : const Color(0xFFF4F4F6),
           borderRadius: BorderRadius.circular(compact ? 6 : 8),
           border: Border.all(
             color: _isPasting
@@ -1261,12 +1280,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 4.0),
       child: GestureDetector(
-        onTap: () async {
-          setState(() {
-            _modifiersBitmask ^= mask;
-          });
-          await _sendKeyboardReport();
-        },
+        onTap: () => _enqueueKeyboardOperation(() => _toggleModifier(mask)),
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 100),
           padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -1842,20 +1856,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
           ? null
           : ControlDrawer(
               holdLockActive: _holdLockActive,
-              onHoldLockChanged: (val) {
-                setState(() {
-                  _holdLockActive = val;
-                  if (!_holdLockActive) {
-                    _activeScancodes.clear();
-                    _sendKeyboardReport();
-                  }
-                });
-              },
+              onHoldLockChanged: (val) =>
+                  _enqueueKeyboardOperation(() => _setHoldLock(val)),
               onResetHidState: _resetHidState,
               onKeyboardKindChanged: (kind) {
                 ref.read(settingsProvider.notifier).updateKeyboardKind(kind);
-                _activeScancodes.clear();
-                _sendKeyboardReport();
+                _enqueueKeyboardOperation(() async {
+                  setState(_activeScancodes.clear);
+                  await _sendKeyboardReport();
+                });
               },
             ),
       body: SafeArea(
