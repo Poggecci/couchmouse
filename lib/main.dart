@@ -482,6 +482,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     required double dx,
     required double dy,
     double wheel = 0,
+    bool force = false,
   }) async {
     double totalDx = dx + _fractionalDx;
     double totalDy = dy + _fractionalDy;
@@ -499,7 +500,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     intDy = intDy.clamp(-127, 127);
     intWheel = intWheel.clamp(-127, 127);
 
-    if (intDx != 0 ||
+    if (force ||
+        intDx != 0 ||
         intDy != 0 ||
         intWheel != 0 ||
         buttons != _lastButtonsState) {
@@ -583,7 +585,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     _enqueueKeyboardOperation(() async {
       await _sendKeyboardReport();
     });
-    _sendReport(buttons: 0, dx: 0, dy: 0);
+    // Forced: _lastButtonsState was just zeroed above, so an unforced send
+    // would be skipped and a held mouse button would stay stuck on the host.
+    _sendReport(buttons: 0, dx: 0, dy: 0, force: true);
   }
 
   Future<void> _tapClick() async {
