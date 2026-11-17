@@ -39,7 +39,7 @@ class GamepadModeView extends ConsumerWidget {
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             child: ConstrainedBox(
-              constraints: const BoxConstraints(maxHeight: 240),
+              constraints: const BoxConstraints(maxHeight: 200),
               child: FittedBox(
                 fit: BoxFit.contain,
                 child: GamepadVisualizer(snapshot: snapshot),
@@ -123,7 +123,7 @@ class _ControllerStatus extends StatelessWidget {
   }
 }
 
-/// Fixed-size (360x190) diagram of the controller; scale it with a FittedBox.
+/// Fixed-size (360x124) diagram of the controller; scale it with a FittedBox.
 class GamepadVisualizer extends StatelessWidget {
   final GamepadSnapshot snapshot;
 
@@ -134,7 +134,7 @@ class GamepadVisualizer extends StatelessWidget {
     final s = snapshot;
     return SizedBox(
       width: 360,
-      height: 190,
+      height: 124,
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
