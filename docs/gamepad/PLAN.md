@@ -52,14 +52,14 @@ Status legend: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked
 
 ---
 
-## Phase 0 — Tooling & baseline `[ ]`
+## Phase 0 — Tooling & baseline `[x]`
 Purpose: make every later phase verifiable in this container.
-- [ ] Install Flutter SDK (stable) to the scratch area; `flutter pub get`.
-- [ ] Baseline: run `flutter analyze` and `flutter test` on untouched code;
+- [x] Install Flutter SDK (stable) to the scratch area; `flutter pub get`.
+- [x] Baseline: run `flutter analyze` and `flutter test` on untouched code;
       record results so later regressions are distinguishable from
       pre-existing issues.
-- [ ] Install `hid-tools` (PyPI) to decode/validate HID descriptors & reports.
-- [ ] Set up a throwaway Gradle Kotlin/JVM harness (outside the repo, in
+- [x] Install `hid-tools` (PyPI) to decode/validate HID descriptors & reports.
+- [x] Set up a throwaway Gradle Kotlin/JVM harness (outside the repo, in
       scratchpad) that compiles the pure-Kotlin gamepad files + JUnit tests.
 - Note: Android SDK host (dl.google.com) is blocked → no APK build here.
   Full build happens via GitHub Actions on the fork / on the user's machine.
@@ -149,3 +149,23 @@ phones · per-host trigger-usage preset · foreground service for screen-off use
 
 ## Log
 (Notes, baseline results and surprises recorded here as phases complete.)
+
+### Phase 0 (done)
+- Toolchain: Flutter 3.50.0 stable / Dart 3.14.0 (repo lockfile cannot be
+  enforced on this SDK; `pub get` re-resolves and also rewrites
+  `analysis_options.yaml`. Those two tool-generated diffs are **never
+  committed** on this branch).
+- **Baseline `flutter analyze`:** 19 issues, all `info • deprecated_member_use`
+  (material/cupertino imports deprecated in Flutter 3.47+). No errors/warnings.
+- **Baseline `flutter test`:** 11 pass / **6 fail before any change**:
+  5 widget tests in `widget_test.dart` (smoke test, swipe-up accessory bar,
+  unfocus exits keyboard mode, soft-keyboard dismissal, lifecycle) and
+  `device_sorting_test.dart` "Paired devices are sorted…" — all
+  `pumpAndSettle timed out`. Not caused by google_fonts runtime fetching
+  (probed). Likely Flutter-version related; out of scope. Regression rule:
+  no *new* failures and no new analyzer issues beyond deprecations.
+- hid-tools decodes the existing descriptor: report 1 = 8 B payload,
+  report 2 = 4 B payload (matches code). Script: scratchpad `tools/decode_desc.py`.
+- Kotlin JVM harness (Gradle 8.14 / Kotlin 2.0.21, JVM 17 target) runs JUnit
+  against selected pure-Kotlin repo files via `-PpureSources=File.kt,...`.
+- Maven Central intermittently returns 429 through the proxy; retrying works.
