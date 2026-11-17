@@ -89,6 +89,13 @@ class GamepadReportTest {
         assertEquals(Pair(0f, 0f), GamepadReport.applyRadialDeadzone(Float.NaN, 0f, 0.1f))
     }
 
+    @Test fun zeroDeadzonePassesThroughUnchanged() {
+        assertEquals(Pair(1f, 1f), GamepadReport.applyRadialDeadzone(1f, 1f, 0f))
+        assertEquals(Pair(0.3f, -0.2f), GamepadReport.applyRadialDeadzone(0.3f, -0.2f, 0f))
+        assertEquals(Pair(1f, -1f), GamepadReport.applyRadialDeadzone(1.5f, -2f, 0f))
+        assertEquals(Pair(0f, 0f), GamepadReport.applyRadialDeadzone(Float.POSITIVE_INFINITY, 0f, 0f))
+    }
+
     @Test fun descriptorHasReportId3() {
         val d = HidDescriptors.GAMEPAD_COLLECTION
         val i = (0 until d.size - 1).first { d[it] == 0x85.toByte() }

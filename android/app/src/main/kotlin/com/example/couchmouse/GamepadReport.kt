@@ -137,14 +137,17 @@ object GamepadReport {
     /**
      * Radial deadzone: inputs inside [deadzone] snap to centre and the
      * remaining range is rescaled so full deflection still reaches 1.0.
+     * The vector is never pulled onto the unit circle, so with a zero
+     * deadzone the input passes through unchanged (square-gate corners such
+     * as (1, 1) stay (1, 1)); components are only clamped to -1..1.
      */
     fun applyRadialDeadzone(x: Float, y: Float, deadzone: Float): Pair<Float, Float> {
-        if (x.isNaN() || y.isNaN()) return 0f to 0f
+        if (!x.isFinite() || !y.isFinite()) return 0f to 0f
         val dz = deadzone.coerceIn(0f, 0.99f)
+        if (dz == 0f) return x.coerceIn(-1f, 1f) to y.coerceIn(-1f, 1f)
         val magnitude = sqrt(x * x + y * y)
         if (magnitude <= dz) return 0f to 0f
-        val clamped = magnitude.coerceAtMost(1f)
-        val scale = ((clamped - dz) / (1f - dz)) / magnitude
+        val scale = ((magnitude - dz) / (1f - dz)) / magnitude
         return (x * scale).coerceIn(-1f, 1f) to (y * scale).coerceIn(-1f, 1f)
     }
 

@@ -10,6 +10,9 @@ import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
 import android.util.Log
+import android.view.InputDevice
+import android.view.KeyEvent
+import android.view.MotionEvent
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
@@ -28,6 +31,10 @@ class MainActivity : FlutterActivity() {
     // input events, method-channel calls and HID callbacks (mainExecutor).
     private var gamepadModeEnabled = false
     private var lastGamepadReport: ByteArray = GamepadState.NEUTRAL.toReport()
+    private val gamepadMapper = GamepadInputMapper()
+    // Axis layout per InputDevice id. Android assigns a new id when a
+    // controller reconnects, and the cache is cleared whenever the mode toggles.
+    private val gamepadLayouts = HashMap<Int, GamepadAxisLayout>()
 
     private var isRegistered = false
     private var cachedFlutterEngine: FlutterEngine? = null
@@ -470,6 +477,7 @@ class MainActivity : FlutterActivity() {
                     }
                     if (!enabled) releaseGamepad()
                     gamepadModeEnabled = enabled
+                    gamepadLayouts.clear()
                     result.success(gamepadModeEnabled)
                 }
                 "getGamepadMode" -> {
@@ -524,8 +532,13 @@ class MainActivity : FlutterActivity() {
         return true
     }
 
-    /** Releases every button/axis on the host. Mirrors [releaseKeyboard]. */
+    /**
+     * Releases every button/axis on the host. Mirrors [releaseKeyboard].
+     * Also forgets locally held input: once focus is lost the matching
+     * key-up events go elsewhere, so held state could otherwise get stuck.
+     */
     private fun releaseGamepad() {
+        gamepadMapper.reset()
         val neutral = GamepadState.NEUTRAL.toReport()
         if (lastGamepadReport.contentEquals(neutral)) return
         if (sendReport(GamepadReport.REPORT_ID, neutral)) {
@@ -536,6 +549,58 @@ class MainActivity : FlutterActivity() {
     /** Forgets what the host last saw (e.g. new host or no host); sends nothing. */
     private fun resetGamepadReport() {
         lastGamepadReport = GamepadState.NEUTRAL.toReport()
+    }
+
+    // ---- Physical controller capture (gamepad mode) ----
+
+    override fun dispatchKeyEvent(event: KeyEvent): Boolean {
+        if (gamepadModeEnabled && gamepadMapper.handles(event.keyCode) && isPhysicalController(event.device)) {
+            val layout = layoutFor(event.device)
+            when (event.action) {
+                KeyEvent.ACTION_DOWN -> if (event.repeatCount == 0) {
+                    gamepadMapper.onKey(event.keyCode, true, layout)
+                    sendGamepadState(gamepadMapper.state)
+                }
+                KeyEvent.ACTION_UP -> {
+                    gamepadMapper.onKey(event.keyCode, false, layout)
+                    sendGamepadState(gamepadMapper.state)
+                }
+            }
+            // Consume so Flutter UI navigation and the B -> Back fallback don't fire.
+            return true
+        }
+        return super.dispatchKeyEvent(event)
+    }
+
+    override fun dispatchGenericMotionEvent(event: MotionEvent): Boolean {
+        if (gamepadModeEnabled &&
+            event.isFromSource(InputDevice.SOURCE_JOYSTICK) &&
+            event.actionMasked == MotionEvent.ACTION_MOVE &&
+            isPhysicalController(event.device)
+        ) {
+            // Batched samples are skipped on purpose: only the latest position matters.
+            gamepadMapper.onMotion(layoutFor(event.device)) { axis -> event.getAxisValue(axis) }
+            sendGamepadState(gamepadMapper.state)
+            return true
+        }
+        return super.dispatchGenericMotionEvent(event)
+    }
+
+    private fun isPhysicalController(device: InputDevice?): Boolean {
+        if (device == null || device.isVirtual) return false
+        val sources = device.sources
+        return (sources and InputDevice.SOURCE_GAMEPAD) == InputDevice.SOURCE_GAMEPAD ||
+            (sources and InputDevice.SOURCE_JOYSTICK) == InputDevice.SOURCE_JOYSTICK
+    }
+
+    private fun layoutFor(device: InputDevice?): GamepadAxisLayout {
+        if (device == null) return GamepadAxisLayout.DEFAULT
+        return gamepadLayouts.getOrPut(device.id) {
+            GamepadAxisLayout.from(
+                hasAxis = { axis -> device.getMotionRange(axis, InputDevice.SOURCE_JOYSTICK) != null },
+                flat = { axis -> device.getMotionRange(axis, InputDevice.SOURCE_JOYSTICK)?.flat ?: 0f },
+            )
+        }
     }
 
     private fun notifyFlutter(method: String, arguments: Map<String, Any?>) {

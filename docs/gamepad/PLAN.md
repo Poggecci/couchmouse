@@ -93,20 +93,20 @@ Exit criteria: tests green; hid-tools decodes descriptor with expected usages.
 Exit criteria: composite descriptor decodes cleanly with 3 collections;
 Kotlin harness still green.
 
-## Phase 3 — Native input capture `[ ]`
-- [ ] `GamepadInputMapper` (pure logic, testable): Android keycode →
+## Phase 3 — Native input capture `[x]`
+- [x] `GamepadInputMapper` (pure logic, testable): Android keycode →
       button bit; axis readings → state. Handles:
       D-pad as `KEYCODE_DPAD_*` **and** `AXIS_HAT_X/Y`;
       triggers from `AXIS_LTRIGGER/RTRIGGER` **or** `AXIS_BRAKE/GAS` (max);
       digital L2/R2 when the trigger is analog-less;
       right stick from `AXIS_Z/RZ` (fallback `AXIS_RX/RY`).
-- [ ] `MainActivity` overrides `dispatchKeyEvent` / `dispatchGenericMotionEvent`:
+- [x] `MainActivity` overrides `dispatchKeyEvent` / `dispatchGenericMotionEvent`:
       only when gamepad mode is on, source is GAMEPAD/JOYSTICK/DPAD, and the
       event is from a physical controller; consume it (prevents B→Back).
       Never swallow Volume keys or Home.
-- [ ] Send only when the encoded report changed; collapse MotionEvent
+- [x] Send only when the encoded report changed; collapse MotionEvent
       batches to the latest sample.
-- [ ] Unit tests for mapper (pure-logic portion) in the JVM harness.
+- [x] Unit tests for mapper (pure-logic portion) in the JVM harness.
 
 Exit criteria: mapper tests green; MainActivity type-checks in the
 compile-only harness (see Phase 2 log).
@@ -199,4 +199,25 @@ phones · per-host trigger-usage preset · foreground service for screen-off use
   `androidx.lifecycle` stub (dl.google.com is blocked, maven.google.com
   redirects there). MainActivity compiles cleanly. Not a substitute for an
   AGP build/R8, but catches API/type errors.
+
+### Phase 3 (done)
+- `GamepadInputMapper.kt`: keycode → button bit (BUTTON_A..THUMBR, C/Z);
+  D-pad from `KEYCODE_DPAD_*` keys OR `AXIS_HAT_X/Y`; right stick Z/RZ with
+  RX/RY fallback (`GamepadAxisLayout.from` per device); triggers =
+  max(LTRIGGER, BRAKE) / max(RTRIGGER, GAS); digital-only L2/R2 → full
+  pull; analog > 0.5 also sets the L2/R2 button bits; device `flat` used as
+  radial deadzone (capped 0.5); NaN/∞ → neutral.
+- `MainActivity.dispatchKeyEvent` / `dispatchGenericMotionEvent`: only in
+  gamepad mode, only physical non-virtual GAMEPAD/JOYSTICK devices, only
+  mapped keys (Back/Volume/Home/DPAD_CENTER pass through); events consumed;
+  repeats ignored; send-on-change. `releaseGamepad()` also resets the
+  mapper so input can't stick after focus loss.
+- **Bug found & fixed by tests:** radial deadzone pulled square-gate
+  corners onto the unit circle even with zero deadzone ((1,−1) → 0.707).
+  Now a zero deadzone passes values through untouched; added a regression test.
+- Verification: 27 repo JUnit tests (+2 harness-only) pass; Android jar on
+  the test classpath is compile-only, proving tests only use inlined
+  constants. Full app Kotlin type-checks against API 34 + flutter.jar.
+- Known limitation: input from multiple physical controllers is merged into
+  one virtual pad (last axis sample wins). Fine for a handheld; noted.
 
