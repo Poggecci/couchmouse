@@ -10,6 +10,8 @@ class ControlDrawer extends ConsumerWidget {
   final bool holdLockActive;
   final void Function(bool) onHoldLockChanged;
   final VoidCallback onResetHidState;
+  final VoidCallback onExportSettings;
+  final VoidCallback onImportSettings;
   final void Function(KeyboardKind) onKeyboardKindChanged;
 
   const ControlDrawer({
@@ -17,6 +19,8 @@ class ControlDrawer extends ConsumerWidget {
     required this.holdLockActive,
     required this.onHoldLockChanged,
     required this.onResetHidState,
+    required this.onExportSettings,
+    required this.onImportSettings,
     required this.onKeyboardKindChanged,
   });
 
@@ -390,6 +394,20 @@ class ControlDrawer extends ConsumerWidget {
                 ),
 
                 _buildDivider(),
+                _buildSectionHeader("SETTINGS BACKUP"),
+                ListTile(
+                  leading: const Icon(Icons.file_upload_outlined, size: 20),
+                  title: const Text("Export Settings"),
+                  onTap: onExportSettings,
+                ),
+                ListTile(
+                  leading: const Icon(Icons.file_download_outlined, size: 20),
+                  title: const Text("Import Settings"),
+                  subtitle: const Text(
+                    "Replace current settings from a backup file",
+                  ),
+                  onTap: onImportSettings,
+                ),
 
                 // Reset Application Settings
                 ListTile(

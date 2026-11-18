@@ -118,6 +118,10 @@ The app requests the following permissions at runtime:
 6. Once paired, select your host machine from the device list in CouchMouse and press **Connect**.
 7. Rotate your screen horizontally for the side-by-side keyboard and trackpad, or hold it vertically for single-hand trackpad use.
 
+### Back Up or Move Your Settings
+
+Open **Settings → Export Settings** to save a JSON backup with Android’s file picker. On the new installation, choose **Settings → Import Settings** and select that file. Import replaces your global and per-computer Couch Mouse preferences. Pair your computer in Android’s Bluetooth settings on the new phone.
+
 ### Signing GitHub Releases
 
 Use the same Android signing keystore for every published APK and keep an encrypted backup of the keystore and its passwords. In GitHub Actions, configure these repository secrets.

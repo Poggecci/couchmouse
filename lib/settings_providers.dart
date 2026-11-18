@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -142,199 +143,234 @@ final connectionStateProvider =
     );
 
 class SettingsNotifier extends Notifier<CouchMouseSettings> {
-  static const String _keyGlobalSensitivity = 'global_sensitivity';
-  static const String _keyGlobalMouseAcceleration = 'global_mouse_acceleration';
-  static const String _keyGlobalTrackpadOnLeft = 'global_trackpad_on_left';
-  static const String _keyGlobalKeyboardKind = 'global_keyboard_kind';
-  static const String _keyGlobalInvertTwoFingerScroll =
-      'global_invert_two_finger_scroll';
-  static const String _keyGlobalScrollSensitivity = 'global_scroll_sensitivity';
-  static const String _keyGlobalScrollMomentum = 'global_scroll_momentum';
-  static const String _keyGlobalTutorialStatus = 'global_tutorial_status';
+  static const _storageKey = 'portable_settings';
+  static const _backupFormat = 'couchmouse-settings';
+  static const _globalPrefix = 'global_';
+  static const _tutorialKey = 'global_tutorial_status';
+  static final _deviceKeyPattern = RegExp(
+    r'^device_(?:[0-9a-fA-F]{2}:){5}[0-9a-fA-F]{2}_(.+)$',
+  );
 
-  String _deviceKey(String address, String key) => 'device_${address}_$key';
+  Future<void> _pendingWrites = Future.value();
+  int _writeRevision = 0;
 
   @override
   CouchMouseSettings build() {
     final connection = ref.watch(connectionStateProvider);
-    final prefs = ref.watch(sharedPreferencesProvider);
-    final String tutorialStatus =
-        prefs.getString(_keyGlobalTutorialStatus) ?? 'none';
+    final stored = _readSettings(ref.watch(sharedPreferencesProvider));
+    final address = connection.isConnected
+        ? connection.connectedDeviceAddress
+        : null;
+    return _settingsFor(stored, address);
+  }
 
-    if (connection.isConnected && connection.connectedDeviceAddress != null) {
-      final address = connection.connectedDeviceAddress!;
-      final hasDeviceSettings = prefs.containsKey(
-        _deviceKey(address, 'sensitivity'),
-      );
-      if (hasDeviceSettings) {
-        double sens =
-            prefs.getDouble(_deviceKey(address, 'sensitivity')) ?? 800.0;
-        if (sens < 150.0) {
-          sens = (sens * 160.0).clamp(200.0, 8000.0);
-          prefs.setDouble(_deviceKey(address, 'sensitivity'), sens);
-        }
-        return CouchMouseSettings(
-          sensitivity: sens,
-          mouseAcceleration:
-              prefs.getBool(_deviceKey(address, 'mouse_acceleration')) ?? false,
-          trackpadOnLeft:
-              prefs.getBool(_deviceKey(address, 'trackpad_on_left')) ?? false,
-          keyboardKind:
-              KeyboardKind.values[prefs.getInt(
-                    _deviceKey(address, 'keyboard_kind'),
-                  ) ??
-                  KeyboardKind.seventyFive.index],
-          invertTwoFingerScroll:
-              prefs.getBool(_deviceKey(address, 'invert_two_finger_scroll')) ??
-              false,
-          scrollSensitivity:
-              prefs.getDouble(_deviceKey(address, 'scroll_sensitivity')) ?? 2.0,
-          scrollMomentum:
-              prefs.getDouble(_deviceKey(address, 'scroll_momentum')) ?? 0.05,
-          tutorialStatus: tutorialStatus,
-        );
-      }
-    }
-
-    double globalSens = prefs.getDouble(_keyGlobalSensitivity) ?? 800.0;
-    if (globalSens < 150.0) {
-      globalSens = (globalSens * 160.0).clamp(200.0, 8000.0);
-      prefs.setDouble(_keyGlobalSensitivity, globalSens);
-    }
+  CouchMouseSettings _settingsFor(Map<String, Object> stored, String? address) {
+    final devicePrefix = _prefix(address);
+    final prefix = stored.containsKey('${devicePrefix}sensitivity')
+        ? devicePrefix
+        : _globalPrefix;
+    final values = _profileValues(stored, prefix);
 
     return CouchMouseSettings(
-      sensitivity: globalSens,
-      mouseAcceleration: prefs.getBool(_keyGlobalMouseAcceleration) ?? false,
-      trackpadOnLeft: prefs.getBool(_keyGlobalTrackpadOnLeft) ?? false,
-      keyboardKind:
-          KeyboardKind.values[prefs.getInt(_keyGlobalKeyboardKind) ??
-              KeyboardKind.seventyFive.index],
-      invertTwoFingerScroll:
-          prefs.getBool(_keyGlobalInvertTwoFingerScroll) ?? false,
-      scrollSensitivity: prefs.getDouble(_keyGlobalScrollSensitivity) ?? 2.0,
-      scrollMomentum: prefs.getDouble(_keyGlobalScrollMomentum) ?? 0.05,
-      tutorialStatus: tutorialStatus,
+      sensitivity: values['sensitivity']! as double,
+      mouseAcceleration: values['mouse_acceleration']! as bool,
+      trackpadOnLeft: values['trackpad_on_left']! as bool,
+      keyboardKind: KeyboardKind.values[values['keyboard_kind']! as int],
+      invertTwoFingerScroll: values['invert_two_finger_scroll']! as bool,
+      scrollSensitivity: values['scroll_sensitivity']! as double,
+      scrollMomentum: values['scroll_momentum']! as double,
+      tutorialStatus: stored[_tutorialKey] as String? ?? 'none',
     );
   }
 
-  Future<void> updateSensitivity(double value) async {
+  Map<String, Object> _profileValues(
+    Map<String, Object> stored,
+    String prefix,
+  ) {
+    var sensitivity =
+        (stored['${prefix}sensitivity'] as num?)?.toDouble() ?? 800.0;
+    if (sensitivity < 150.0) {
+      sensitivity = (sensitivity * 160.0).clamp(200.0, 8000.0);
+    }
+    return {
+      'sensitivity': sensitivity,
+      'mouse_acceleration': stored['${prefix}mouse_acceleration'] ?? false,
+      'trackpad_on_left': stored['${prefix}trackpad_on_left'] ?? false,
+      'keyboard_kind':
+          stored['${prefix}keyboard_kind'] ?? KeyboardKind.seventyFive.index,
+      'invert_two_finger_scroll':
+          stored['${prefix}invert_two_finger_scroll'] ?? false,
+      'scroll_sensitivity':
+          (stored['${prefix}scroll_sensitivity'] as num?)?.toDouble() ?? 2.0,
+      'scroll_momentum':
+          (stored['${prefix}scroll_momentum'] as num?)?.toDouble() ?? 0.05,
+    };
+  }
+
+  String _prefix(String? address) =>
+      address == null ? _globalPrefix : 'device_${address}_';
+
+  String? get _connectedAddress {
+    final connection = ref.read(connectionStateProvider);
+    return connection.isConnected ? connection.connectedDeviceAddress : null;
+  }
+
+  bool _validSetting(String key, Object? value) {
+    if (key == _tutorialKey) {
+      return value == 'none' || value == 'completed' || value == 'dismissed';
+    }
+    final name = key.startsWith(_globalPrefix)
+        ? key.substring(_globalPrefix.length)
+        : _deviceKeyPattern.firstMatch(key)?.group(1);
+    return switch (name) {
+      'sensitivity' => value is num && value >= 0 && value <= 8000,
+      'scroll_sensitivity' => value is num && value >= 1 && value <= 5,
+      'scroll_momentum' => value is num && value >= 0 && value <= 1,
+      'keyboard_kind' =>
+        value is int && value >= 0 && value < KeyboardKind.values.length,
+      'mouse_acceleration' ||
+      'trackpad_on_left' ||
+      'invert_two_finger_scroll' => value is bool,
+      _ => false,
+    };
+  }
+
+  Map<String, Object> _readSettings(SharedPreferences prefs) {
+    final saved = prefs.getString(_storageKey);
+    if (saved != null) {
+      return Map<String, Object>.from(jsonDecode(saved) as Map);
+    }
+
+    // Older installations stored each setting separately.
+    final legacy = <String, Object>{};
+    for (final key in prefs.getKeys()) {
+      final value = prefs.get(key);
+      if (_validSetting(key, value)) legacy[key] = value!;
+    }
+    return legacy;
+  }
+
+  // Store one snapshot so a backup can be restored as a single preference write.
+  Future<void> _writeSettings(void Function(Map<String, Object>) edit) {
+    final prefs = ref.read(sharedPreferencesProvider);
+    final revision = ++_writeRevision;
+    final write = _pendingWrites.then((_) async {
+      final stored = _readSettings(prefs);
+      edit(stored);
+      try {
+        if (!await prefs.setString(_storageKey, jsonEncode(stored))) {
+          throw StateError('Could not save settings');
+        }
+      } catch (_) {
+        // SharedPreferences updates its cache before the platform write finishes.
+        await prefs.reload();
+        rethrow;
+      } finally {
+        if (ref.mounted && revision == _writeRevision) {
+          state = _settingsFor(_readSettings(prefs), _connectedAddress);
+        }
+      }
+    });
+    _pendingWrites = write.then<void>((_) {}, onError: (Object _) {});
+    return write;
+  }
+
+  Future<String> exportSettings() async {
+    final prefs = ref.read(sharedPreferencesProvider);
+    await _pendingWrites;
+    return const JsonEncoder.withIndent('  ').convert({
+      'format': _backupFormat,
+      'version': 1,
+      'settings': _readSettings(prefs),
+    });
+  }
+
+  Future<void> importSettings(String backup) async {
+    final decoded = jsonDecode(backup);
+    if (decoded is! Map ||
+        decoded['format'] != _backupFormat ||
+        decoded['version'] != 1 ||
+        decoded['settings'] is! Map<String, dynamic>) {
+      throw const FormatException('Choose a Couch Mouse settings backup.');
+    }
+
+    final imported = <String, Object>{};
+    final settings = decoded['settings'] as Map<String, dynamic>;
+    for (final entry in settings.entries) {
+      if (!_validSetting(entry.key, entry.value)) {
+        throw const FormatException('The backup contains invalid settings.');
+      }
+      imported[entry.key] = entry.value as Object;
+    }
+
+    await _writeSettings(
+      (stored) => stored
+        ..clear()
+        ..addAll(imported),
+    );
+  }
+
+  Future<void> _saveSetting(String name, Object value) {
+    final address = _connectedAddress;
+    final prefix = _prefix(address);
+    return _writeSettings((stored) {
+      if (address != null && !stored.containsKey('${prefix}sensitivity')) {
+        final global = _profileValues(stored, _globalPrefix);
+        stored.addAll(
+          global.map((key, value) => MapEntry('$prefix$key', value)),
+        );
+      }
+      stored['$prefix$name'] = value;
+    });
+  }
+
+  Future<void> updateSensitivity(double value) {
     state = state.copyWith(sensitivity: value);
-    await _saveCurrentState();
+    return _saveSetting('sensitivity', value);
   }
 
-  Future<void> updateMouseAcceleration(bool value) async {
+  Future<void> updateMouseAcceleration(bool value) {
     state = state.copyWith(mouseAcceleration: value);
-    await _saveCurrentState();
+    return _saveSetting('mouse_acceleration', value);
   }
 
-  Future<void> updateTrackpadOnLeft(bool value) async {
+  Future<void> updateTrackpadOnLeft(bool value) {
     state = state.copyWith(trackpadOnLeft: value);
-    await _saveCurrentState();
+    return _saveSetting('trackpad_on_left', value);
   }
 
-  Future<void> updateKeyboardKind(KeyboardKind value) async {
+  Future<void> updateKeyboardKind(KeyboardKind value) {
     state = state.copyWith(keyboardKind: value);
-    await _saveCurrentState();
+    return _saveSetting('keyboard_kind', value.index);
   }
 
-  Future<void> updateInvertTwoFingerScroll(bool value) async {
+  Future<void> updateInvertTwoFingerScroll(bool value) {
     state = state.copyWith(invertTwoFingerScroll: value);
-    await _saveCurrentState();
+    return _saveSetting('invert_two_finger_scroll', value);
   }
 
-  Future<void> updateScrollSensitivity(double value) async {
+  Future<void> updateScrollSensitivity(double value) {
     final rounded = (value * 10).roundToDouble() / 10.0;
     state = state.copyWith(scrollSensitivity: rounded);
-    await _saveCurrentState();
+    return _saveSetting('scroll_sensitivity', rounded);
   }
 
-  Future<void> updateScrollMomentum(double value) async {
-    state = state.copyWith(scrollMomentum: value);
-    await _saveCurrentState();
+  Future<void> updateScrollMomentum(double value) {
+    final rounded = (value * 10).roundToDouble() / 10.0;
+    state = state.copyWith(scrollMomentum: rounded);
+    return _saveSetting('scroll_momentum', rounded);
   }
 
-  Future<void> updateTutorialStatus(String status) async {
+  Future<void> updateTutorialStatus(String status) {
     state = state.copyWith(tutorialStatus: status);
-    final prefs = ref.read(sharedPreferencesProvider);
-    await prefs.setString(_keyGlobalTutorialStatus, status);
-  }
-
-  Future<void> _saveCurrentState() async {
-    final connection = ref.read(connectionStateProvider);
-    final prefs = ref.read(sharedPreferencesProvider);
-
-    if (connection.isConnected && connection.connectedDeviceAddress != null) {
-      final address = connection.connectedDeviceAddress!;
-      await prefs.setDouble(
-        _deviceKey(address, 'sensitivity'),
-        state.sensitivity,
-      );
-      await prefs.setBool(
-        _deviceKey(address, 'mouse_acceleration'),
-        state.mouseAcceleration,
-      );
-      await prefs.setBool(
-        _deviceKey(address, 'trackpad_on_left'),
-        state.trackpadOnLeft,
-      );
-      await prefs.setInt(
-        _deviceKey(address, 'keyboard_kind'),
-        state.keyboardKind.index,
-      );
-      await prefs.setBool(
-        _deviceKey(address, 'invert_two_finger_scroll'),
-        state.invertTwoFingerScroll,
-      );
-      await prefs.setDouble(
-        _deviceKey(address, 'scroll_sensitivity'),
-        state.scrollSensitivity,
-      );
-      await prefs.setDouble(
-        _deviceKey(address, 'scroll_momentum'),
-        state.scrollMomentum,
-      );
-    } else {
-      await prefs.setDouble(_keyGlobalSensitivity, state.sensitivity);
-      await prefs.setBool(_keyGlobalMouseAcceleration, state.mouseAcceleration);
-      await prefs.setBool(_keyGlobalTrackpadOnLeft, state.trackpadOnLeft);
-      await prefs.setInt(_keyGlobalKeyboardKind, state.keyboardKind.index);
-      await prefs.setBool(
-        _keyGlobalInvertTwoFingerScroll,
-        state.invertTwoFingerScroll,
-      );
-      await prefs.setDouble(
-        _keyGlobalScrollSensitivity,
-        state.scrollSensitivity,
-      );
-      await prefs.setDouble(_keyGlobalScrollMomentum, state.scrollMomentum);
-    }
+    return _writeSettings((stored) => stored[_tutorialKey] = status);
   }
 
   Future<void> resetSettings() async {
-    final connection = ref.read(connectionStateProvider);
-    final prefs = ref.read(sharedPreferencesProvider);
-
-    if (connection.isConnected && connection.connectedDeviceAddress != null) {
-      final address = connection.connectedDeviceAddress!;
-      await prefs.remove(_deviceKey(address, 'sensitivity'));
-      await prefs.remove(_deviceKey(address, 'mouse_acceleration'));
-      await prefs.remove(_deviceKey(address, 'trackpad_on_left'));
-      await prefs.remove(_deviceKey(address, 'keyboard_kind'));
-      await prefs.remove(_deviceKey(address, 'invert_two_finger_scroll'));
-      await prefs.remove(_deviceKey(address, 'scroll_sensitivity'));
-      await prefs.remove(_deviceKey(address, 'scroll_momentum'));
-    } else {
-      await prefs.remove(_keyGlobalSensitivity);
-      await prefs.remove(_keyGlobalMouseAcceleration);
-      await prefs.remove(_keyGlobalTrackpadOnLeft);
-      await prefs.remove(_keyGlobalKeyboardKind);
-      await prefs.remove(_keyGlobalInvertTwoFingerScroll);
-      await prefs.remove(_keyGlobalScrollSensitivity);
-      await prefs.remove(_keyGlobalScrollMomentum);
-      await prefs.remove(_keyGlobalTutorialStatus);
-    }
-
-    ref.invalidateSelf();
+    final prefix = _prefix(_connectedAddress);
+    await _writeSettings(
+      (stored) => stored.removeWhere((key, _) => key.startsWith(prefix)),
+    );
   }
 }
 

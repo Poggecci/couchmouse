@@ -69,11 +69,15 @@ class HomeScreen extends ConsumerStatefulWidget {
 class _HomeScreenState extends ConsumerState<HomeScreen>
     with WidgetsBindingObserver {
   static const _channel = MethodChannel('com.example.couchmouse/hid');
+  static const _settingsChannel = MethodChannel(
+    'com.example.couchmouse/settings',
+  );
 
   bool _isSupported = true;
   bool _permissionsGranted = false;
   bool _isRegistered = false;
   bool _walkthroughChecked = false;
+  bool _transferringSettings = false;
 
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
@@ -292,6 +296,48 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     } catch (e) {
       debugPrint("Error loading connection state: $e");
     }
+  }
+
+  Future<void> _transferSettings({required bool export}) async {
+    if (_transferringSettings) return;
+    _transferringSettings = true;
+    _scaffoldKey.currentState?.closeDrawer();
+    final messenger = ScaffoldMessenger.of(context);
+
+    String message;
+    try {
+      if (export) {
+        final backup = await ref
+            .read(settingsProvider.notifier)
+            .exportSettings();
+        if (!mounted) return;
+        final saved = await _settingsChannel.invokeMethod<bool>(
+          'exportSettings',
+          {'contents': backup},
+        );
+        if (saved != true) return;
+        message = 'Settings backup saved.';
+      } else {
+        final backup = await _settingsChannel.invokeMethod<String>(
+          'importSettings',
+        );
+        if (!mounted || backup == null) return;
+        await ref.read(settingsProvider.notifier).importSettings(backup);
+        message = 'Settings restored.';
+      }
+    } on FormatException {
+      message = 'Choose a valid Couch Mouse settings backup.';
+    } on PlatformException catch (error) {
+      message = error.message ?? 'Could not open the settings backup.';
+    } catch (error) {
+      debugPrint('Settings backup failed: ${error.runtimeType}');
+      message = export
+          ? 'Could not save settings.'
+          : 'Could not restore settings.';
+    } finally {
+      _transferringSettings = false;
+    }
+    if (mounted) messenger.showSnackBar(SnackBar(content: Text(message)));
   }
 
   Future<void> _openBluetoothSettings() async {
@@ -1856,6 +1902,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
           ? null
           : ControlDrawer(
               holdLockActive: _holdLockActive,
+              onExportSettings: () => _transferSettings(export: true),
+              onImportSettings: () => _transferSettings(export: false),
               onHoldLockChanged: (val) =>
                   _enqueueKeyboardOperation(() => _setHoldLock(val)),
               onResetHidState: _resetHidState,

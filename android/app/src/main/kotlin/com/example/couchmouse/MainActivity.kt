@@ -17,6 +17,7 @@ import io.flutter.plugin.common.MethodChannel
 class MainActivity : FlutterActivity() {
     private val CHANNEL = "com.example.couchmouse/hid"
     private val TAG = "RemoteMouseHID"
+    private val settingsDocuments = SettingsDocuments(this)
 
     private var bluetoothAdapter: BluetoothAdapter? = null
     private var bluetoothHidDevice: BluetoothHidDevice? = null
@@ -214,6 +215,21 @@ class MainActivity : FlutterActivity() {
     @SuppressLint("MissingPermission")
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "com.example.couchmouse/settings")
+            .setMethodCallHandler { call, result ->
+                when (call.method) {
+                    "exportSettings" -> {
+                        val contents = call.argument<String>("contents")
+                        if (contents == null) {
+                            result.error("INVALID_BACKUP", "No settings backup to save.", null)
+                        } else {
+                            settingsDocuments.open(result, contents)
+                        }
+                    }
+                    "importSettings" -> settingsDocuments.open(result)
+                    else -> result.notImplemented()
+                }
+            }
         cachedFlutterEngine = flutterEngine
 
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, CHANNEL).setMethodCallHandler { call, result ->
@@ -501,8 +517,15 @@ class MainActivity : FlutterActivity() {
         super.onWindowFocusChanged(hasFocus)
     }
 
+    @Suppress("DEPRECATION", "OVERRIDE_DEPRECATION")
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        settingsDocuments.onActivityResult(requestCode, resultCode, data)
+    }
+
     override fun onDestroy() {
         releaseKeyboard()
+        settingsDocuments.close()
         cachedFlutterEngine = null
         try {
             unregisterReceiver(bluetoothReceiver)
