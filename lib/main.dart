@@ -116,7 +116,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   bool _holdLockActive = false;
   bool _typingText = false;
   bool _cancelTypingRequested = false;
-  bool _blockInput = false;
 
   bool _keyboardMode = false;
   bool _keyboardDidOpen = false;
@@ -1217,7 +1216,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     setState(() {
       _typingText = true;
       _cancelTypingRequested = false;
-      _blockInput = source == _TextSource.typingBox;
     });
 
     final statusNotifier = ValueNotifier<String>(
@@ -1318,10 +1316,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     if (!messenger.mounted) return typedCount;
     messenger.clearSnackBars();
     if (!mounted) return typedCount;
-    setState(() {
-      _typingText = false;
-      _blockInput = false;
-    });
+    setState(() => _typingText = false);
 
     final String message;
     if (reportFailed) {
@@ -2139,9 +2134,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                     ref.read(gamepadModeProvider.notifier).setEnabled(false),
               )
             : IgnorePointer(
-                ignoring: _blockInput,
+                ignoring: _typingText,
                 child: AnimatedOpacity(
-                  opacity: _blockInput ? 0.4 : 1.0,
+                  opacity: _typingText ? 0.4 : 1.0,
                   duration: const Duration(milliseconds: 150),
                   child: showFullKeyboard
                       ? _buildForcedLandscapeKeyboardLayout()

@@ -11,10 +11,10 @@ enum _PasteEnd { completed, sendFailure, cancelled, focusLost, disposed }
 void main() {
   for (final (description, end) in [
     (
-      'Paste sends one Enter per line ending before replaying buffered keys',
+      'Paste sends one Enter per line ending and blocks taps until done',
       _PasteEnd.completed,
     ),
-    ('A failed paste drops buffered keystrokes', _PasteEnd.sendFailure),
+    ('A failed paste stops typing', _PasteEnd.sendFailure),
     ('A paste over 1,000 characters can be cancelled', _PasteEnd.cancelled),
     (
       'Focus loss releases the current key and drops the queue',
@@ -52,8 +52,8 @@ void main() {
 
       await tester.tap(find.text('Paste'));
       await tester.pump();
-      await tester.tap(find.text('B'));
-      await tester.tap(find.text('X'));
+      await tester.tap(find.text('B'), warnIfMissed: false);
+      await tester.tap(find.text('X'), warnIfMissed: false);
       expect(reports.map((report) => report[2]), [0x04]);
       expect(reports.single[0], 0x02);
 
@@ -66,7 +66,7 @@ void main() {
         tester.binding.handleAppLifecycleStateChanged(
           AppLifecycleState.inactive,
         );
-        await tester.tap(find.text('A'));
+        await tester.tap(find.text('A'), warnIfMissed: false);
         tester.binding.handleAppLifecycleStateChanged(
           AppLifecycleState.resumed,
         );
@@ -90,12 +90,7 @@ void main() {
           expect(reports.map((report) => report[2]), [0x04, 0, 0x05, 0]);
         }
       } else if (end == _PasteEnd.cancelled) {
-        expect(reports.skip(reports.length - 4).map((report) => report[2]), [
-          0x05,
-          0,
-          0x1B,
-          0,
-        ]);
+        expect(reports.last, List<int>.filled(8, 0));
         expect(reports.length, lessThan(2 * clipboardText.length));
         await tester.pumpAndSettle();
         expect(find.textContaining('Paste cancelled'), findsOneWidget);
@@ -103,8 +98,8 @@ void main() {
         expect(reports.map((report) => report[2]), [0x04, 0, 0]);
         expect(find.text('Paste stopped after 0/2 characters'), findsOneWidget);
       } else {
-        // A, Enter, b, Enter, c, Enter, d, then the queued B and X taps.
-        const presses = [0x04, 0x28, 0x05, 0x28, 0x06, 0x28, 0x07, 0x05, 0x1B];
+        // A, Enter, b, Enter, c, Enter, d. The B and X taps were blocked.
+        const presses = [0x04, 0x28, 0x05, 0x28, 0x06, 0x28, 0x07];
         expect(
           reports.map((report) => report[2]),
           presses.expand((key) => [key, 0]),
