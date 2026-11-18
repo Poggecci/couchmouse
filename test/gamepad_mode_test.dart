@@ -90,9 +90,9 @@ void main() {
       return c;
     }
 
-    test('defaults to 60 Hz and persists a new rate', () async {
+    test('defaults to 125 Hz and persists a new rate', () async {
       final c = await containerWith({});
-      expect(c.read(gamepadReportRateProvider), 60);
+      expect(c.read(gamepadReportRateProvider), 125);
       await c.read(gamepadReportRateProvider.notifier).setRate(90);
       expect(c.read(gamepadReportRateProvider), 90);
       final sp = await SharedPreferences.getInstance();
@@ -102,12 +102,12 @@ void main() {
     test('ignores rates that are not offered', () async {
       final c = await containerWith({});
       await c.read(gamepadReportRateProvider.notifier).setRate(1000);
-      expect(c.read(gamepadReportRateProvider), 60);
+      expect(c.read(gamepadReportRateProvider), 125);
     });
 
     test('falls back to the default for an invalid saved value', () async {
       final c = await containerWith({'global_gamepad_report_rate_hz': 7});
-      expect(c.read(gamepadReportRateProvider), 60);
+      expect(c.read(gamepadReportRateProvider), 125);
     });
   });
 
@@ -284,7 +284,7 @@ void main() {
       tester,
     ) async {
       final prefs = await setUpApp(tester, gamepadMode: true);
-      expect(rateCalls(), [60]);
+      expect(rateCalls(), [125]);
 
       // The drawer's existing BlockSlider label rows overflow under the test
       // font (every glyph is a full square). This also happens on upstream
@@ -316,7 +316,7 @@ void main() {
       FlutterError.onError = originalOnError;
 
       expect(prefs.getInt('global_gamepad_report_rate_hz'), 30);
-      expect(rateCalls(), [60, 30]);
+      expect(rateCalls(), [125, 30]);
       // Only the known slider overflow was tolerated, nothing from the new UI.
       for (final t in tolerated) {
         expect(t, isNot(contains('_RateOption')));

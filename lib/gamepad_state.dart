@@ -119,7 +119,7 @@ class GamepadReportRateNotifier extends Notifier<int> {
   static const String _key = 'global_gamepad_report_rate_hz';
   static const List<int> options = [30, 60, 90, 125];
   static const int defaultHz =
-      60; // must match GamepadReportPump.DEFAULT_RATE_HZ
+      125; // must match GamepadReportPump.DEFAULT_RATE_HZ
 
   @override
   int build() {

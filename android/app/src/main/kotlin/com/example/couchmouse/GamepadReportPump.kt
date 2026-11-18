@@ -158,8 +158,8 @@ class GamepadReportPump(
     }
 
     companion object {
-        const val DEFAULT_RATE_HZ = 60
-        const val DEFAULT_MIN_INTERVAL_MS = 1000L / DEFAULT_RATE_HZ // 16 ms
+        const val DEFAULT_RATE_HZ = 125
+        const val DEFAULT_MIN_INTERVAL_MS = 1000L / DEFAULT_RATE_HZ // 8 ms
         const val KEEP_ALIVE_MS = 50L // 20 Hz when idle; the link sleeps after ~1 s of silence
         const val MIN_RATE_HZ = 10
         const val MAX_RATE_HZ = 250

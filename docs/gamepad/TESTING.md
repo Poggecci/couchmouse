@@ -61,7 +61,7 @@ Pick at least one:
 - [ ] Gamepad mode is still on after closing and reopening the app.
 
 ## 4b. Responsiveness and dropped inputs (send-on-change + keepalive)
-Run these at the default **60 Hz** first, then at 30 and 90 Hz (Menu →
+Run these at the default **125 Hz** first, then at 60 and 90 Hz (Menu →
 Gamepad → Report Rate) and note which feels best on your host.
 - [ ] Leave the controller untouched for 10+ s, then tap A once → the host
       registers it immediately.

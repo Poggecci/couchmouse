@@ -746,8 +746,11 @@ class MainActivity : FlutterActivity() {
     // Runs on the main thread, like every other keyboard send, so it can never
     // re-send a stale key state after a newer one.
 
+    // In gamepad mode the report pump already sends at least every 50 ms, so the
+    // link keep-alive stands down.
     private fun linkKeepAliveWanted(): Boolean =
-        isRegistered && hostDevice != null && keyboardInputResumed && hasWindowFocus()
+        isRegistered && hostDevice != null && keyboardInputResumed && hasWindowFocus() &&
+            !gamepadModeEnabled
 
     private fun updateLinkKeepAlive() {
         mainHandler.removeCallbacks(linkKeepAliveTick)
