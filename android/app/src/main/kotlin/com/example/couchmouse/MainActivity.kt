@@ -8,6 +8,9 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.os.Build
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
+import android.os.SystemClock
 import android.provider.Settings
 import android.util.Log
 import io.flutter.embedding.android.FlutterActivity
@@ -15,6 +18,11 @@ import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
 
 class MainActivity : FlutterActivity() {
+    private companion object {
+        // Max silence on the HID link before a keep-alive report (see updateLinkKeepAlive).
+        const val LINK_KEEPALIVE_MS = 50L
+    }
+
     private val CHANNEL = "com.example.couchmouse/hid"
     private val TAG = "RemoteMouseHID"
 
@@ -23,6 +31,12 @@ class MainActivity : FlutterActivity() {
     private var hostDevice: BluetoothDevice? = null
     private var keyboardReportHost: BluetoothDevice? = null
     private var keyboardInputResumed = false
+
+    // Link keep-alive state (main thread only; see updateLinkKeepAlive).
+    private val mainHandler = Handler(Looper.getMainLooper())
+    private var lastReportSentAt = 0L                 // SystemClock.uptimeMillis()
+    private var lastKeyboardReport = ByteArray(8)     // last keyboard state sent
+    private val linkKeepAliveTick = Runnable { runLinkKeepAlive() }
 
     private var isRegistered = false
     private var cachedFlutterEngine: FlutterEngine? = null
@@ -86,6 +100,7 @@ class MainActivity : FlutterActivity() {
                         hostDevice = null
                         isRegistered = false
                         keyboardReportHost = null
+                        updateLinkKeepAlive()
                         notifyFlutter("onRegistrationChanged", mapOf("registered" to false))
                         notifyFlutter("onConnectionStateChanged", mapOf("connected" to false))
                     }
@@ -113,14 +128,18 @@ class MainActivity : FlutterActivity() {
         try {
             bluetoothHidDevice?.registerApp(
                 sdpSettings,
-                null, // QoS Incoming settings (Optional)
-                null, // QoS Outgoing settings (Optional)
+                // Without QoS the controller services the HID link only every ~25-35 ms,
+                // so reports leave in bursts (cursor stutter). Ask for guaranteed
+                // service with low latency, like a real mouse does.
+                hidQos(),
+                hidQos(),
                 mainExecutor,
                 object : BluetoothHidDevice.Callback() {
                     override fun onAppStatusChanged(pluggedDevice: BluetoothDevice?, registered: Boolean) {
                         Log.d(TAG, "Application HID Profile registration state: $registered")
                         isRegistered = registered
                         if (!registered) keyboardReportHost = null
+                        updateLinkKeepAlive()
                         notifyFlutter("onRegistrationChanged", mapOf("registered" to registered))
                     }
 
@@ -146,6 +165,7 @@ class MainActivity : FlutterActivity() {
                                 keyboardReportHost = null
                             }
                         }
+                        updateLinkKeepAlive()
 
                         notifyFlutter(
                             "onConnectionStateChanged",
@@ -438,6 +458,7 @@ class MainActivity : FlutterActivity() {
                     }
                     val success = sendReport(1, report)
                     if (success) {
+                        lastKeyboardReport = report
                         keyboardReportHost = if (holdsKeys) hostDevice else null
                         result.success(null)
                     } else {
@@ -451,6 +472,20 @@ class MainActivity : FlutterActivity() {
         }
     }
 
+    /**
+     * L2CAP/HCI QoS for the HID channels. Latency is in microseconds and becomes the
+     * link's poll interval (Tpoll). 2.5 ms measured smooth on a Linux host (vs ~25-35 ms
+     * bursts with no QoS). Token rate/bucket cover small reports at up to ~250 Hz.
+     */
+    private fun hidQos() = BluetoothHidDeviceAppQosSettings(
+        BluetoothHidDeviceAppQosSettings.SERVICE_GUARANTEED,
+        4000,  // token rate, bytes/s
+        16,    // token bucket size, bytes
+        0,     // peak bandwidth (0 = unspecified)
+        2500,  // latency, us
+        BluetoothHidDeviceAppQosSettings.MAX, // delay variation (don't care)
+    )
+
     @SuppressLint("MissingPermission")
     private fun sendReport(id: Int, report: ByteArray): Boolean {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.P) return false
@@ -462,6 +497,7 @@ class MainActivity : FlutterActivity() {
         }
 
         return try {
+            lastReportSentAt = SystemClock.uptimeMillis()
             hid.sendReport(device, id, report)
         } catch (e: SecurityException) {
             Log.e(TAG, "SecurityException inside sendReport: ${e.message}")
@@ -476,7 +512,38 @@ class MainActivity : FlutterActivity() {
         val device = hostDevice ?: return
         if (keyboardReportHost == device && sendReport(1, ByteArray(8))) {
             keyboardReportHost = null
+            lastKeyboardReport = ByteArray(8)
         }
+    }
+
+    // ---- Link keep-alive ----
+    //
+    // Android's HID-device power manager drops an idle link into sniff with
+    // subrating (max receive latency 225 ms). The first report after a pause then
+    // waits up to ~225 ms for the next anchor: the start of every swipe or key
+    // press lags. Keeping a little traffic on the link holds it in the busy
+    // 11.25 ms sniff state. The keep-alive re-sends the current keyboard state:
+    // an unchanged keyboard report produces no key events on the host, and it
+    // never touches the mouse (a zero-motion mouse report can count as activity).
+    // Runs on the main thread, like every other keyboard send, so it can never
+    // re-send a stale key state after a newer one.
+
+    private fun linkKeepAliveWanted(): Boolean =
+        isRegistered && hostDevice != null && keyboardInputResumed && hasWindowFocus()
+
+    private fun updateLinkKeepAlive() {
+        mainHandler.removeCallbacks(linkKeepAliveTick)
+        if (linkKeepAliveWanted()) runLinkKeepAlive()
+    }
+
+    private fun runLinkKeepAlive() {
+        if (!linkKeepAliveWanted()) return
+        val now = SystemClock.uptimeMillis()
+        if (now - lastReportSentAt >= LINK_KEEPALIVE_MS) {
+            sendReport(1, lastKeyboardReport)
+        }
+        // max(): if the send didn't go out (link dropping), don't spin on a past deadline.
+        mainHandler.postAtTime(linkKeepAliveTick, maxOf(lastReportSentAt, now) + LINK_KEEPALIVE_MS)
     }
 
     private fun notifyFlutter(method: String, arguments: Map<String, Any?>) {
@@ -488,20 +555,24 @@ class MainActivity : FlutterActivity() {
     override fun onResume() {
         super.onResume()
         keyboardInputResumed = true
+        updateLinkKeepAlive()
     }
 
     override fun onPause() {
         keyboardInputResumed = false
         releaseKeyboard()
+        updateLinkKeepAlive()
         super.onPause()
     }
 
     override fun onWindowFocusChanged(hasFocus: Boolean) {
         if (!hasFocus) releaseKeyboard()
         super.onWindowFocusChanged(hasFocus)
+        updateLinkKeepAlive()
     }
 
     override fun onDestroy() {
+        mainHandler.removeCallbacks(linkKeepAliveTick)
         releaseKeyboard()
         cachedFlutterEngine = null
         try {
