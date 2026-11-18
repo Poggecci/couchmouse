@@ -15,6 +15,10 @@
     <!-- Required to query or display paired devices -->
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" android:maxSdkVersion="30" />
 
+    <!-- Keeps the HID app registered while a host is connected (HidConnectionService) -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_CONNECTED_DEVICE" />
+
     <application
         android:label="CouchMouse"
         android:name="${applicationName}"
@@ -41,6 +45,11 @@
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
         </activity>
+        <service
+            android:name=".HidConnectionService"
+            android:exported="false"
+            android:stopWithTask="true"
+            android:foregroundServiceType="connectedDevice" />
         <!-- Don't delete the meta-data below.
              This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->
         <meta-data

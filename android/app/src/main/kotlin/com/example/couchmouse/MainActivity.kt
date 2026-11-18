@@ -33,6 +33,9 @@ class MainActivity : FlutterActivity() {
 
     private var bluetoothAdapter: BluetoothAdapter? = null
     private var bluetoothHidDevice: BluetoothHidDevice? = null
+    private var a2dpProxy: BluetoothProfile? = null
+    private var headsetProxy: BluetoothProfile? = null
+    private var audioProxiesRequested = false
     private var hostDevice: BluetoothDevice? = null
     private var keyboardReportHost: BluetoothDevice? = null
     private var keyboardInputResumed = false
@@ -50,7 +53,11 @@ class MainActivity : FlutterActivity() {
     private val bluetoothReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
             val action = intent?.action
-            if (BluetoothAdapter.ACTION_SCAN_MODE_CHANGED == action) {
+            if (action == BluetoothA2dp.ACTION_CONNECTION_STATE_CHANGED ||
+                action == BluetoothHeadset.ACTION_CONNECTION_STATE_CHANGED
+            ) {
+                runOnUiThread { notifyHostAudio() }
+            } else if (BluetoothAdapter.ACTION_SCAN_MODE_CHANGED == action) {
                 val scanMode = intent.getIntExtra(BluetoothAdapter.EXTRA_SCAN_MODE, BluetoothAdapter.ERROR)
                 val isDiscoverable = (scanMode == BluetoothAdapter.SCAN_MODE_CONNECTABLE_DISCOVERABLE)
                 runOnUiThread {
@@ -67,7 +74,10 @@ class MainActivity : FlutterActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        val filter = IntentFilter(BluetoothAdapter.ACTION_SCAN_MODE_CHANGED)
+        val filter = IntentFilter(BluetoothAdapter.ACTION_SCAN_MODE_CHANGED).apply {
+            addAction(BluetoothA2dp.ACTION_CONNECTION_STATE_CHANGED)
+            addAction(BluetoothHeadset.ACTION_CONNECTION_STATE_CHANGED)
+        }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             registerReceiver(bluetoothReceiver, filter, Context.RECEIVER_EXPORTED)
         } else {
@@ -106,12 +116,18 @@ class MainActivity : FlutterActivity() {
                         hostDevice = null
                         isRegistered = false
                         resetHidSession()
+                        HidConnectionService.stop(this@MainActivity)
                         updateLinkKeepAlive()
                         notifyFlutter("onRegistrationChanged", mapOf("registered" to false))
                         notifyFlutter("onConnectionStateChanged", mapOf("connected" to false))
                     }
                 }
             }, BluetoothProfile.HID_DEVICE)
+            if (!audioProxiesRequested) {
+                audioProxiesRequested = true
+                bluetoothAdapter?.getProfileProxy(this, audioProfileListener, BluetoothProfile.A2DP)
+                bluetoothAdapter?.getProfileProxy(this, audioProfileListener, BluetoothProfile.HEADSET)
+            }
         } catch (e: SecurityException) {
             Log.e(TAG, "SecurityException during getProfileProxy: ${e.message}")
         } catch (e: Exception) {
@@ -144,7 +160,10 @@ class MainActivity : FlutterActivity() {
                     override fun onAppStatusChanged(pluggedDevice: BluetoothDevice?, registered: Boolean) {
                         Log.d(TAG, "Application HID Profile registration state: $registered")
                         isRegistered = registered
-                        if (!registered) resetHidSession()
+                        if (!registered) {
+                            resetHidSession()
+                            HidConnectionService.stop(this@MainActivity)
+                        }
                         updateLinkKeepAlive()
                         notifyFlutter("onRegistrationChanged", mapOf("registered" to registered))
                     }
@@ -165,11 +184,13 @@ class MainActivity : FlutterActivity() {
                                 Log.i(TAG, "Connected to host: $deviceName")
                                 if (hostDevice != device) resetHidSession()
                                 hostDevice = device
+                                HidConnectionService.start(this@MainActivity, deviceName ?: "host")
                             }
                             BluetoothProfile.STATE_DISCONNECTED -> {
                                 Log.i(TAG, "Disconnected from host")
                                 hostDevice = null
                                 resetHidSession()
+                                HidConnectionService.stop(this@MainActivity)
                             }
                         }
                         updateLinkKeepAlive()
@@ -182,6 +203,7 @@ class MainActivity : FlutterActivity() {
                                 "deviceAddress" to device?.address
                             )
                         )
+                        if (isConnected) notifyHostAudio()
                     }
 
                     override fun onGetReport(device: BluetoothDevice?, type: Byte, id: Byte, bufferSize: Int) {
@@ -581,6 +603,41 @@ class MainActivity : FlutterActivity() {
         mainHandler.postAtTime(linkKeepAliveTick, nextSendAt)
     }
 
+    // ---- Host audio ----
+    //
+    // A host that also connects media or call audio shares the Bluetooth link
+    // with HID. Reports queue behind any sound streamed to the host. On some
+    // phones (Galaxy S25 on One UI 9), an audio event while the HID app is not
+    // registered also leaves the link in sniff subrating sized for audio: the
+    // host polls the mouse only every ~750 ms until the link is rebuilt.
+    // Flutter warns the user.
+
+    private val audioProfileListener = object : BluetoothProfile.ServiceListener {
+        override fun onServiceConnected(profile: Int, proxy: BluetoothProfile?) {
+            when (profile) {
+                BluetoothProfile.A2DP -> a2dpProxy = proxy
+                BluetoothProfile.HEADSET -> headsetProxy = proxy
+            }
+            notifyHostAudio()
+        }
+
+        // The proxy rebinds by itself when Bluetooth comes back on.
+        override fun onServiceDisconnected(profile: Int) {}
+    }
+
+    @SuppressLint("MissingPermission")
+    private fun notifyHostAudio() {
+        val device = hostDevice ?: return
+        val connected = listOf(a2dpProxy, headsetProxy).any { proxy ->
+            try {
+                proxy?.getConnectionState(device) == BluetoothProfile.STATE_CONNECTED
+            } catch (e: SecurityException) {
+                false
+            }
+        }
+        notifyFlutter("onHostAudioChanged", mapOf("connected" to connected))
+    }
+
     private fun notifyFlutter(method: String, arguments: Map<String, Any?>) {
         cachedFlutterEngine?.dartExecutor?.binaryMessenger?.let { messenger ->
             MethodChannel(messenger, CHANNEL).invokeMethod(method, arguments)
@@ -615,6 +672,7 @@ class MainActivity : FlutterActivity() {
     override fun onDestroy() {
         mainHandler.removeCallbacks(linkKeepAliveTick)
         releaseKeyboard()
+        HidConnectionService.stop(this)
         settingsDocuments.close()
         cachedFlutterEngine = null
         try {
@@ -630,6 +688,8 @@ class MainActivity : FlutterActivity() {
                     isRegistered = false
                 }
                 bluetoothAdapter?.closeProfileProxy(BluetoothProfile.HID_DEVICE, bluetoothHidDevice)
+                a2dpProxy?.let { bluetoothAdapter?.closeProfileProxy(BluetoothProfile.A2DP, it) }
+                headsetProxy?.let { bluetoothAdapter?.closeProfileProxy(BluetoothProfile.HEADSET, it) }
             } catch (e: SecurityException) {
                 Log.e(TAG, "SecurityException during unregisterApp/closeProfileProxy: ${e.message}")
             } catch (e: Exception) {
