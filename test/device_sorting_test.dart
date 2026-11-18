@@ -67,7 +67,7 @@ void main() {
     );
 
     testWidgets(
-      'Paired devices are sorted by connection history in the connection bottom sheet',
+      'The paired-device sheet sorts by history and refreshes when a bond changes',
       (WidgetTester tester) async {
         // Set a portrait mobile screen size
         tester.view.physicalSize = const Size(1080, 1920);
@@ -77,43 +77,46 @@ void main() {
           tester.view.resetDevicePixelRatio();
         });
 
-        // Seed history: Device B was connected last, then Device C
+        await prefs.setString('global_tutorial_status', 'completed');
+        // Device B was connected most recently, followed by Device C.
         await prefs.setStringList('connected_device_addresses_history', [
           'AA:BB:CC:DD:EE:02', // Device B
           'AA:BB:CC:DD:EE:03', // Device C
         ]);
 
-        // Mock Bluetooth/HID channel
-        tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
-          const MethodChannel('com.example.couchmouse/hid'),
-          (MethodCall methodCall) async {
-            if (methodCall.method == 'isSupported') {
-              return true;
-            }
-            if (methodCall.method == 'getSdkVersion') {
-              return 31;
-            }
-            if (methodCall.method == 'registerAppProfile') {
-              return null;
-            }
-            if (methodCall.method == 'getConnectionState') {
-              return {
-                'connected': false,
-                'deviceName': null,
-                'deviceAddress': null,
-                'registered': true,
-              };
-            }
-            if (methodCall.method == 'getPairedDevices') {
-              return [
-                {'name': 'Device A', 'address': 'AA:BB:CC:DD:EE:01'},
-                {'name': 'Device B', 'address': 'AA:BB:CC:DD:EE:02'},
-                {'name': 'Device C', 'address': 'AA:BB:CC:DD:EE:03'},
-              ];
-            }
+        const hidChannel = MethodChannel('com.example.couchmouse/hid');
+        final messenger = tester.binding.defaultBinaryMessenger;
+        final pairedDevices = [
+          {'name': 'Device A', 'address': 'AA:BB:CC:DD:EE:01'},
+          {'name': 'Device B', 'address': 'AA:BB:CC:DD:EE:02'},
+          {'name': 'Device C', 'address': 'AA:BB:CC:DD:EE:03'},
+        ];
+
+        messenger.setMockMethodCallHandler(hidChannel, (
+          MethodCall methodCall,
+        ) async {
+          if (methodCall.method == 'isSupported') {
+            return true;
+          }
+          if (methodCall.method == 'getSdkVersion') {
+            return 31;
+          }
+          if (methodCall.method == 'registerAppProfile') {
             return null;
-          },
-        );
+          }
+          if (methodCall.method == 'getConnectionState') {
+            return {
+              'connected': false,
+              'deviceName': null,
+              'deviceAddress': null,
+              'registered': true,
+            };
+          }
+          if (methodCall.method == 'getPairedDevices') {
+            return pairedDevices;
+          }
+          return null;
+        });
 
         // Mock permissions channel
         tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
@@ -134,7 +137,9 @@ void main() {
           ),
         );
 
-        await tester.pumpAndSettle();
+        for (var i = 0; i < 10; i++) {
+          await tester.pump(const Duration(milliseconds: 50));
+        }
 
         // Find the Bluetooth icon button and tap it to open the connection sheet
         final bluetoothBtn = find.byIcon(CupertinoIcons.bluetooth);
@@ -154,6 +159,19 @@ void main() {
 
         // Order should be Device B (most recent), Device C (next), Device A (not in history)
         expect(texts, ['Device B', 'Device C', 'Device A']);
+
+        pairedDevices.removeAt(1);
+        await messenger.handlePlatformMessage(
+          hidChannel.name,
+          hidChannel.codec.encodeMethodCall(
+            const MethodCall('onBondStateChanged'),
+          ),
+          (_) {},
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.text('Device B'), findsNothing);
+        expect(listTiles, findsNWidgets(2));
       },
     );
   });

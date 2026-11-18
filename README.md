@@ -14,7 +14,7 @@
 </p>
 
 <p align="center">
-  <strong>CouchMouse</strong> is an Android application that turns your device into a driverless Bluetooth HID keyboard and trackpad. It emulates physical hardware over Bluetooth, working without any client or server software on the host computer.
+  <strong>CouchMouse</strong> is an Android application that turns your device into a driverless Bluetooth HID keyboard and trackpad, and turns Android gaming handhelds into a Bluetooth gamepad. It emulates physical hardware over Bluetooth, working without any client or server software on the host computer.
 </p>
 
 ---
@@ -46,6 +46,18 @@ The trackpad provides precise cursor tracking and supports the following setting
 - Landscape Mode: Displays a side-by-side view pairing your selected keyboard layout with the trackpad. You can drag the boundaries or swap positions to suit left- or right-handed preferences.
 - Portrait Mode: Focuses on single-hand trackpad navigation. Tapping the keyboard button activates the soft keyboard, which opens your device's native system input method editor (IME) to type. The app translates character inputs into HID scan codes, and a quick-access toolbar provides access to modifier keys (Ctrl, Shift, Alt, Win/Cmd), arrow keys, Esc, Tab, and Enter.
 
+### Gamepad Mode (Android handhelds)
+On devices with built-in controls, such as the AYN Odin and Thor or Retroid handhelds, or on a phone with a controller attached, CouchMouse can forward the physical controls to the host as a standard Bluetooth HID gamepad.
+- Turn it on from the menu (**Gamepad Mode**). The trackpad and keyboard are replaced by a status screen showing the host connection, the detected controller and a live view of buttons, sticks and triggers.
+- Forwards 15 buttons, the D-pad, both analog sticks and both analog triggers. Controllers without analog triggers send a full pull when L2/R2 is pressed.
+- Input is captured and sent natively. The Flutter UI is only a status display, so it adds no latency.
+- Changes are sent to the host immediately, capped at a report rate you choose in the menu (30, 60, 90 or 125 Hz; default 60). While nothing changes, the full state is still re-sent every 50 ms. That keeps the Bluetooth link from dropping into its slow power-saving mode, and repairs any report Android's Bluetooth stack silently dropped.
+- Quick taps are never lost: a button or D-pad press that's released before the next report is still sent as a press, followed by the release.
+- If inputs lag or drop on your host, lower the report rate. Sending faster than the Bluetooth link can carry makes reports queue up, which delays every input.
+- Stick input is processed as soon as it arrives instead of once per screen frame (Android 11+).
+- The screen stays on while gamepad mode is active. Keep CouchMouse in the foreground while playing, because Android only delivers controller input to the focused app.
+- The Back, Home and volume keys keep their normal function.
+
 ## System Architecture
 
 ```mermaid
@@ -53,11 +65,12 @@ graph TD
     A[Flutter UI / Gesture Detector] -->|Touch Coordinates / Key Events| B(Input Engine)
     B -->|Method Channel: sendMouseReport / sendKeyboardReport| C(Kotlin MainActivity)
     C -->|Android Bluetooth HID Service| D[BluetoothHidDevice App Profile]
-    D -->|Bluetooth SDP Link subclass 0xC0| E[Host Device]
+    D -->|Bluetooth SDP Link subclass 0xC8| E[Host Device]
+    F[Physical controller: KeyEvent / MotionEvent] -->|GamepadInputMapper, native only| C
 ```
 
 ### HID Descriptors
-The device registers itself under subclass code `0xC0` (Combo Keyboard/Mouse) using a custom SDP (Service Discovery Protocol) configuration:
+The device registers itself under subclass code `0xC8` (combo keyboard/mouse `0xC0` plus gamepad `0x08`) using a custom SDP (Service Discovery Protocol) configuration. Keyboard, mouse and gamepad are always registered together as one composite descriptor. Hosts cache the descriptor per pairing, so changing it at runtime would force a re-pair.
 
 #### Keyboard Report (Report ID 1 - 8 Bytes)
 - Byte 0: Modifier keys bitmask (Ctrl, Shift, Alt, GUI)
@@ -70,11 +83,33 @@ The device registers itself under subclass code `0xC0` (Combo Keyboard/Mouse) us
 - Byte 2: Signed relative Y displacement (-127 to 127)
 - Byte 3: Signed relative scroll wheel vertical movement (-127 to 127)
 
+#### Gamepad Report (Report ID 3 - 13 Bytes)
+- Bytes 0-1: 16 buttons, little-endian. Button N is bit N-1, in Linux `BTN_GAMEPAD` order: 1 A, 2 B, 4 X, 5 Y, 7 L1, 8 R1, 9 L2, 10 R2, 11 Select, 12 Start, 13 Home, 14 L3, 15 R3 (3, 6 and 16 unused)
+- Byte 2: Hat switch / D-pad in the low nibble (0 = up, clockwise; 8 = centred)
+- Bytes 3-10: Left stick X, Y and right stick X (Z), Y (Rz) as signed 16-bit values (-32767 to 32767)
+- Byte 11: Right trigger (Simulation: Accelerator), 0-255
+- Byte 12: Left trigger (Simulation: Brake), 0-255
+
 ## Requirements
 
 ### System Requirements
 - Android 9.0 (API Level 28) or higher is required. The native `BluetoothHidDevice` APIs do not exist on older versions.
 - The host device must support Bluetooth keyboards and mice.
+
+### Gamepad Host Compatibility
+CouchMouse appears as a generic HID gamepad, not as an Xbox or PlayStation controller. Android's API does not let an app set the Bluetooth vendor/product ID, so pretending to be an Xbox controller is not possible without root.
+
+| Host | Status |
+|---|---|
+| Steam (Windows, Linux, macOS, Steam Deck) via Steam Input | Works; configure it as a generic gamepad |
+| Linux (evdev / SDL) | Works; buttons map to the standard `BTN_GAMEPAD` codes |
+| Android / Android TV | Works |
+| Windows games using DirectInput or SDL | Works |
+| Windows games that only support XInput | Not detected directly; run them through Steam Input or an XInput wrapper (e.g. x360ce) |
+| macOS / iPadOS games using Apple's GameController framework | Not supported; Apple only accepts specific controller models |
+| Consoles (Switch, PlayStation, Xbox) | Not supported |
+
+**After updating to a version with gamepad support, unpair and re-pair CouchMouse on the host.** Hosts cache the old keyboard/mouse-only descriptor and won't see the gamepad until you re-pair.
 
 ### iOS Support Limitation
 This approach cannot be ported to iOS. Apple's CoreBluetooth framework restricts third-party applications from registering or broadcasting standard Bluetooth HID service records (such as HID over GATT or Bluetooth Classic SDP profiles). Consequently, native, driverless keyboard and mouse emulation is not possible on iOS without jailbreaking, private APIs, or an external hardware micro-controller bridge (e.g., an ESP32 or Raspberry Pi Pico) to act as the physical peripheral.
@@ -118,9 +153,15 @@ The app requests the following permissions at runtime:
 6. Once paired, select your host machine from the device list in CouchMouse and press **Connect**.
 7. Rotate your screen horizontally for the side-by-side keyboard and trackpad, or hold it vertically for single-hand trackpad use.
 
+### Using a handheld as a gamepad
+1. Pair and connect as above. If you paired before gamepad support existed, unpair and re-pair first.
+2. Open the menu and turn on **Gamepad Mode**.
+3. Check that your controller is listed and that pressing buttons lights up the on-screen diagram.
+4. Leave CouchMouse open and play. Use **Exit Gamepad Mode** or the menu toggle to return to the trackpad.
+
 ### Back Up or Move Your Settings
 
-Open **Settings → Export Settings** to save a JSON backup with Android’s file picker. On the new installation, choose **Settings → Import Settings** and select that file. Import replaces your global and per-computer Couch Mouse preferences. Pair your computer in Android’s Bluetooth settings on the new phone.
+Open **Settings → Export Settings** to save a JSON backup with Android’s file picker. On the new installation, choose **Settings → Import Settings** and select that file. Import replaces your global and per-computer Couch Mouse preferences, including Gamepad Mode and its report rate. Pair your computer in Android’s Bluetooth settings on the new phone.
 
 ### Signing GitHub Releases
 
@@ -132,3 +173,8 @@ Use the same Android signing keystore for every published APK and keep an encryp
 - `ANDROID_KEY_PASSWORD` containing the signing key password
 
 Set the repository variable `ANDROID_SIGNING_CERT_SHA256` to the SHA-256 fingerprint of the signing certificate. Find it with `keytool -list -v -keystore <keystore> -alias <alias>`. The release workflow verifies this fingerprint before publishing. Enable **verify_only** when testing signing without publishing. Keep the application ID and increment the Android version code for each release. Local development builds can use the debug key.
+
+## Testing
+- Flutter tests: `flutter test`
+- Native JVM unit tests for the HID gamepad report, descriptor and input mapping (`android/app/src/test`): after `flutter build apk` has generated the Gradle wrapper, run `cd android && ./gradlew :app:testDebugUnitTest`
+- Manual hardware checklist for gamepad mode: [`docs/gamepad/TESTING.md`](docs/gamepad/TESTING.md)

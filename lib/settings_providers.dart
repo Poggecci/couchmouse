@@ -14,6 +14,8 @@ class CouchMouseSettings {
   final double scrollSensitivity;
   final double scrollMomentum;
   final String tutorialStatus;
+  final bool gamepadMode;
+  final int gamepadReportRate;
 
   CouchMouseSettings({
     required this.sensitivity,
@@ -24,6 +26,8 @@ class CouchMouseSettings {
     required this.scrollSensitivity,
     required this.scrollMomentum,
     required this.tutorialStatus,
+    required this.gamepadMode,
+    required this.gamepadReportRate,
   });
 
   CouchMouseSettings copyWith({
@@ -35,6 +39,8 @@ class CouchMouseSettings {
     double? scrollSensitivity,
     double? scrollMomentum,
     String? tutorialStatus,
+    bool? gamepadMode,
+    int? gamepadReportRate,
   }) {
     return CouchMouseSettings(
       sensitivity: sensitivity ?? this.sensitivity,
@@ -46,6 +52,8 @@ class CouchMouseSettings {
       scrollSensitivity: scrollSensitivity ?? this.scrollSensitivity,
       scrollMomentum: scrollMomentum ?? this.scrollMomentum,
       tutorialStatus: tutorialStatus ?? this.tutorialStatus,
+      gamepadMode: gamepadMode ?? this.gamepadMode,
+      gamepadReportRate: gamepadReportRate ?? this.gamepadReportRate,
     );
   }
 }
@@ -143,6 +151,10 @@ final connectionStateProvider =
     );
 
 class SettingsNotifier extends Notifier<CouchMouseSettings> {
+  static const gamepadReportRates = [30, 60, 90, 125];
+  static const _defaultGamepadReportRate = 125;
+  static const _gamepadModeKey = 'global_gamepad_mode';
+  static const _gamepadRateKey = 'global_gamepad_report_rate_hz';
   static const _storageKey = 'portable_settings';
   static const _backupFormat = 'couchmouse-settings';
   static const _globalPrefix = 'global_';
@@ -180,6 +192,9 @@ class SettingsNotifier extends Notifier<CouchMouseSettings> {
       scrollSensitivity: values['scroll_sensitivity']! as double,
       scrollMomentum: values['scroll_momentum']! as double,
       tutorialStatus: stored[_tutorialKey] as String? ?? 'none',
+      gamepadMode: stored[_gamepadModeKey] as bool? ?? false,
+      gamepadReportRate:
+          stored[_gamepadRateKey] as int? ?? _defaultGamepadReportRate,
     );
   }
 
@@ -218,6 +233,10 @@ class SettingsNotifier extends Notifier<CouchMouseSettings> {
   bool _validSetting(String key, Object? value) {
     if (key == _tutorialKey) {
       return value == 'none' || value == 'completed' || value == 'dismissed';
+    }
+    if (key == _gamepadModeKey) return value is bool;
+    if (key == _gamepadRateKey) {
+      return value is int && gamepadReportRates.contains(value);
     }
     final name = key.startsWith(_globalPrefix)
         ? key.substring(_globalPrefix.length)
@@ -364,6 +383,17 @@ class SettingsNotifier extends Notifier<CouchMouseSettings> {
   Future<void> updateTutorialStatus(String status) {
     state = state.copyWith(tutorialStatus: status);
     return _writeSettings((stored) => stored[_tutorialKey] = status);
+  }
+
+  Future<void> updateGamepadMode(bool enabled) {
+    state = state.copyWith(gamepadMode: enabled);
+    return _writeSettings((stored) => stored[_gamepadModeKey] = enabled);
+  }
+
+  Future<void> updateGamepadReportRate(int hz) async {
+    if (!gamepadReportRates.contains(hz)) return;
+    state = state.copyWith(gamepadReportRate: hz);
+    await _writeSettings((stored) => stored[_gamepadRateKey] = hz);
   }
 
   Future<void> resetSettings() async {

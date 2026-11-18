@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'package:couchmouse/gamepad_state.dart';
 import 'package:couchmouse/main.dart';
 import 'package:couchmouse/settings_providers.dart';
 
@@ -30,6 +31,28 @@ Future<ProviderContainer> _settingsContainer(
 }
 
 void main() {
+  test('Gamepad preferences round-trip and update live providers', () async {
+    final source = await _settingsContainer({
+      'global_gamepad_mode': true,
+      'global_gamepad_report_rate_hz': 60,
+    });
+    final backup = await source
+        .read(settingsProvider.notifier)
+        .exportSettings();
+    final destination = await _settingsContainer({});
+    expect(destination.read(gamepadModeProvider), isFalse);
+    expect(destination.read(gamepadReportRateProvider), 125);
+
+    final settings = destination.read(settingsProvider.notifier);
+    await settings.importSettings(backup);
+    expect(destination.read(gamepadModeProvider), isTrue);
+    expect(destination.read(gamepadReportRateProvider), 60);
+
+    await settings.importSettings(_backup({'global_sensitivity': 1600}));
+    expect(destination.read(gamepadModeProvider), isFalse);
+    expect(destination.read(gamepadReportRateProvider), 125);
+  });
+
   test(
     'Restores legacy global and per-computer settings on a new install',
     () async {
@@ -82,6 +105,8 @@ void main() {
       'not JSON',
       '{"format":"couchmouse-settings","version":2,"settings":{}}',
       _backup({'global_sensitivity': 1500, 'global_keyboard_kind': -1}),
+      _backup({'global_gamepad_mode': 1}),
+      _backup({'global_gamepad_report_rate_hz': 144}),
       _backup({'last_connected_device_address': _hostAddress}),
     ]) {
       await expectLater(

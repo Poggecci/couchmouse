@@ -60,3 +60,8 @@ kotlin {
 flutter {
     source = "../.."
 }
+
+dependencies {
+    // JVM unit tests for the pure-Kotlin HID report code (./gradlew test)
+    testImplementation("junit:junit:4.13.2")
+}
