@@ -89,11 +89,15 @@ jobs:
           expected="$(printf '%s' "$EXPECTED_SHA256" | tr -d ':' | tr '[:upper:]' '[:lower:]')"
           apksigner="$(find "$ANDROID_HOME/build-tools" -name apksigner -type f | sort -V | tail -n 1)"
           certificates="$("$apksigner" verify --print-certs build/app/outputs/flutter-apk/app-release.apk)"
-          actual="$(printf '%s\n' "$certificates" | sed -n 's/^Signer #[0-9]* certificate SHA-256 digest: //p')"
+          actual="$(printf '%s\n' "$certificates" |
+            sed -nE 's/^.* certificate SHA-256 digest: ([[:xdigit:]]{64})$/\1/p' |
+            tr '[:upper:]' '[:lower:]' | sort -u)"
           if [[ ! "$expected" =~ ^[a-f0-9]{64}$ || "$actual" != "$expected" ]]; then
             echo 'APK signing certificate does not match ANDROID_SIGNING_CERT_SHA256.'
+            printf '%s\n' "$certificates"
             exit 1
           fi
+          printf 'Verified APK signing certificate %s\n' "$actual"
 
       # 6. Rename APK for professional distribution
       - name: Rename APK
