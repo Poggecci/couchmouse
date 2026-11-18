@@ -47,14 +47,14 @@ You must execute these steps in a strict, sequential cycle:
 
 ## 4. Quality Scorecard (To be updated by the Agent)
 
-*Last Updated: 2026-05-25 14:35*
-*Total Files Scanned: 2*
+*Last Updated: 2026-11-18 (typing box cycle, `feature/buffer-box`)*
+*Total Files Scanned: 8* (`lib/main.dart`, `lib/settings_providers.dart`, `lib/keyboard_layouts.dart`, `lib/widgets/control_drawer.dart`, `lib/widgets/typing_box.dart`, `test/typing_box_test.dart`, `test/clipboard_paste_test.dart`, `test/connected_home_screen.dart`)
 
 ### Current Scores
 *   **Mechanical Score**: `100.0%`
-*   **Subjective Score**: `100.0%`
+*   **Subjective Score**: `100.0%` (`95.0%` counting deferred `009`)
 *   **Overall Score**: `100.0%`
-*   **Strict Score (The North Star)**: `100.0%` *(WontFix and Deferred issues are calculated as open/unresolved)*
+*   **Strict Score (The North Star)**: `97.0%` *(WontFix and Deferred issues are calculated as open/unresolved)*. Below target only because of `009`.
 
 ### Metric Formula Reference
 $$\text{Penalty} = \sum (\text{Issue Count} \times \text{Tier Weight})$$
@@ -88,6 +88,13 @@ $$\text{Overall Score} = (0.4 \times \text{Mechanical Score}) + (0.6 \times \tex
 5.  Clean up comments, strip obvious labels, and merge duplicate widgets.
 6.  Re-run analyze and tests to verify everything remains green, and rescore.
 
+### Cycle 2 (2026-11-18): Typing box feature
+*   **Observe**: Adding the typing box meant a second caller for paste's press/release loop. The new widget test needed the same mock host setup as `clipboard_paste_test.dart`. `control_drawer.dart` labels each settings row with a comment that repeats its title. `charToScancode` names each punctuation key in a trailing comment.
+*   **Reflect**: `main.dart` (about 2,000 lines) is a god file. One `State` class owns the layouts, the HID keyboard queue, typing/paste, lifecycle and connection handling. This cycle kept new UI out of it (`widgets/typing_box.dart`), but the class still grows.
+*   **Organize / Strategy**: Share one `_typeText` routine between paste and the typing box rather than copying it. Move test host setup into `test/connected_home_screen.dart`. Strip the restating comments. Defer splitting `main.dart`, which is its own refactor and needs hands-on testing.
+*   **Not scanned**: `lib/widgets/walkthrough_dialog.dart` only had one help string changed. It carries heavy comment bloat (about 40 label comments, including a "Beautiful Animated Illustration Builders" banner) for a future cycle.
+*   **Tests**: Six widget tests (`widget_test.dart`, `device_sorting_test.dart`) time out in `pumpAndSettle` on local Flutter 3.50. They fail the same way on unmodified `main`, so this cycle didn't cause them. Every other test passes, including the new typing box tests.
+
 ---
 
 ## 6. Living Issue Queue
@@ -101,3 +108,7 @@ $$\text{Overall Score} = (0.4 \times \text{Mechanical Score}) + (0.6 \times \tex
 | `003` | `lib/main.dart:1172` | `T4` | `Subjective` | Presentation layer leaks private implementation details by storing `StateSetter` and `BuildContext` in widget state. | `[Fixed]` |
 | `004` | `lib/main.dart` | `T4` | `Subjective` | AI Prose & redundant comment bloat (e.g. key label explanations, obvious field comments). | `[Fixed]` |
 | `005` | `lib/main.dart:2688` | `T3` | `Mechanical` | Duplicate layout code for HoldLock & Reset buttons in `_buildKeyboardToolbar` and `_buildForcedLandscapeHeader`. | `[Fixed]` |
+| `006` | `test/typing_box_test.dart` | `T3` | `Mechanical` | Mock host setup copied from `clipboard_paste_test.dart`. Moved to `test/connected_home_screen.dart`. | `[Fixed]` |
+| `007` | `lib/widgets/control_drawer.dart` | `T4` | `Subjective` | Comments that repeat each settings row's title (`// Mouse Acceleration Toggle`). | `[Fixed]` |
+| `008` | `lib/keyboard_layouts.dart:1119` | `T4` | `Subjective` | Trailing comments naming each punctuation key in `charToScancode` (`'-': 0x2D, // Minus`). | `[Fixed]` |
+| `009` | `lib/main.dart` | `T4` | `Subjective` | God file: `_HomeScreenState` mixes layouts, HID queue, typing/paste, lifecycle and connection logic. | `[Deferred]` |

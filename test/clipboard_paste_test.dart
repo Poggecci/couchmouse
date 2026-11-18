@@ -1,12 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:couchmouse/keyboard_layouts.dart';
-import 'package:couchmouse/main.dart';
-import 'package:couchmouse/settings_providers.dart';
+
+import 'connected_home_screen.dart';
 
 enum _PasteEnd { completed, sendFailure, cancelled, focusLost, disposed }
 
@@ -33,53 +31,22 @@ void main() {
         _PasteEnd.cancelled => 'A' * 1001,
         _ => 'Aa',
       };
-      tester.view.physicalSize = const Size(1200, 650);
-      tester.view.devicePixelRatio = 1;
-      addTearDown(tester.view.resetPhysicalSize);
-      addTearDown(tester.view.resetDevicePixelRatio);
-      SharedPreferences.setMockInitialValues({
-        'global_tutorial_status': 'completed',
-      });
-      final prefs = await SharedPreferences.getInstance();
-
-      final reports = <List<int>>[];
-      final messenger = tester.binding.defaultBinaryMessenger;
-      messenger.setMockMethodCallHandler(
-        const MethodChannel('com.example.couchmouse/hid'),
-        (call) async {
-          switch (call.method) {
-            case 'isSupported':
-              return true;
-            case 'getSdkVersion':
-              return 31;
-            case 'getConnectionState':
-              return {'connected': true, 'registered': true};
-            case 'sendKeyboardReport':
-              reports.add(List<int>.from(call.arguments['bytes'] as List));
-              if (end == _PasteEnd.sendFailure && reports.length == 2) {
-                throw PlatformException(
-                  code: 'UNAVAILABLE',
-                  message: 'No Bluetooth device currently connected.',
-                );
-              }
+      final reports = await pumpConnectedHomeScreen(
+        tester,
+        size: const Size(1200, 650),
+        onKeyboardReport: (reports) {
+          if (end == _PasteEnd.sendFailure && reports.length == 2) {
+            throw PlatformException(
+              code: 'UNAVAILABLE',
+              message: 'No Bluetooth device currently connected.',
+            );
           }
-          return null;
         },
       );
-      messenger.setMockMethodCallHandler(
-        const MethodChannel('flutter.baseflow.com/permissions/methods'),
-        (call) async => call.method == 'checkPermissionStatus' ? 1 : null,
-      );
-      messenger.setMockMethodCallHandler(
+      tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
         SystemChannels.platform,
         (call) async =>
             call.method == 'Clipboard.getData' ? {'text': clipboardText} : null,
-      );
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
-          child: const MaterialApp(home: HomeScreen()),
-        ),
       );
       await tester.pumpAndSettle();
 

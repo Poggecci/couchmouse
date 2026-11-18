@@ -294,6 +294,7 @@ class _WalkthroughDialogState extends ConsumerState<WalkthroughDialog>
             '• Single tap with one finger to Left-Click.\n'
             '• Tap the tactile buttons at the bottom to Left/Right Click.\n'
             '• Swipe up below the trackpad area to bring up the keyboard.\n'
+            '• Turn on Rich Typing Mode in Advanced settings to write a message with autocorrect, then send it.\n'
             '• Swipe right below the trackpad area to bring up the settings.',
         'illustration': _buildTrackpadIllustration(),
       },

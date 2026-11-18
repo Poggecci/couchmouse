@@ -15,6 +15,7 @@ class CouchMouseSettings {
   final double scrollMomentum;
   final bool trackball;
   final double trackballFriction;
+  final bool typingBox;
   final String tutorialStatus;
   final bool gamepadMode;
   final int gamepadReportRate;
@@ -29,6 +30,7 @@ class CouchMouseSettings {
     required this.scrollMomentum,
     required this.trackball,
     required this.trackballFriction,
+    required this.typingBox,
     required this.tutorialStatus,
     required this.gamepadMode,
     required this.gamepadReportRate,
@@ -44,6 +46,7 @@ class CouchMouseSettings {
     double? scrollMomentum,
     bool? trackball,
     double? trackballFriction,
+    bool? typingBox,
     String? tutorialStatus,
     bool? gamepadMode,
     int? gamepadReportRate,
@@ -59,6 +62,7 @@ class CouchMouseSettings {
       scrollMomentum: scrollMomentum ?? this.scrollMomentum,
       trackball: trackball ?? this.trackball,
       trackballFriction: trackballFriction ?? this.trackballFriction,
+      typingBox: typingBox ?? this.typingBox,
       tutorialStatus: tutorialStatus ?? this.tutorialStatus,
       gamepadMode: gamepadMode ?? this.gamepadMode,
       gamepadReportRate: gamepadReportRate ?? this.gamepadReportRate,
@@ -201,6 +205,7 @@ class SettingsNotifier extends Notifier<CouchMouseSettings> {
       scrollMomentum: values['scroll_momentum']! as double,
       trackball: values['trackball']! as bool,
       trackballFriction: values['trackball_friction']! as double,
+      typingBox: values['typing_box']! as bool,
       tutorialStatus: stored[_tutorialKey] as String? ?? 'none',
       gamepadMode: stored[_gamepadModeKey] as bool? ?? false,
       gamepadReportRate:
@@ -232,6 +237,7 @@ class SettingsNotifier extends Notifier<CouchMouseSettings> {
       'trackball': stored['${prefix}trackball'] ?? false,
       'trackball_friction':
           (stored['${prefix}trackball_friction'] as num?)?.toDouble() ?? 0.7,
+      'typing_box': stored['${prefix}typing_box'] ?? false,
     };
   }
 
@@ -264,7 +270,8 @@ class SettingsNotifier extends Notifier<CouchMouseSettings> {
       'mouse_acceleration' ||
       'trackpad_on_left' ||
       'invert_two_finger_scroll' ||
-      'trackball' => value is bool,
+      'trackball' ||
+      'typing_box' => value is bool,
       _ => false,
     };
   }
@@ -404,6 +411,11 @@ class SettingsNotifier extends Notifier<CouchMouseSettings> {
     final rounded = (value * 10).roundToDouble() / 10.0;
     state = state.copyWith(trackballFriction: rounded);
     return _saveSetting('trackball_friction', rounded);
+  }
+
+  Future<void> updateTypingBox(bool value) {
+    state = state.copyWith(typingBox: value);
+    return _saveSetting('typing_box', value);
   }
 
   Future<void> updateTutorialStatus(String status) {

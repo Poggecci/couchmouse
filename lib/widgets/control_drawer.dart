@@ -476,7 +476,7 @@ class _ControlDrawerState extends ConsumerState<ControlDrawer> {
 
                   _buildSettingsRow(
                     title: "Advanced Settings",
-                    subtitle: "Show report rate and reset options",
+                    subtitle: "Show extra options",
                     control: Switch.adaptive(
                       key: const Key('advancedSettingsSwitch'),
                       activeThumbColor: Colors.black,
@@ -486,6 +486,19 @@ class _ControlDrawerState extends ConsumerState<ControlDrawer> {
                   ),
 
                   if (_showAdvanced) ...[
+                    _buildDivider(),
+
+                    _buildSettingsRow(
+                      title: "Rich Typing Mode",
+                      subtitle:
+                          "Adds a text box for full native system keyboard functionality",
+                      control: Switch.adaptive(
+                        activeThumbColor: Colors.black,
+                        value: settings.typingBox,
+                        onChanged: notifier.updateTypingBox,
+                      ),
+                    ),
+
                     _buildDivider(),
 
                     Padding(

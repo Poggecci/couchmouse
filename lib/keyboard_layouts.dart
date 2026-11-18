@@ -1096,29 +1096,78 @@ class KeyboardLayouts {
     }
   }
 
+  static const Map<String, String> _typableSubstitutes = {
+    '\r\n': '\n',
+    '\r': '\n',
+    '\u2018': "'",
+    '\u2019': "'",
+    '\u201C': '"',
+    '\u201D': '"',
+    '\u2013': '-',
+    '\u2014': '-',
+    '\u2026': '...',
+    '\u00A0': ' ',
+  };
+
+  /// Replaces line endings and the typographic characters phone keyboards
+  /// insert (curly quotes, dashes, ellipsis) with keys a US layout can type.
+  static String typableText(String text) => _typableSubstitutes.entries.fold(
+    text,
+    (result, entry) => result.replaceAll(entry.key, entry.value),
+  );
+
   static const Map<String, int> charToScancode = {
-    'a': 0x04, 'b': 0x05, 'c': 0x06, 'd': 0x07, 'e': 0x08, 'f': 0x09,
-    'g': 0x0A, 'h': 0x0B, 'i': 0x0C, 'j': 0x0D, 'k': 0x0E, 'l': 0x0F,
-    'm': 0x10, 'n': 0x11, 'o': 0x12, 'p': 0x13, 'q': 0x14, 'r': 0x15,
-    's': 0x16, 't': 0x17, 'u': 0x18, 'v': 0x19, 'w': 0x1A, 'x': 0x1B,
-    'y': 0x1C, 'z': 0x1D,
-    '1': 0x1E, '2': 0x1F, '3': 0x20, '4': 0x21, '5': 0x22,
-    '6': 0x23, '7': 0x24, '8': 0x25, '9': 0x26, '0': 0x27,
-    '\n': 0x28, // Enter
-    '\r': 0x28, // Carriage return
-    '\t': 0x2B, // Tab
-    ' ': 0x2C, // Space
-    '-': 0x2D, // Minus
-    '=': 0x2E, // Equals
-    '[': 0x2F, // Left Bracket
-    ']': 0x30, // Right Bracket
-    '\\': 0x31, // Backslash
-    ';': 0x33, // Semicolon
-    "'": 0x34, // Apostrophe
-    '`': 0x35, // Grave Accent
-    ',': 0x36, // Comma
-    '.': 0x37, // Period
-    '/': 0x38, // Slash
+    'a': 0x04,
+    'b': 0x05,
+    'c': 0x06,
+    'd': 0x07,
+    'e': 0x08,
+    'f': 0x09,
+    'g': 0x0A,
+    'h': 0x0B,
+    'i': 0x0C,
+    'j': 0x0D,
+    'k': 0x0E,
+    'l': 0x0F,
+    'm': 0x10,
+    'n': 0x11,
+    'o': 0x12,
+    'p': 0x13,
+    'q': 0x14,
+    'r': 0x15,
+    's': 0x16,
+    't': 0x17,
+    'u': 0x18,
+    'v': 0x19,
+    'w': 0x1A,
+    'x': 0x1B,
+    'y': 0x1C,
+    'z': 0x1D,
+    '1': 0x1E,
+    '2': 0x1F,
+    '3': 0x20,
+    '4': 0x21,
+    '5': 0x22,
+    '6': 0x23,
+    '7': 0x24,
+    '8': 0x25,
+    '9': 0x26,
+    '0': 0x27,
+    '\n': 0x28,
+    '\r': 0x28,
+    '\t': 0x2B,
+    ' ': 0x2C,
+    '-': 0x2D,
+    '=': 0x2E,
+    '[': 0x2F,
+    ']': 0x30,
+    '\\': 0x31,
+    ';': 0x33,
+    "'": 0x34,
+    '`': 0x35,
+    ',': 0x36,
+    '.': 0x37,
+    '/': 0x38,
   };
 
   static const Map<String, int> shiftCharToScancode = {
