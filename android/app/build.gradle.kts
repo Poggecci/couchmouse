@@ -4,6 +4,12 @@ plugins {
     id("dev.flutter.flutter-gradle-plugin")
 }
 
+val releaseKeystore = providers.environmentVariable("ANDROID_KEYSTORE_PATH").orNull
+
+fun signingCredential(name: String): String =
+    providers.environmentVariable(name).orNull?.takeIf { it.isNotEmpty() }
+        ?: error("Missing release signing credential: $name")
+
 android {
     namespace = "com.example.couchmouse"
     compileSdk = flutter.compileSdkVersion
@@ -25,11 +31,22 @@ android {
         versionName = flutter.versionName
     }
 
+    signingConfigs {
+        if (releaseKeystore != null) {
+            create("distribution") {
+                storeFile = file(releaseKeystore)
+                storePassword = signingCredential("ANDROID_KEYSTORE_PASSWORD")
+                keyAlias = signingCredential("ANDROID_KEY_ALIAS")
+                keyPassword = signingCredential("ANDROID_KEY_PASSWORD")
+            }
+        }
+    }
+
     buildTypes {
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
-            signingConfig = signingConfigs.getByName("debug")
+            signingConfig = signingConfigs.getByName(
+                if (releaseKeystore == null) "debug" else "distribution"
+            )
         }
     }
 }

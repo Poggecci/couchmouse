@@ -117,3 +117,14 @@ The app requests the following permissions at runtime:
 5. Select your phone from the list of available Bluetooth devices on your computer.
 6. Once paired, select your host machine from the device list in CouchMouse and press **Connect**.
 7. Rotate your screen horizontally for the side-by-side keyboard and trackpad, or hold it vertically for single-hand trackpad use.
+
+### Signing GitHub Releases
+
+Use the same Android signing keystore for every published APK and keep an encrypted backup of the keystore and its passwords. In GitHub Actions, configure these repository secrets.
+
+- `ANDROID_KEYSTORE_BASE64` containing the base64-encoded keystore
+- `ANDROID_KEYSTORE_PASSWORD` containing the keystore password
+- `ANDROID_KEY_ALIAS` containing the signing key alias
+- `ANDROID_KEY_PASSWORD` containing the signing key password
+
+Set the repository variable `ANDROID_SIGNING_CERT_SHA256` to the SHA-256 fingerprint of the signing certificate. Find it with `keytool -list -v -keystore <keystore> -alias <alias>`. The release workflow verifies this fingerprint before publishing. Enable **verify_only** when testing signing without publishing. Keep the application ID and increment the Android version code for each release. Local development builds can use the debug key.

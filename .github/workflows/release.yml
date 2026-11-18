@@ -25,6 +25,11 @@ on:
         type: boolean
         required: false
         default: false
+      verify_only:
+        description: 'Build and verify the signed APK without publishing'
+        type: boolean
+        required: false
+        default: false
 
 permissions:
   contents: write
@@ -59,32 +64,48 @@ jobs:
       - name: Install Dependencies
         run: flutter pub get
 
-      # Optional Step: Decode Keystore for Release Signing (if secrets are set up)
       - name: Decode Android Keystore
         env:
           ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
         run: |
-          if [ -n "$ANDROID_KEYSTORE_BASE64" ]; then
-            echo "$ANDROID_KEYSTORE_BASE64" | base64 --decode > android/app/upload-keystore.jks
-          else
-            echo "No keystore secret found, skipping decode."
-          fi
+          : "${ANDROID_KEYSTORE_BASE64:?Set the ANDROID_KEYSTORE_BASE64 release secret}"
+          umask 077
+          printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/couchmouse-release.jks"
 
       # 5. Build Flutter release APK
       - name: Build Release APK
         run: flutter build apk --release
         env:
+          ANDROID_KEYSTORE_PATH: ${{ runner.temp }}/couchmouse-release.jks
           ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
           ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
           ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
 
+      - name: Verify Android Signing Certificate
+        env:
+          EXPECTED_SHA256: ${{ vars.ANDROID_SIGNING_CERT_SHA256 }}
+        run: |
+          : "${EXPECTED_SHA256:?Set the ANDROID_SIGNING_CERT_SHA256 repository variable}"
+          expected="$(printf '%s' "$EXPECTED_SHA256" | tr -d ':' | tr '[:upper:]' '[:lower:]')"
+          apksigner="$(find "$ANDROID_HOME/build-tools" -name apksigner -type f | sort -V | tail -n 1)"
+          certificates="$("$apksigner" verify --print-certs build/app/outputs/flutter-apk/app-release.apk)"
+          actual="$(printf '%s\n' "$certificates" | sed -n 's/^Signer #[0-9]* certificate SHA-256 digest: //p')"
+          if [[ ! "$expected" =~ ^[a-f0-9]{64}$ || "$actual" != "$expected" ]]; then
+            echo 'APK signing certificate does not match ANDROID_SIGNING_CERT_SHA256.'
+            exit 1
+          fi
+
       # 6. Rename APK for professional distribution
       - name: Rename APK
+        if: ${{ !inputs.verify_only }}
+        env:
+          RELEASE_TAG: ${{ inputs.tag_name }}
         run: |
-          cp build/app/outputs/flutter-apk/app-release.apk build/app/outputs/flutter-apk/couchmouse-${{ github.event.inputs.tag_name }}.apk
+          cp build/app/outputs/flutter-apk/app-release.apk "build/app/outputs/flutter-apk/couchmouse-${RELEASE_TAG}.apk"
 
       # 7. Create GitHub Release and upload APK
       - name: Create GitHub Release
+        if: ${{ !inputs.verify_only }}
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ github.event.inputs.tag_name }}
