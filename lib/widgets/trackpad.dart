@@ -1,4 +1,6 @@
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 
 class Trackpad extends StatefulWidget {
   final double height;
@@ -7,6 +9,8 @@ class Trackpad extends StatefulWidget {
   final bool mouseAcceleration;
   final bool invertTwoFingerScroll;
   final double scrollSensitivity;
+  final bool trackball;
+  final double trackballFriction;
   final void Function({
     required double dx,
     required double dy,
@@ -23,6 +27,8 @@ class Trackpad extends StatefulWidget {
     required this.mouseAcceleration,
     required this.invertTwoFingerScroll,
     required this.scrollSensitivity,
+    required this.trackball,
+    required this.trackballFriction,
     required this.onReport,
     required this.onTap,
   });
@@ -31,116 +37,197 @@ class Trackpad extends StatefulWidget {
   State<Trackpad> createState() => _TrackpadState();
 }
 
-class _TrackpadState extends State<Trackpad> {
+class _TrackpadState extends State<Trackpad>
+    with SingleTickerProviderStateMixin {
+  // Flicks slower than this, in screen pixels per second, don't glide.
+  static const double _minGlideSpeed = 150.0;
+  // The glide stops below this cursor speed, in counts per second.
+  static const double _stopSpeed = 40.0;
+
   Offset? _touchPos;
   List<Offset> _trailPoints = [];
+
+  late final Ticker _glide;
+  Offset _glideVelocity = Offset.zero;
+  Duration _lastGlideTick = Duration.zero;
+  int _fingersDown = 0;
+  bool _lastUpdateMoved = false;
+  bool _suppressTap = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _glide = createTicker(_onGlideTick);
+  }
+
+  @override
+  void didUpdateWidget(Trackpad oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (!widget.trackball) _glide.stop();
+  }
+
+  @override
+  void dispose() {
+    _glide.dispose();
+    super.dispose();
+  }
+
+  double get _cursorScale => widget.sensitivity / 160.0;
+
+  // Friction 0 glides for about 2.5 s after a hard flick, friction 1 for about 0.5 s.
+  double get _decayRate => 2.0 + widget.trackballFriction * 8.0;
+
+  void _startGlide(Velocity velocity) {
+    final pixels = velocity.pixelsPerSecond;
+    if (!widget.trackball || pixels.distance < _minGlideSpeed) return;
+    _glideVelocity = pixels * _cursorScale;
+    _lastGlideTick = Duration.zero;
+    _glide.start();
+  }
+
+  void _onGlideTick(Duration elapsed) {
+    final dt = (elapsed - _lastGlideTick).inMicroseconds / 1e6;
+    _lastGlideTick = elapsed;
+    if (dt <= 0) return;
+
+    // Exact distance covered under exponential decay, so a long frame gap
+    // can't overshoot the rest of the glide.
+    final decay = math.exp(-_decayRate * dt);
+    final moved = _glideVelocity * ((1 - decay) / _decayRate);
+    _glideVelocity *= decay;
+    widget.onReport(dx: moved.dx, dy: moved.dy, wheel: 0);
+
+    if (_glideVelocity.distance < _stopSpeed) _glide.stop();
+  }
+
+  void _onPointerDown(PointerDownEvent event) {
+    if (_fingersDown++ == 0) {
+      _suppressTap = _glide.isActive;
+      _glide.stop();
+    }
+  }
+
+  void _onPointerUp(PointerEvent event) {
+    _fingersDown--;
+  }
 
   @override
   Widget build(BuildContext context) {
     return Stack(
       children: [
-        GestureDetector(
-          behavior: HitTestBehavior.opaque,
-          onScaleStart: (details) {
-            setState(() {
-              _touchPos = details.localFocalPoint;
-              _trailPoints = [details.localFocalPoint];
-            });
-          },
-          onScaleUpdate: (details) {
-            if (details.pointerCount == 1) {
+        Listener(
+          onPointerDown: _onPointerDown,
+          onPointerUp: _onPointerUp,
+          onPointerCancel: _onPointerUp,
+          child: GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onScaleStart: (details) {
               setState(() {
                 _touchPos = details.localFocalPoint;
-                _trailPoints.add(details.localFocalPoint);
-                if (_trailPoints.length > 15) {
-                  _trailPoints.removeAt(0);
-                }
+                _trailPoints = [details.localFocalPoint];
               });
+            },
+            onScaleUpdate: (details) {
+              _lastUpdateMoved = details.pointerCount == 1;
+              if (details.pointerCount == 1) {
+                setState(() {
+                  _touchPos = details.localFocalPoint;
+                  _trailPoints.add(details.localFocalPoint);
+                  if (_trailPoints.length > 15) {
+                    _trailPoints.removeAt(0);
+                  }
+                });
 
-              double rawDx = details.focalPointDelta.dx;
-              double rawDy = details.focalPointDelta.dy;
+                double rawDx = details.focalPointDelta.dx;
+                double rawDy = details.focalPointDelta.dy;
 
-              double scaledDx = rawDx * (widget.sensitivity / 160.0);
-              double scaledDy = rawDy * (widget.sensitivity / 160.0);
+                double scaledDx = rawDx * _cursorScale;
+                double scaledDy = rawDy * _cursorScale;
 
-              if (widget.mouseAcceleration) {
-                scaledDx = scaledDx * (1.0 + scaledDx.abs() * 0.05);
-                scaledDy = scaledDy * (1.0 + scaledDy.abs() * 0.05);
+                if (widget.mouseAcceleration) {
+                  scaledDx = scaledDx * (1.0 + scaledDx.abs() * 0.05);
+                  scaledDy = scaledDy * (1.0 + scaledDy.abs() * 0.05);
+                }
+
+                widget.onReport(dx: scaledDx, dy: scaledDy, wheel: 0);
+              } else if (details.pointerCount == 2) {
+                setState(() {
+                  _touchPos = details.localFocalPoint;
+                  _trailPoints.clear();
+                });
+
+                double dy = details.focalPointDelta.dy;
+                double wheelDelta =
+                    (widget.invertTwoFingerScroll ? dy : -dy) *
+                    0.25 *
+                    widget.scrollSensitivity;
+                if (wheelDelta != 0) {
+                  widget.onReport(dx: 0, dy: 0, wheel: wheelDelta);
+                }
               }
-
-              widget.onReport(dx: scaledDx, dy: scaledDy, wheel: 0);
-            } else if (details.pointerCount == 2) {
+            },
+            onScaleEnd: (details) {
               setState(() {
-                _touchPos = details.localFocalPoint;
+                _touchPos = null;
                 _trailPoints.clear();
               });
-
-              double dy = details.focalPointDelta.dy;
-              double wheelDelta =
-                  (widget.invertTwoFingerScroll ? dy : -dy) *
-                  0.25 *
-                  widget.scrollSensitivity;
-              if (wheelDelta != 0) {
-                widget.onReport(dx: 0, dy: 0, wheel: wheelDelta);
+              if (details.pointerCount == 0 && _lastUpdateMoved) {
+                _startGlide(details.velocity);
               }
-            }
-          },
-          onScaleEnd: (details) {
-            setState(() {
-              _touchPos = null;
-              _trailPoints.clear();
-            });
-          },
-          onTap: widget.onTap,
-          child: Container(
-            height: widget.height,
-            decoration: BoxDecoration(
-              color: const Color(0xFFF4F4F6),
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(
-                color: _touchPos != null
-                    ? Colors.black.withValues(alpha: 0.2)
-                    : Colors.black.withValues(alpha: widget.borderOpacity),
-                width: 1.0,
-              ),
-            ),
-            alignment: Alignment.center,
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  Icons.mouse_outlined,
-                  size: widget.height < 200 ? 28 : 40,
+            },
+            onTap: () {
+              if (!_suppressTap) widget.onTap();
+            },
+            child: Container(
+              height: widget.height,
+              decoration: BoxDecoration(
+                color: const Color(0xFFF4F4F6),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
                   color: _touchPos != null
-                      ? Colors.black.withValues(alpha: 0.8)
-                      : Colors.black.withValues(alpha: 0.15),
+                      ? Colors.black.withValues(alpha: 0.2)
+                      : Colors.black.withValues(alpha: widget.borderOpacity),
+                  width: 1.0,
                 ),
-                const SizedBox(height: 12),
-                Text(
-                  "Trackpad",
-                  style: TextStyle(
-                    fontSize: widget.height < 200 ? 14 : 16,
-                    fontWeight: FontWeight.w600,
-                    letterSpacing: 0.5,
+              ),
+              alignment: Alignment.center,
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.mouse_outlined,
+                    size: widget.height < 200 ? 28 : 40,
                     color: _touchPos != null
-                        ? Colors.black
-                        : Colors.black.withValues(alpha: 0.4),
+                        ? Colors.black.withValues(alpha: 0.8)
+                        : Colors.black.withValues(alpha: 0.15),
                   ),
-                ),
-                if (widget.height >= 180) ...[
-                  const SizedBox(height: 6),
+                  const SizedBox(height: 12),
                   Text(
-                    "Slide to Move • Tap to Click • 2 Fingers to Scroll",
-                    textAlign: TextAlign.center,
+                    "Trackpad",
                     style: TextStyle(
-                      fontSize: widget.height < 200 ? 10 : 11,
+                      fontSize: widget.height < 200 ? 14 : 16,
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: 0.5,
                       color: _touchPos != null
-                          ? Colors.black.withValues(alpha: 0.5)
-                          : Colors.black.withValues(alpha: 0.3),
+                          ? Colors.black
+                          : Colors.black.withValues(alpha: 0.4),
                     ),
                   ),
+                  if (widget.height >= 180) ...[
+                    const SizedBox(height: 6),
+                    Text(
+                      "Slide to Move • Tap to Click • 2 Fingers to Scroll",
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: widget.height < 200 ? 10 : 11,
+                        color: _touchPos != null
+                            ? Colors.black.withValues(alpha: 0.5)
+                            : Colors.black.withValues(alpha: 0.3),
+                      ),
+                    ),
+                  ],
                 ],
-              ],
+              ),
             ),
           ),
         ),

@@ -37,7 +37,7 @@ The app includes interactive virtual keyboards supporting six layout options:
 ### Trackpad Control
 The trackpad provides precise cursor tracking and supports the following settings:
 - Adjustable pointer sensitivity (DPI) and scroll speed.
-- Toggleable mouse acceleration and scroll momentum.
+- Toggleable mouse acceleration, scroll momentum, and a trackball mode where a flick keeps the cursor gliding.
 - Reversible two-finger scroll direction.
 - Left-handed or right-handed trackpad position layouts in landscape mode.
 - Mouse click buttons (Left, Middle, Right) and a dedicated scroll wheel zone.

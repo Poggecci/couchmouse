@@ -114,6 +114,20 @@ void main() {
     },
   );
 
+  test('Trackball settings survive a backup round trip', () async {
+    final source = await _settingsContainer({});
+    final sourceSettings = source.read(settingsProvider.notifier);
+    await sourceSettings.updateTrackball(true);
+    await sourceSettings.updateTrackballFriction(0.83);
+    final backup = await sourceSettings.exportSettings();
+
+    final destination = await _settingsContainer({});
+    await destination.read(settingsProvider.notifier).importSettings(backup);
+    final restored = destination.read(settingsProvider);
+    expect(restored.trackball, isTrue);
+    expect(restored.trackballFriction, 0.8);
+  });
+
   testWidgets(
     'Settings drawer exports and imports through the file picker channel',
     (tester) async {

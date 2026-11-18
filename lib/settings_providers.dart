@@ -13,6 +13,8 @@ class CouchMouseSettings {
   final bool invertTwoFingerScroll;
   final double scrollSensitivity;
   final double scrollMomentum;
+  final bool trackball;
+  final double trackballFriction;
   final String tutorialStatus;
 
   CouchMouseSettings({
@@ -23,6 +25,8 @@ class CouchMouseSettings {
     required this.invertTwoFingerScroll,
     required this.scrollSensitivity,
     required this.scrollMomentum,
+    required this.trackball,
+    required this.trackballFriction,
     required this.tutorialStatus,
   });
 
@@ -34,6 +38,8 @@ class CouchMouseSettings {
     bool? invertTwoFingerScroll,
     double? scrollSensitivity,
     double? scrollMomentum,
+    bool? trackball,
+    double? trackballFriction,
     String? tutorialStatus,
   }) {
     return CouchMouseSettings(
@@ -45,6 +51,8 @@ class CouchMouseSettings {
           invertTwoFingerScroll ?? this.invertTwoFingerScroll,
       scrollSensitivity: scrollSensitivity ?? this.scrollSensitivity,
       scrollMomentum: scrollMomentum ?? this.scrollMomentum,
+      trackball: trackball ?? this.trackball,
+      trackballFriction: trackballFriction ?? this.trackballFriction,
       tutorialStatus: tutorialStatus ?? this.tutorialStatus,
     );
   }
@@ -179,6 +187,8 @@ class SettingsNotifier extends Notifier<CouchMouseSettings> {
       invertTwoFingerScroll: values['invert_two_finger_scroll']! as bool,
       scrollSensitivity: values['scroll_sensitivity']! as double,
       scrollMomentum: values['scroll_momentum']! as double,
+      trackball: values['trackball']! as bool,
+      trackballFriction: values['trackball_friction']! as double,
       tutorialStatus: stored[_tutorialKey] as String? ?? 'none',
     );
   }
@@ -204,6 +214,9 @@ class SettingsNotifier extends Notifier<CouchMouseSettings> {
           (stored['${prefix}scroll_sensitivity'] as num?)?.toDouble() ?? 2.0,
       'scroll_momentum':
           (stored['${prefix}scroll_momentum'] as num?)?.toDouble() ?? 0.05,
+      'trackball': stored['${prefix}trackball'] ?? false,
+      'trackball_friction':
+          (stored['${prefix}trackball_friction'] as num?)?.toDouble() ?? 0.7,
     };
   }
 
@@ -225,12 +238,14 @@ class SettingsNotifier extends Notifier<CouchMouseSettings> {
     return switch (name) {
       'sensitivity' => value is num && value >= 0 && value <= 8000,
       'scroll_sensitivity' => value is num && value >= 1 && value <= 5,
-      'scroll_momentum' => value is num && value >= 0 && value <= 1,
+      'scroll_momentum' ||
+      'trackball_friction' => value is num && value >= 0 && value <= 1,
       'keyboard_kind' =>
         value is int && value >= 0 && value < KeyboardKind.values.length,
       'mouse_acceleration' ||
       'trackpad_on_left' ||
-      'invert_two_finger_scroll' => value is bool,
+      'invert_two_finger_scroll' ||
+      'trackball' => value is bool,
       _ => false,
     };
   }
@@ -359,6 +374,17 @@ class SettingsNotifier extends Notifier<CouchMouseSettings> {
     final rounded = (value * 10).roundToDouble() / 10.0;
     state = state.copyWith(scrollMomentum: rounded);
     return _saveSetting('scroll_momentum', rounded);
+  }
+
+  Future<void> updateTrackball(bool value) {
+    state = state.copyWith(trackball: value);
+    return _saveSetting('trackball', value);
+  }
+
+  Future<void> updateTrackballFriction(double value) {
+    final rounded = (value * 10).roundToDouble() / 10.0;
+    state = state.copyWith(trackballFriction: rounded);
+    return _saveSetting('trackball_friction', rounded);
   }
 
   Future<void> updateTutorialStatus(String status) {
