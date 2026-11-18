@@ -27,7 +27,12 @@ Future<List<List<int>>> _openPortraitKeyboard(
 }
 
 bool _inputBlocked(WidgetTester tester) => tester
-    .widgetList<IgnorePointer>(find.byType(IgnorePointer))
+    .widgetList<IgnorePointer>(
+      find.ancestor(
+        of: find.byType(TypingBox),
+        matching: find.byType(IgnorePointer),
+      ),
+    )
     .any((widget) => widget.ignoring);
 
 void main() {

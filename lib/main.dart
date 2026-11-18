@@ -39,13 +39,12 @@ void main() async {
 }
 
 enum _TextSource {
-  clipboard('Paste', 'Pasting', 'Pasted'),
-  typingBox('Send', 'Sending', 'Sent');
+  clipboard('Paste', 'Pasting'),
+  typingBox('Send', 'Sending');
 
-  const _TextSource(this.noun, this.progress, this.done);
+  const _TextSource(this.noun, this.progress);
   final String noun;
   final String progress;
-  final String done;
 }
 
 class CouchMouseApp extends StatelessWidget {
@@ -1332,7 +1331,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
       message =
           "${source.noun} cancelled ($typedCount/${chars.length} characters typed)";
     } else if (source == _TextSource.clipboard) {
-      message = "${source.done} $typedCount characters";
+      message = "Pasted $typedCount characters";
     } else {
       return typedCount;
     }
