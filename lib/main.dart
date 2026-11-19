@@ -78,6 +78,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   bool _isSupported = true;
   bool _permissionsGranted = false;
   bool _isRegistered = false;
+  bool _hostAudioWarned = false;
   bool _walkthroughChecked = false;
   bool _transferringSettings = false;
 
@@ -159,7 +160,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
           final connected = call.arguments['connected'] as bool;
           final deviceName = call.arguments['deviceName'] as String?;
           final deviceAddress = call.arguments['deviceAddress'] as String?;
-          if (!connected) _discardKeyboardInput();
+          if (!connected) {
+            _discardKeyboardInput();
+            _hostAudioWarned = false;
+          }
           await ref
               .read(connectionStateProvider.notifier)
               .updateConnectionState(
@@ -180,6 +184,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
           break;
         case 'onBondStateChanged':
           ref.invalidate(pairedDevicesProvider);
+          break;
+        case 'onHostAudioChanged':
+          if (call.arguments['connected'] as bool && !_hostAudioWarned) {
+            _hostAudioWarned = true;
+            _warnHostAudio();
+          }
           break;
         case 'onScanModeChanged':
           final isDiscoverable = call.arguments['isDiscoverable'] as bool;
@@ -363,6 +373,30 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
       _transferringSettings = false;
     }
     if (mounted) messenger.showSnackBar(SnackBar(content: Text(message)));
+  }
+
+  // Host audio on the same Bluetooth link can stall HID reports (see the
+  // "Host audio" notes in MainActivity.kt).
+  void _warnHostAudio() {
+    final name =
+        ref.read(connectionStateProvider).connectedDeviceName ?? 'The host';
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          '$name is also using this phone for audio. If the cursor lags, '
+          'turn off its call and media audio in Bluetooth settings, '
+          'then reconnect.',
+        ),
+        action: SnackBarAction(
+          label: 'SETTINGS',
+          textColor: const Color(0xFF00E5FF),
+          onPressed: _openBluetoothSettings,
+        ),
+        behavior: SnackBarBehavior.floating,
+        persist: false,
+        duration: const Duration(seconds: 10),
+      ),
+    );
   }
 
   Future<void> _openBluetoothSettings() async {

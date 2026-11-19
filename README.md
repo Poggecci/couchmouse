@@ -163,6 +163,33 @@ The app requests the following permissions at runtime:
 
 Open **Settings → Export Settings** to save a JSON backup with Android’s file picker. On the new installation, choose **Settings → Import Settings** and select that file. Import replaces your global and per-computer Couch Mouse preferences, including Trackball, Trackball Friction, Gamepad Mode, and the gamepad report rate. Pair your computer in Android’s Bluetooth settings on the new phone.
 
+### Linux: Cursor Lags or Stutters
+
+Linux computers also connect to your phone for call and media audio. On some phones, such as the Galaxy S25, this audio slows CouchMouse down. The cursor freezes while a sound plays, or lags by seconds until you reconnect.
+
+1. On the phone, open Bluetooth settings, tap the gear next to your computer, and turn off **Calls** and **Audio** (**Media audio** on some phones).
+2. Disconnect and reconnect in CouchMouse.
+
+**Optional:** if the cursor still lags, stop your computer from connecting audio to phones. Needs WirePlumber 0.5 or newer (`wireplumber --version`). Paste this into a terminal:
+
+```bash
+mkdir -p ~/.config/wireplumber/wireplumber.conf.d && cat > ~/.config/wireplumber/wireplumber.conf.d/51-couchmouse.conf <<'EOF'
+monitor.bluez.rules = [
+  {
+    matches = [ { device.form-factor = "phone" } ]
+    actions = { update-props = { bluez5.auto-connect = [ ] } }
+  }
+]
+EOF
+systemctl --user restart wireplumber
+```
+
+Then reconnect in CouchMouse. Your phone can still start audio to the computer itself. To undo:
+
+```bash
+rm ~/.config/wireplumber/wireplumber.conf.d/51-couchmouse.conf && systemctl --user restart wireplumber
+```
+
 ### Signing GitHub Releases
 
 Use the same Android signing keystore for every published APK and keep an encrypted backup of the keystore and its passwords. In GitHub Actions, configure these repository secrets.

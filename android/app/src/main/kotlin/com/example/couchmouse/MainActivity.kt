@@ -31,8 +31,6 @@ class MainActivity : FlutterActivity() {
         const val LINK_KEEPALIVE_MS = 50L
 
         const val HID_QOS_LATENCY_US = 2_500
-        // An 8-byte keyboard report, report ID, and HIDP header every 2.5 ms.
-        const val HID_QOS_BYTES_PER_SECOND = 10 * 1_000_000 / HID_QOS_LATENCY_US
     }
 
     private val CHANNEL = "com.example.couchmouse/hid"
@@ -43,6 +41,9 @@ class MainActivity : FlutterActivity() {
     // Volatile: also read by the gamepad sender thread (see sendReport).
     @Volatile private var bluetoothHidDevice: BluetoothHidDevice? = null
     @Volatile private var hostDevice: BluetoothDevice? = null
+    private var a2dpProxy: BluetoothProfile? = null
+    private var headsetProxy: BluetoothProfile? = null
+    private var audioProxiesRequested = false
     private var keyboardReportHost: BluetoothDevice? = null
     private var keyboardInputResumed = false
 
@@ -103,7 +104,11 @@ class MainActivity : FlutterActivity() {
     private val bluetoothReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
             val action = intent?.action
-            if (BluetoothAdapter.ACTION_SCAN_MODE_CHANGED == action) {
+            if (action == BluetoothA2dp.ACTION_CONNECTION_STATE_CHANGED ||
+                action == BluetoothHeadset.ACTION_CONNECTION_STATE_CHANGED
+            ) {
+                runOnUiThread { notifyHostAudio() }
+            } else if (BluetoothAdapter.ACTION_SCAN_MODE_CHANGED == action) {
                 val scanMode = intent.getIntExtra(BluetoothAdapter.EXTRA_SCAN_MODE, BluetoothAdapter.ERROR)
                 val isDiscoverable = (scanMode == BluetoothAdapter.SCAN_MODE_CONNECTABLE_DISCOVERABLE)
                 runOnUiThread {
@@ -124,6 +129,8 @@ class MainActivity : FlutterActivity() {
         super.onCreate(savedInstanceState)
         val filter = IntentFilter(BluetoothAdapter.ACTION_SCAN_MODE_CHANGED).apply {
             addAction(BluetoothDevice.ACTION_BOND_STATE_CHANGED)
+            addAction(BluetoothA2dp.ACTION_CONNECTION_STATE_CHANGED)
+            addAction(BluetoothHeadset.ACTION_CONNECTION_STATE_CHANGED)
         }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             registerReceiver(bluetoothReceiver, filter, Context.RECEIVER_EXPORTED)
@@ -165,12 +172,18 @@ class MainActivity : FlutterActivity() {
                         hostDevice = null
                         isRegistered = false
                         resetHidSession()
+                        HidConnectionService.stop(this@MainActivity)
                         updateGamepadStreaming()
                         notifyFlutter("onRegistrationChanged", mapOf("registered" to false))
                         notifyFlutter("onConnectionStateChanged", mapOf("connected" to false))
                     }
                 }
             }, BluetoothProfile.HID_DEVICE)
+            if (!audioProxiesRequested) {
+                audioProxiesRequested = true
+                bluetoothAdapter?.getProfileProxy(this, audioProfileListener, BluetoothProfile.A2DP)
+                bluetoothAdapter?.getProfileProxy(this, audioProfileListener, BluetoothProfile.HEADSET)
+            }
         } catch (e: SecurityException) {
             Log.e(TAG, "SecurityException during getProfileProxy: ${e.message}")
         } catch (e: Exception) {
@@ -205,7 +218,10 @@ class MainActivity : FlutterActivity() {
                     override fun onAppStatusChanged(pluggedDevice: BluetoothDevice?, registered: Boolean) {
                         Log.d(TAG, "Application HID Profile registration state: $registered")
                         isRegistered = registered
-                        if (!registered) resetHidSession()
+                        if (!registered) {
+                            resetHidSession()
+                            HidConnectionService.stop(this@MainActivity)
+                        }
                         updateGamepadStreaming()
                         notifyFlutter("onRegistrationChanged", mapOf("registered" to registered))
                     }
@@ -226,11 +242,13 @@ class MainActivity : FlutterActivity() {
                                 Log.i(TAG, "Connected to host: $deviceName")
                                 if (hostDevice != device) resetHidSession()
                                 hostDevice = device
+                                HidConnectionService.start(this@MainActivity, deviceName ?: "host")
                             }
                             BluetoothProfile.STATE_DISCONNECTED -> {
                                 Log.i(TAG, "Disconnected from host")
                                 hostDevice = null
                                 resetHidSession()
+                                HidConnectionService.stop(this@MainActivity)
                             }
                             else -> return
                         }
@@ -244,6 +262,7 @@ class MainActivity : FlutterActivity() {
                                 "deviceAddress" to device?.address?.takeIf { isConnected }
                             )
                         )
+                        if (isConnected) notifyHostAudio()
                     }
 
                     override fun onGetReport(device: BluetoothDevice?, type: Byte, id: Byte, bufferSize: Int) {
@@ -602,15 +621,15 @@ class MainActivity : FlutterActivity() {
     }
 
     /**
-     * L2CAP QoS for the HID interrupt channel. The 2.5 ms access latency requests
-     * a shorter poll interval. The HID Profile Appendix D examples use the same
-     * nonzero peak bandwidth and token rate for Guaranteed service.
+     * Request 2.5 ms access latency for the HID interrupt channel.
+     * Bluetooth Core Vol 3, Part A, §5.3 reserves zero bandwidth fields for
+     * Best Effort. Use the token-rate wildcard and the largest peak value.
      */
     private fun hidQos() = BluetoothHidDeviceAppQosSettings(
         BluetoothHidDeviceAppQosSettings.SERVICE_GUARANTEED,
-        HID_QOS_BYTES_PER_SECOND, // token rate
+        BluetoothHidDeviceAppQosSettings.MAX, // token rate (maximum available)
         16, // token bucket size, bytes
-        HID_QOS_BYTES_PER_SECOND, // peak bandwidth
+        BluetoothHidDeviceAppQosSettings.MAX, // peak bandwidth (largest unsigned value)
         HID_QOS_LATENCY_US,
         BluetoothHidDeviceAppQosSettings.MAX, // delay variation (don't care)
     )
@@ -851,6 +870,41 @@ class MainActivity : FlutterActivity() {
         mainHandler.postAtTime(linkKeepAliveTick, nextSendAt)
     }
 
+    // ---- Host audio ----
+    //
+    // A host that also connects media or call audio shares the Bluetooth link
+    // with HID. Reports queue behind any sound streamed to the host. On some
+    // phones (Galaxy S25 on One UI 9), an audio event while the HID app is not
+    // registered also leaves the link in sniff subrating sized for audio: the
+    // host polls the mouse only every ~750 ms until the link is rebuilt.
+    // Flutter warns the user.
+
+    private val audioProfileListener = object : BluetoothProfile.ServiceListener {
+        override fun onServiceConnected(profile: Int, proxy: BluetoothProfile?) {
+            when (profile) {
+                BluetoothProfile.A2DP -> a2dpProxy = proxy
+                BluetoothProfile.HEADSET -> headsetProxy = proxy
+            }
+            notifyHostAudio()
+        }
+
+        // The proxy rebinds by itself when Bluetooth comes back on.
+        override fun onServiceDisconnected(profile: Int) {}
+    }
+
+    @SuppressLint("MissingPermission")
+    private fun notifyHostAudio() {
+        val device = hostDevice ?: return
+        val connected = listOf(a2dpProxy, headsetProxy).any { proxy ->
+            try {
+                proxy?.getConnectionState(device) == BluetoothProfile.STATE_CONNECTED
+            } catch (e: SecurityException) {
+                false
+            }
+        }
+        notifyFlutter("onHostAudioChanged", mapOf("connected" to connected))
+    }
+
     private fun notifyFlutter(method: String, arguments: Map<String, Any?>) {
         cachedFlutterEngine?.dartExecutor?.binaryMessenger?.let { messenger ->
             MethodChannel(messenger, CHANNEL).invokeMethod(method, arguments)
@@ -892,6 +946,7 @@ class MainActivity : FlutterActivity() {
         mainHandler.removeCallbacks(flushGamepadUi)
         (getSystemService(Context.INPUT_SERVICE) as? InputManager)
             ?.unregisterInputDeviceListener(inputDeviceListener)
+        HidConnectionService.stop(this)
         settingsDocuments.close()
         cachedFlutterEngine = null
         try {
@@ -907,6 +962,8 @@ class MainActivity : FlutterActivity() {
                     isRegistered = false
                 }
                 bluetoothAdapter?.closeProfileProxy(BluetoothProfile.HID_DEVICE, bluetoothHidDevice)
+                a2dpProxy?.let { bluetoothAdapter?.closeProfileProxy(BluetoothProfile.A2DP, it) }
+                headsetProxy?.let { bluetoothAdapter?.closeProfileProxy(BluetoothProfile.HEADSET, it) }
             } catch (e: SecurityException) {
                 Log.e(TAG, "SecurityException during unregisterApp/closeProfileProxy: ${e.message}")
             } catch (e: Exception) {
