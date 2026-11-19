@@ -37,7 +37,7 @@ The app includes interactive virtual keyboards supporting six layout options:
 ### Trackpad Control
 The trackpad provides precise cursor tracking and supports the following settings:
 - Adjustable pointer sensitivity (DPI) and scroll speed.
-- Toggleable mouse acceleration and scroll momentum.
+- Toggleable mouse acceleration, scroll momentum, and a trackball mode where a flick keeps the cursor gliding.
 - Reversible two-finger scroll direction.
 - Left-handed or right-handed trackpad position layouts in landscape mode.
 - Mouse click buttons (Left, Middle, Right) and a dedicated scroll wheel zone.
@@ -161,7 +161,7 @@ The app requests the following permissions at runtime:
 
 ### Back Up or Move Your Settings
 
-Open **Settings → Export Settings** to save a JSON backup with Android’s file picker. On the new installation, choose **Settings → Import Settings** and select that file. Import replaces your global and per-computer Couch Mouse preferences, including Gamepad Mode and its report rate. Pair your computer in Android’s Bluetooth settings on the new phone.
+Open **Settings → Export Settings** to save a JSON backup with Android’s file picker. On the new installation, choose **Settings → Import Settings** and select that file. Import replaces your global and per-computer Couch Mouse preferences, including Trackball, Trackball Friction, Gamepad Mode, and the gamepad report rate. Pair your computer in Android’s Bluetooth settings on the new phone.
 
 ### Signing GitHub Releases
 

@@ -139,6 +139,45 @@ void main() {
     },
   );
 
+  test(
+    'Trackball defaults and computer overrides survive a backup round trip',
+    () async {
+      final source = await _settingsContainer({});
+      final sourceSettings = source.read(settingsProvider.notifier);
+      await sourceSettings.updateTrackball(true);
+      await sourceSettings.updateTrackballFriction(0.83);
+      await source
+          .read(connectionStateProvider.notifier)
+          .updateConnectionState(
+            isConnected: true,
+            connectedDeviceAddress: _hostAddress,
+          );
+      expect(source.read(settingsProvider).trackball, isTrue);
+      expect(source.read(settingsProvider).trackballFriction, 0.8);
+      await sourceSettings.updateTrackball(false);
+      await sourceSettings.updateTrackballFriction(0.2);
+      final backup = await sourceSettings.exportSettings();
+
+      final destination = await _settingsContainer({});
+      final restored = destination.read(settingsProvider.notifier);
+      await restored.importSettings(backup);
+      expect(destination.read(settingsProvider).trackball, isTrue);
+      expect(destination.read(settingsProvider).trackballFriction, 0.8);
+      await destination
+          .read(connectionStateProvider.notifier)
+          .updateConnectionState(
+            isConnected: true,
+            connectedDeviceAddress: _hostAddress,
+          );
+      expect(destination.read(settingsProvider).trackball, isFalse);
+      expect(destination.read(settingsProvider).trackballFriction, 0.2);
+
+      await restored.importSettings(_backup({'global_sensitivity': 1600}));
+      expect(destination.read(settingsProvider).trackball, isFalse);
+      expect(destination.read(settingsProvider).trackballFriction, 0.7);
+    },
+  );
+
   testWidgets(
     'Settings drawer exports and imports through the file picker channel',
     (tester) async {

@@ -317,7 +317,14 @@ void main() {
         await tester.pump(const Duration(milliseconds: 50));
       }
       final option = find.byKey(const Key('gamepadRate_30'));
-      await tester.ensureVisible(option);
+      await tester.scrollUntilVisible(
+        option,
+        250,
+        scrollable: find.descendant(
+          of: find.byType(Drawer),
+          matching: find.byType(Scrollable),
+        ),
+      );
       await tester.pump(const Duration(milliseconds: 50));
       await tester.tap(option);
       for (var i = 0; i < 5; i++) {

@@ -490,7 +490,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
-      _keyboardInputFocused = true;
+      if (!_keyboardInputFocused) {
+        setState(() => _keyboardInputFocused = true);
+      }
       _checkSupportAndPermissions(request: false);
       _retryLastConnection();
     } else if (_keyboardInputFocused) {
@@ -1477,7 +1479,37 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     );
   }
 
-  Widget _buildPortraitLayout() {
+  Widget _buildTrackpad({
+    required double height,
+    required double borderOpacity,
+    required CouchMouseSettings settings,
+    required String? hostAddress,
+  }) {
+    return Trackpad(
+      key: ValueKey(hostAddress),
+      height: height,
+      borderOpacity: borderOpacity,
+      sensitivity: _sensitivity,
+      mouseAcceleration: _mouseAcceleration,
+      invertTwoFingerScroll: _invertTwoFingerScroll,
+      scrollSensitivity: _scrollSensitivity,
+      trackball:
+          settings.trackball &&
+          _keyboardInputFocused &&
+          _isRegistered &&
+          hostAddress != null,
+      trackballFriction: settings.trackballFriction,
+      onReport: ({required dx, required dy, required wheel}) {
+        _sendReport(buttons: _lastButtonsState, dx: dx, dy: dy, wheel: wheel);
+      },
+      onTap: _tapClick,
+    );
+  }
+
+  Widget _buildPortraitLayout(
+    CouchMouseSettings settings,
+    String? hostAddress,
+  ) {
     return Stack(
       children: [
         Column(
@@ -1495,27 +1527,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                     return Row(
                       children: [
                         Expanded(
-                          child: Trackpad(
+                          child: _buildTrackpad(
                             height: constraints.maxHeight,
                             borderOpacity: 0.1,
-                            sensitivity: _sensitivity,
-                            mouseAcceleration: _mouseAcceleration,
-                            invertTwoFingerScroll: _invertTwoFingerScroll,
-                            scrollSensitivity: _scrollSensitivity,
-                            onReport:
-                                ({
-                                  required double dx,
-                                  required double dy,
-                                  required double wheel,
-                                }) {
-                                  _sendReport(
-                                    buttons: _lastButtonsState,
-                                    dx: dx,
-                                    dy: dy,
-                                    wheel: wheel,
-                                  );
-                                },
-                            onTap: _tapClick,
+                            settings: settings,
+                            hostAddress: hostAddress,
                           ),
                         ),
                         const SizedBox(width: 12),
@@ -1615,7 +1631,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     );
   }
 
-  Widget _buildSplitLandscapeLayout() {
+  Widget _buildSplitLandscapeLayout(
+    CouchMouseSettings settings,
+    String? hostAddress,
+  ) {
     final trackpadColumn = Expanded(
       flex: 1,
       child: Padding(
@@ -1638,27 +1657,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                   return Row(
                     children: [
                       Expanded(
-                        child: Trackpad(
+                        child: _buildTrackpad(
                           height: constraints.maxHeight,
                           borderOpacity: 0.08,
-                          sensitivity: _sensitivity,
-                          mouseAcceleration: _mouseAcceleration,
-                          invertTwoFingerScroll: _invertTwoFingerScroll,
-                          scrollSensitivity: _scrollSensitivity,
-                          onReport:
-                              ({
-                                required double dx,
-                                required double dy,
-                                required double wheel,
-                              }) {
-                                _sendReport(
-                                  buttons: _lastButtonsState,
-                                  dx: dx,
-                                  dy: dy,
-                                  wheel: wheel,
-                                );
-                              },
-                          onTap: _tapClick,
+                          settings: settings,
+                          hostAddress: hostAddress,
                         ),
                       ),
                       const SizedBox(width: 12),
@@ -1858,6 +1861,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   @override
   Widget build(BuildContext context) {
     final settings = ref.watch(settingsProvider);
+    final hostAddress = ref.watch(
+      connectionStateProvider.select(
+        (state) => state.isConnected ? state.connectedDeviceAddress : null,
+      ),
+    );
     final gamepadMode = ref.watch(gamepadModeProvider);
     ref.listen<bool>(gamepadModeProvider, (previous, next) {
       if (previous != next) _onGamepadModeChanged(next);
@@ -2024,8 +2032,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
             : showFullKeyboard
             ? _buildForcedLandscapeKeyboardLayout()
             : (orientation == Orientation.portrait
-                  ? _buildPortraitLayout()
-                  : _buildSplitLandscapeLayout()),
+                  ? _buildPortraitLayout(settings, hostAddress)
+                  : _buildSplitLandscapeLayout(settings, hostAddress)),
       ),
     );
   }

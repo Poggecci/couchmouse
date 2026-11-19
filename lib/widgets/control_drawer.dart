@@ -220,6 +220,40 @@ class ControlDrawer extends ConsumerWidget {
 
                 _buildDivider(),
 
+                _buildSettingsRow(
+                  title: "Trackball",
+                  subtitle: "Flick to keep the cursor gliding",
+                  control: Switch.adaptive(
+                    activeThumbColor: Colors.black,
+                    value: settings.trackball,
+                    onChanged: (val) {
+                      ref.read(settingsProvider.notifier).updateTrackball(val);
+                    },
+                  ),
+                ),
+                if (settings.trackball)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 8,
+                    ),
+                    child: BlockSlider(
+                      value: settings.trackballFriction,
+                      min: 0.0,
+                      max: 1.0,
+                      label: "Trackball Friction",
+                      valueText:
+                          "${(settings.trackballFriction * 100).toStringAsFixed(0)}%",
+                      onChanged: (val) {
+                        ref
+                            .read(settingsProvider.notifier)
+                            .updateTrackballFriction(val);
+                      },
+                    ),
+                  ),
+
+                _buildDivider(),
+
                 // Trackpad Left-Side Configuration
                 _buildSettingsRow(
                   title: "Trackpad Left-Side",
