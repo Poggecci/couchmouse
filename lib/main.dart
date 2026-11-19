@@ -71,6 +71,7 @@ class HomeScreen extends ConsumerStatefulWidget {
 class _HomeScreenState extends ConsumerState<HomeScreen>
     with WidgetsBindingObserver {
   static const _channel = MethodChannel('com.example.couchmouse/hid');
+  static const _mouseChannel = MethodChannel('com.example.couchmouse/mouse');
   static const _settingsChannel = MethodChannel(
     'com.example.couchmouse/settings',
   );
@@ -616,29 +617,25 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     _fractionalDy = totalDy - intDy;
     _fractionalWheel = totalWheel - intWheel;
 
-    intDx = intDx.clamp(-127, 127);
-    intDy = intDy.clamp(-127, 127);
-    intWheel = intWheel.clamp(-127, 127);
-
-    if (force ||
-        intDx != 0 ||
-        intDy != 0 ||
-        intWheel != 0 ||
-        buttons != _lastButtonsState) {
-      _lastButtonsState = buttons;
-      try {
-        await _channel.invokeMethod('sendMouseReport', {
-          'buttons': buttons,
-          'dx': intDx.toDouble(),
-          'dy': intDy.toDouble(),
-          'wheel': intWheel,
-        });
-      } on PlatformException catch (e) {
-        debugPrint("Error dispatching HID mouse event: ${e.message}");
-      } on MissingPluginException {
-        // HID forwarding is unavailable on this platform.
-      }
+    // No ±127 clamp here: the native pump carries larger motion into the
+    // following reports.
+    if (intDx != 0 || intDy != 0 || intWheel != 0) {
+      _sendMouse('move', [intDx, intDy, intWheel]);
     }
+    if (force || buttons != _lastButtonsState) {
+      _lastButtonsState = buttons;
+      _sendMouse('buttons', [buttons, force]);
+    }
+  }
+
+  /// Fire-and-forget: the native side paces mouse reports on its own thread,
+  /// so a touch event never waits for a reply.
+  void _sendMouse(String method, List<Object> args) {
+    _mouseChannel.invokeMethod<void>(method, args).catchError((Object e) {
+      if (e is! MissingPluginException) {
+        debugPrint("Error dispatching HID mouse event: $e");
+      }
+    });
   }
 
   Future<bool> _sendKeyboardReport() {

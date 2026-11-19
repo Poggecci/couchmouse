@@ -23,6 +23,7 @@ import android.view.WindowManager
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
+import io.flutter.plugin.common.StandardMethodCodec
 
 class MainActivity : FlutterActivity() {
     private companion object {
@@ -31,9 +32,11 @@ class MainActivity : FlutterActivity() {
         const val LINK_KEEPALIVE_MS = 50L
 
         const val HID_QOS_LATENCY_US = 2_500
+        const val MOUSE_REPORT_ID = 2
     }
 
     private val CHANNEL = "com.example.couchmouse/hid"
+    private val MOUSE_CHANNEL = "com.example.couchmouse/mouse"
     private val TAG = "RemoteMouseHID"
     private val settingsDocuments = SettingsDocuments(this)
 
@@ -62,6 +65,16 @@ class MainActivity : FlutterActivity() {
     private val gamepadSender = Handler(gamepadSenderThread.looper)
     private val gamepadPump = GamepadReportPump(send = { report -> sendReport(GamepadReport.REPORT_ID, report) })
     private val gamepadTick = Runnable { runGamepadPump() }
+
+    // Mouse reports (Report ID 2), paced on their own sender thread (see
+    // MouseReportPump). Motion arrives on a background channel task queue, so
+    // neither receiving nor sending waits for the main thread, which also
+    // renders the UI.
+    private val mouseSenderThread =
+        HandlerThread("MouseReportPump", Process.THREAD_PRIORITY_DISPLAY).apply { start() }
+    private val mouseSender = Handler(mouseSenderThread.looper)
+    private val mousePump = MouseReportPump(send = { report -> sendReport(MOUSE_REPORT_ID, report) })
+    private val mouseTick = Runnable { runMousePump() }
     // Axis layout per InputDevice id. Android assigns a new id when a
     // controller reconnects, and the cache is cleared whenever the mode toggles.
     private val gamepadLayouts = HashMap<Int, GamepadAxisLayout>()
@@ -93,12 +106,13 @@ class MainActivity : FlutterActivity() {
     }
 
     // Link keep-alive state (main thread only; see updateLinkKeepAlive).
-    private var lastReportSentAt = 0L // SystemClock.uptimeMillis()
+    // Also written by the mouse sender thread (see sendReport).
+    @Volatile private var lastReportSentAt = 0L // SystemClock.uptimeMillis()
     private val neutralKeyboardReport = ByteArray(8)
     private var heldKeyboardReport: ByteArray? = null
     private val linkKeepAliveTick = Runnable { runLinkKeepAlive() }
 
-    private var isRegistered = false
+    @Volatile private var isRegistered = false // also read by the mouse channel queue
     private var cachedFlutterEngine: FlutterEngine? = null
 
     private val bluetoothReceiver = object : BroadcastReceiver() {
@@ -340,6 +354,35 @@ class MainActivity : FlutterActivity() {
             }
         cachedFlutterEngine = flutterEngine
 
+        // Mouse input: handled on a background task queue, not the main thread.
+        // Fire-and-forget: Flutter doesn't wait for a reply per touch event.
+        val messenger = flutterEngine.dartExecutor.binaryMessenger
+        MethodChannel(messenger, MOUSE_CHANNEL, StandardMethodCodec.INSTANCE, messenger.makeBackgroundTaskQueue())
+            .setMethodCallHandler { call, result ->
+                val args = call.arguments as? List<*>
+                val connected = isRegistered && hostDevice != null
+                val wake = when (call.method) {
+                    "move" -> connected && args != null && mousePump.move(
+                        (args[0] as Number).toInt(),
+                        (args[1] as Number).toInt(),
+                        (args[2] as Number).toInt(),
+                    )
+                    "buttons" -> connected && args != null &&
+                        mousePump.setButtons((args[0] as Number).toInt(), force = args[1] == true)
+                    "setRate" -> {
+                        val hz = (args?.get(0) as? Number)?.toInt()
+                        if (hz != null) mouseSender.post { mousePump.setMaxRateHz(hz) }
+                        false
+                    }
+                    else -> {
+                        result.notImplemented()
+                        return@setMethodCallHandler
+                    }
+                }
+                if (wake) mouseSender.post(mouseTick)
+                result.success(null)
+            }
+
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, CHANNEL).setMethodCallHandler { call, result ->
             when (call.method) {
                 "isSupported" -> {
@@ -526,29 +569,6 @@ class MainActivity : FlutterActivity() {
                         result.error("ERROR", e.message, null)
                     }
                 }
-                "sendMouseReport" -> {
-                    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.P) {
-                        result.error("UNSUPPORTED", "Bluetooth HID requires Android 9+", null)
-                        return@setMethodCallHandler
-                    }
-                    val buttons = call.argument<Int>("buttons") ?: 0
-                    val dx = call.argument<Double>("dx")?.toInt() ?: 0
-                    val dy = call.argument<Double>("dy")?.toInt() ?: 0
-                    val wheel = call.argument<Int>("wheel") ?: 0
-
-                    val report = byteArrayOf(
-                        buttons.toByte(),
-                        dx.coerceIn(-127, 127).toByte(),
-                        dy.coerceIn(-127, 127).toByte(),
-                        wheel.coerceIn(-127, 127).toByte()
-                    )
-                    val success = sendReport(2, report)
-                    if (success) {
-                        result.success(null)
-                    } else {
-                        result.error("UNAVAILABLE", "No Bluetooth device currently connected.", null)
-                    }
-                }
                 "sendKeyboardReport" -> {
                     if (Build.VERSION.SDK_INT < Build.VERSION_CODES.P) {
                         result.error("UNSUPPORTED", "Bluetooth HID requires Android 9+", null)
@@ -676,6 +696,7 @@ class MainActivity : FlutterActivity() {
         heldKeyboardReport = null
         keyboardReportHost = null
         lastReportSentAt = 0L
+        mousePump.reset()
     }
 
     /**
@@ -706,6 +727,13 @@ class MainActivity : FlutterActivity() {
         gamepadSender.removeCallbacks(gamepadTick)
         val next = gamepadPump.tick(SystemClock.uptimeMillis()) ?: return
         gamepadSender.postAtTime(gamepadTick, next)
+    }
+
+    /** Mouse sender thread only: sends whatever is due and schedules the next wake-up. */
+    private fun runMousePump() {
+        mouseSender.removeCallbacks(mouseTick)
+        val next = mousePump.tick(SystemClock.uptimeMillis()) ?: return
+        mouseSender.postAtTime(mouseTick, next)
     }
 
     /** One synchronous neutral report, for when the host link is about to go away. */
@@ -942,6 +970,8 @@ class MainActivity : FlutterActivity() {
         releaseKeyboard()
         gamepadSender.removeCallbacksAndMessages(null)
         gamepadSenderThread.quitSafely()
+        mouseSender.removeCallbacksAndMessages(null)
+        mouseSenderThread.quitSafely()
         if (gamepadPump.isStreaming) sendNeutralGamepadNow()
         mainHandler.removeCallbacks(flushGamepadUi)
         (getSystemService(Context.INPUT_SERVICE) as? InputManager)
