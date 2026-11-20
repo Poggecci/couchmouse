@@ -25,7 +25,9 @@ void main() {
       tester.view.resetDevicePixelRatio();
     });
 
-    SharedPreferences.setMockInitialValues({});
+    SharedPreferences.setMockInitialValues({
+      'global_tutorial_status': 'completed',
+    });
     final prefs = await SharedPreferences.getInstance();
 
     // Mock Bluetooth/HID channel
@@ -79,7 +81,9 @@ void main() {
         tester.view.resetDevicePixelRatio();
       });
 
-      SharedPreferences.setMockInitialValues({});
+      SharedPreferences.setMockInitialValues({
+        'global_tutorial_status': 'completed',
+      });
       final prefs = await SharedPreferences.getInstance();
 
       // Mock Bluetooth/HID channel
@@ -147,7 +151,9 @@ void main() {
         tester.view.resetDevicePixelRatio();
       });
 
-      SharedPreferences.setMockInitialValues({});
+      SharedPreferences.setMockInitialValues({
+        'global_tutorial_status': 'completed',
+      });
       final prefs = await SharedPreferences.getInstance();
 
       // Mock Bluetooth/HID channel
@@ -214,7 +220,9 @@ void main() {
         tester.view.resetDevicePixelRatio();
       });
 
-      SharedPreferences.setMockInitialValues({});
+      SharedPreferences.setMockInitialValues({
+        'global_tutorial_status': 'completed',
+      });
       final prefs = await SharedPreferences.getInstance();
 
       // Mock Bluetooth/HID channel
@@ -281,7 +289,9 @@ void main() {
         tester.view.resetDevicePixelRatio();
       });
 
-      SharedPreferences.setMockInitialValues({});
+      SharedPreferences.setMockInitialValues({
+        'global_tutorial_status': 'completed',
+      });
       final prefs = await SharedPreferences.getInstance();
 
       tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
@@ -341,7 +351,9 @@ void main() {
         tester.view.resetDevicePixelRatio();
       });
 
-      SharedPreferences.setMockInitialValues({});
+      SharedPreferences.setMockInitialValues({
+        'global_tutorial_status': 'completed',
+      });
       final prefs = await SharedPreferences.getInstance();
 
       int permissionCheckCount = 0;
