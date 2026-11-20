@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../app_theme.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../settings_providers.dart';
@@ -65,10 +66,10 @@ class ConnectionDashboard extends ConsumerWidget {
               ? const EdgeInsets.symmetric(horizontal: 10, vertical: 1)
               : const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: const Color(0xFFF4F4F6),
+            color: context.palette.surface,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color: Colors.black.withValues(alpha: 0.08),
+              color: context.palette.ink.withValues(alpha: 0.08),
               width: 1.0,
             ),
           ),
@@ -80,10 +81,10 @@ class ConnectionDashboard extends ConsumerWidget {
                 const SizedBox(width: 8),
                 Text(
                   isConnected ? "Connected" : "Disconnected",
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
-                    color: Colors.black87,
+                    color: context.palette.ink.withValues(alpha: 0.87),
                     letterSpacing: 0.5,
                   ),
                 ),
@@ -97,10 +98,10 @@ class ConnectionDashboard extends ConsumerWidget {
                     children: [
                       Text(
                         isConnected ? "Connected" : "Not Connected",
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w700,
-                          color: Colors.black,
+                          color: context.palette.ink,
                         ),
                       ),
                       const SizedBox(height: 2),
@@ -112,7 +113,7 @@ class ConnectionDashboard extends ConsumerWidget {
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
                           fontSize: 12,
-                          color: Colors.black.withValues(alpha: 0.4),
+                          color: context.palette.ink.withValues(alpha: 0.4),
                         ),
                       ),
                     ],
@@ -122,7 +123,7 @@ class ConnectionDashboard extends ConsumerWidget {
               IconButton(
                 onPressed: onTap,
                 icon: const Icon(CupertinoIcons.bluetooth),
-                color: Colors.black.withValues(alpha: 0.8),
+                color: context.palette.ink.withValues(alpha: 0.8),
                 padding: EdgeInsets.zero,
                 constraints: const BoxConstraints(),
                 iconSize: compact ? 18 : 22,

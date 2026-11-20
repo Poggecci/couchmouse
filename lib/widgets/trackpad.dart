@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import '../app_theme.dart';
 import 'package:flutter/scheduler.dart';
 
 class Trackpad extends StatefulWidget {
@@ -191,12 +192,14 @@ class _TrackpadState extends State<Trackpad>
             child: Container(
               height: widget.height,
               decoration: BoxDecoration(
-                color: const Color(0xFFF4F4F6),
+                color: context.palette.surface,
                 borderRadius: BorderRadius.circular(20),
                 border: Border.all(
                   color: _touchPos != null
-                      ? Colors.black.withValues(alpha: 0.2)
-                      : Colors.black.withValues(alpha: widget.borderOpacity),
+                      ? context.palette.ink.withValues(alpha: 0.2)
+                      : context.palette.ink.withValues(
+                          alpha: widget.borderOpacity,
+                        ),
                   width: 1.0,
                 ),
               ),
@@ -208,8 +211,8 @@ class _TrackpadState extends State<Trackpad>
                     Icons.mouse_outlined,
                     size: widget.height < 200 ? 28 : 40,
                     color: _touchPos != null
-                        ? Colors.black.withValues(alpha: 0.8)
-                        : Colors.black.withValues(alpha: 0.15),
+                        ? context.palette.ink.withValues(alpha: 0.8)
+                        : context.palette.ink.withValues(alpha: 0.15),
                   ),
                   const SizedBox(height: 12),
                   Text(
@@ -219,8 +222,8 @@ class _TrackpadState extends State<Trackpad>
                       fontWeight: FontWeight.w600,
                       letterSpacing: 0.5,
                       color: _touchPos != null
-                          ? Colors.black
-                          : Colors.black.withValues(alpha: 0.4),
+                          ? context.palette.ink
+                          : context.palette.ink.withValues(alpha: 0.4),
                     ),
                   ),
                   if (widget.height >= 180) ...[
@@ -231,8 +234,8 @@ class _TrackpadState extends State<Trackpad>
                       style: TextStyle(
                         fontSize: widget.height < 200 ? 10 : 11,
                         color: _touchPos != null
-                            ? Colors.black.withValues(alpha: 0.5)
-                            : Colors.black.withValues(alpha: 0.3),
+                            ? context.palette.ink.withValues(alpha: 0.5)
+                            : context.palette.ink.withValues(alpha: 0.3),
                       ),
                     ),
                   ],
@@ -245,7 +248,11 @@ class _TrackpadState extends State<Trackpad>
           Positioned.fill(
             child: IgnorePointer(
               child: CustomPaint(
-                painter: TrackpadPainter(_trailPoints, _touchPos),
+                painter: TrackpadPainter(
+                  _trailPoints,
+                  _touchPos,
+                  context.palette.ink,
+                ),
               ),
             ),
           ),
@@ -257,8 +264,9 @@ class _TrackpadState extends State<Trackpad>
 class TrackpadPainter extends CustomPainter {
   final List<Offset> points;
   final Offset? currentPoint;
+  final Color ink;
 
-  TrackpadPainter(this.points, this.currentPoint);
+  TrackpadPainter(this.points, this.currentPoint, this.ink);
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -268,7 +276,7 @@ class TrackpadPainter extends CustomPainter {
       for (int i = 0; i < points.length - 1; i++) {
         double progress = i / points.length;
         final Paint trailPaint = Paint()
-          ..color = Colors.black.withValues(alpha: progress * 0.2)
+          ..color = ink.withValues(alpha: progress * 0.2)
           ..strokeWidth = progress * 4.0 + 1.5
           ..style = PaintingStyle.stroke
           ..strokeCap = StrokeCap.round;
@@ -281,21 +289,21 @@ class TrackpadPainter extends CustomPainter {
       final Paint glowPaint = Paint()
         ..shader = RadialGradient(
           colors: [
-            Colors.black.withValues(alpha: 0.08),
-            Colors.black.withValues(alpha: 0.01),
+            ink.withValues(alpha: 0.08),
+            ink.withValues(alpha: 0.01),
             Colors.transparent,
           ],
         ).createShader(Rect.fromCircle(center: currentPoint!, radius: 36.0));
       canvas.drawCircle(currentPoint!, 36.0, glowPaint);
 
       final Paint ringPaint = Paint()
-        ..color = Colors.black.withValues(alpha: 0.25)
+        ..color = ink.withValues(alpha: 0.25)
         ..style = PaintingStyle.stroke
         ..strokeWidth = 1.0;
       canvas.drawCircle(currentPoint!, 15.0, ringPaint);
 
       final Paint dotPaint = Paint()
-        ..color = Colors.black
+        ..color = ink
         ..style = PaintingStyle.fill;
       canvas.drawCircle(currentPoint!, 3.0, dotPaint);
     }

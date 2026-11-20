@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../app_theme.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../settings_providers.dart';
@@ -26,8 +27,8 @@ class BluetoothDevicesSheet extends ConsumerWidget {
         MediaQuery.of(context).orientation == Orientation.landscape;
 
     return Container(
-      decoration: const BoxDecoration(
-        color: Color(0xFFFFFFFF),
+      decoration: BoxDecoration(
+        color: context.palette.paper,
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       constraints: BoxConstraints(
@@ -47,7 +48,7 @@ class BluetoothDevicesSheet extends ConsumerWidget {
                 width: 40,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: Colors.black.withValues(alpha: 0.15),
+                  color: context.palette.ink.withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
@@ -60,25 +61,25 @@ class BluetoothDevicesSheet extends ConsumerWidget {
                   children: [
                     Icon(
                       CupertinoIcons.bluetooth,
-                      color: Colors.black.withValues(alpha: 0.8),
+                      color: context.palette.ink.withValues(alpha: 0.8),
                       size: 24,
                     ),
                     const SizedBox(width: 10),
-                    const Text(
+                    Text(
                       "Bluetooth Connections",
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.w800,
-                        color: Colors.black,
+                        color: context.palette.ink,
                         letterSpacing: 0.5,
                       ),
                     ),
                   ],
                 ),
                 IconButton(
-                  icon: const Icon(
+                  icon: Icon(
                     CupertinoIcons.refresh,
-                    color: Colors.black54,
+                    color: context.palette.ink.withValues(alpha: 0.54),
                     size: 20,
                   ),
                   onPressed: () {
@@ -88,18 +89,18 @@ class BluetoothDevicesSheet extends ConsumerWidget {
               ],
             ),
             Divider(
-              color: Colors.black.withValues(alpha: 0.08),
+              color: context.palette.ink.withValues(alpha: 0.08),
               height: isLandscape ? 12 : 24,
             ),
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: const Color(0xFFF4F4F6),
+                color: context.palette.surface,
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
                   color: connection.isConnected
-                      ? Colors.black.withValues(alpha: 0.15)
-                      : Colors.black.withValues(alpha: 0.08),
+                      ? context.palette.ink.withValues(alpha: 0.15)
+                      : context.palette.ink.withValues(alpha: 0.08),
                 ),
               ),
               child: Row(
@@ -125,7 +126,7 @@ class BluetoothDevicesSheet extends ConsumerWidget {
                         fontWeight: FontWeight.w700,
                         color: connection.isConnected
                             ? const Color(0xFF34C759)
-                            : Colors.black87,
+                            : context.palette.ink.withValues(alpha: 0.87),
                       ),
                     ),
                   ),
@@ -155,12 +156,12 @@ class BluetoothDevicesSheet extends ConsumerWidget {
               ),
             ),
             SizedBox(height: isLandscape ? 8 : 16),
-            const Text(
+            Text(
               "PAIRED DEVICES",
               style: TextStyle(
                 fontSize: 10,
                 fontWeight: FontWeight.bold,
-                color: Colors.black38,
+                color: context.palette.ink.withValues(alpha: 0.38),
                 letterSpacing: 1.0,
               ),
             ),
@@ -172,10 +173,13 @@ class BluetoothDevicesSheet extends ConsumerWidget {
                     return Container(
                       padding: const EdgeInsets.symmetric(vertical: 24),
                       alignment: Alignment.center,
-                      child: const Text(
+                      child: Text(
                         "No paired devices found.\nMake sure your phone is paired to your computer.",
                         textAlign: TextAlign.center,
-                        style: TextStyle(color: Colors.black38, fontSize: 13),
+                        style: TextStyle(
+                          color: context.palette.ink.withValues(alpha: 0.38),
+                          fontSize: 13,
+                        ),
                       ),
                     );
                   }
@@ -197,11 +201,11 @@ class BluetoothDevicesSheet extends ConsumerWidget {
                         padding: const EdgeInsets.symmetric(vertical: 4.0),
                         child: Container(
                           decoration: BoxDecoration(
-                            color: const Color(0xFFF4F4F6),
+                            color: context.palette.surface,
                             borderRadius: BorderRadius.circular(12),
                             border: Border.all(
                               color: isConnectedThis
-                                  ? Colors.black
+                                  ? context.palette.ink
                                   : Colors.transparent,
                               width: 1,
                             ),
@@ -213,27 +217,29 @@ class BluetoothDevicesSheet extends ConsumerWidget {
                             ),
                             title: Text(
                               name,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontWeight: FontWeight.bold,
                                 fontSize: 14,
-                                color: Colors.black,
+                                color: context.palette.ink,
                               ),
                             ),
                             subtitle: Text(
                               address,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 11,
-                                color: Colors.black38,
+                                color: context.palette.ink.withValues(
+                                  alpha: 0.38,
+                                ),
                               ),
                             ),
                             trailing: isConnectingThis
-                                ? const SizedBox(
+                                ? SizedBox(
                                     width: 20,
                                     height: 20,
                                     child: CircularProgressIndicator(
                                       strokeWidth: 2,
                                       valueColor: AlwaysStoppedAnimation<Color>(
-                                        Colors.black,
+                                        context.palette.ink,
                                       ),
                                     ),
                                   )
@@ -250,8 +256,8 @@ class BluetoothDevicesSheet extends ConsumerWidget {
                                             await onConnect(address, name);
                                           },
                                     style: ElevatedButton.styleFrom(
-                                      backgroundColor: Colors.black,
-                                      foregroundColor: Colors.white,
+                                      backgroundColor: context.palette.ink,
+                                      foregroundColor: context.palette.paper,
                                       minimumSize: Size.zero,
                                       padding: const EdgeInsets.symmetric(
                                         horizontal: 14,
@@ -275,11 +281,13 @@ class BluetoothDevicesSheet extends ConsumerWidget {
                     },
                   );
                 },
-                loading: () => const Center(
+                loading: () => Center(
                   child: Padding(
                     padding: EdgeInsets.symmetric(vertical: 24),
                     child: CircularProgressIndicator(
-                      valueColor: AlwaysStoppedAnimation<Color>(Colors.black),
+                      valueColor: AlwaysStoppedAnimation<Color>(
+                        context.palette.ink,
+                      ),
                     ),
                   ),
                 ),
@@ -378,7 +386,7 @@ class _PulsatingGlowButtonState extends State<PulsatingGlowButton>
               borderRadius: BorderRadius.circular(12),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withValues(
+                  color: context.palette.ink.withValues(
                     alpha: 0.08 + (glowValue * 0.12),
                   ),
                   blurRadius: 10 + (glowValue * 10),
@@ -394,8 +402,8 @@ class _PulsatingGlowButtonState extends State<PulsatingGlowButton>
                   CupertinoIcons.antenna_radiowaves_left_right,
                   size: 18,
                   color: Color.lerp(
-                    Colors.white,
-                    Colors.white.withValues(alpha: 0.6),
+                    context.palette.paper,
+                    context.palette.paper.withValues(alpha: 0.6),
                     glowValue,
                   ),
                 ),
@@ -404,8 +412,8 @@ class _PulsatingGlowButtonState extends State<PulsatingGlowButton>
                   style: const TextStyle(fontWeight: FontWeight.bold),
                 ),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.black,
-                  foregroundColor: Colors.white,
+                  backgroundColor: context.palette.ink,
+                  foregroundColor: context.palette.paper,
                   elevation: 0,
                   padding: EdgeInsets.symmetric(
                     vertical: widget.isLandscape ? 8 : 14,
@@ -414,8 +422,8 @@ class _PulsatingGlowButtonState extends State<PulsatingGlowButton>
                     borderRadius: BorderRadius.circular(12),
                     side: BorderSide(
                       color: Color.lerp(
-                        Colors.white.withValues(alpha: 0.2),
-                        Colors.white.withValues(alpha: 0.6),
+                        context.palette.paper.withValues(alpha: 0.2),
+                        context.palette.paper.withValues(alpha: 0.6),
                         glowValue,
                       )!,
                       width: 1.5,
@@ -432,15 +440,15 @@ class _PulsatingGlowButtonState extends State<PulsatingGlowButton>
         width: double.infinity,
         child: ElevatedButton.icon(
           onPressed: widget.onPressed,
-          icon: const Icon(
+          icon: Icon(
             CupertinoIcons.search,
             size: 18,
-            color: Colors.white,
+            color: context.palette.paper,
           ),
           label: Text(widget.label),
           style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.black,
-            foregroundColor: Colors.white,
+            backgroundColor: context.palette.ink,
+            foregroundColor: context.palette.paper,
             padding: EdgeInsets.symmetric(
               vertical: widget.isLandscape ? 8 : 14,
             ),

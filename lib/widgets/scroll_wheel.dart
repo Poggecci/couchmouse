@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import '../app_theme.dart';
 import 'package:flutter/scheduler.dart';
 
 class ScrollWheel extends StatefulWidget {
@@ -155,12 +156,12 @@ class _ScrollWheelState extends State<ScrollWheel>
         width: widget.width,
         height: widget.height,
         decoration: BoxDecoration(
-          color: const Color(0xFFFAFAFC),
+          color: context.palette.wheel,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
             color: _isPressed
-                ? Colors.black.withValues(alpha: 0.2)
-                : Colors.black.withValues(alpha: 0.08),
+                ? context.palette.ink.withValues(alpha: 0.2)
+                : context.palette.ink.withValues(alpha: 0.08),
             width: 1.0,
           ),
         ),
@@ -170,6 +171,7 @@ class _ScrollWheelState extends State<ScrollWheel>
             painter: ScrollWheelPainter(
               scrollAngle: _scrollAngle,
               isPressed: _isPressed,
+              palette: context.palette,
             ),
           ),
         ),
@@ -181,8 +183,13 @@ class _ScrollWheelState extends State<ScrollWheel>
 class ScrollWheelPainter extends CustomPainter {
   final double scrollAngle;
   final bool isPressed;
+  final Palette palette;
 
-  ScrollWheelPainter({required this.scrollAngle, required this.isPressed});
+  ScrollWheelPainter({
+    required this.scrollAngle,
+    required this.isPressed,
+    required this.palette,
+  });
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -195,9 +202,9 @@ class ScrollWheelPainter extends CustomPainter {
     final Paint sheenPaint = Paint()
       ..shader = LinearGradient(
         colors: [
-          Colors.black.withValues(alpha: 0.02),
-          Colors.white,
-          Colors.black.withValues(alpha: 0.02),
+          palette.ink.withValues(alpha: 0.02),
+          palette.wheelShine,
+          palette.ink.withValues(alpha: 0.02),
         ],
         begin: Alignment.centerLeft,
         end: Alignment.centerRight,
@@ -220,7 +227,7 @@ class ScrollWheelPainter extends CustomPainter {
         final double strokeWidth = cosTheta * 1.5 + 0.5;
 
         final Paint ribPaint = Paint()
-          ..color = Colors.black.withValues(alpha: opacity)
+          ..color = palette.ink.withValues(alpha: opacity)
           ..strokeWidth = strokeWidth
           ..style = PaintingStyle.stroke
           ..strokeCap = StrokeCap.round;
@@ -231,7 +238,7 @@ class ScrollWheelPainter extends CustomPainter {
 
     // Draw a subtle vertical indicator line down the center to emphasize track
     final Paint trackPaint = Paint()
-      ..color = Colors.black.withValues(alpha: isPressed ? 0.15 : 0.06)
+      ..color = palette.ink.withValues(alpha: isPressed ? 0.15 : 0.06)
       ..strokeWidth = 1.0;
     canvas.drawLine(Offset(w / 2, 8), Offset(w / 2, h - 8), trackPaint);
 
@@ -239,10 +246,10 @@ class ScrollWheelPainter extends CustomPainter {
     final Paint fadePaint = Paint()
       ..shader = LinearGradient(
         colors: [
-          const Color(0xFFFAFAFC),
+          palette.wheel,
           Colors.transparent,
           Colors.transparent,
-          const Color(0xFFFAFAFC),
+          palette.wheel,
         ],
         stops: const [0.0, 0.15, 0.85, 1.0],
         begin: Alignment.topCenter,
@@ -254,6 +261,7 @@ class ScrollWheelPainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant ScrollWheelPainter oldDelegate) {
     return oldDelegate.scrollAngle != scrollAngle ||
-        oldDelegate.isPressed != isPressed;
+        oldDelegate.isPressed != isPressed ||
+        oldDelegate.palette != palette;
   }
 }

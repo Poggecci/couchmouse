@@ -5,8 +5,8 @@ import 'package:flutter/services.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:google_fonts/google_fonts.dart';
 
+import 'app_theme.dart';
 import 'settings_providers.dart';
 import 'gamepad_state.dart';
 import 'keyboard_layouts.dart';
@@ -47,24 +47,22 @@ enum _TextSource {
   final String progress;
 }
 
-class CouchMouseApp extends StatelessWidget {
+class CouchMouseApp extends ConsumerWidget {
   const CouchMouseApp({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final darkMode = ref.watch(settingsProvider.select((s) => s.darkMode));
     return MaterialApp(
       title: 'CouchMouse',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        brightness: Brightness.light,
-        scaffoldBackgroundColor: const Color(0xFFFFFFFF),
-        fontFamily: GoogleFonts.plusJakartaSans().fontFamily,
-        colorScheme: const ColorScheme.light(
-          primary: Colors.black,
-          secondary: Color(0xFF1C1C1E),
-          surface: Color(0xFFF4F4F6),
-        ),
-        useMaterial3: true,
+      theme: buildTheme(Brightness.light),
+      darkTheme: buildTheme(Brightness.dark),
+      themeMode: darkMode ? ThemeMode.system : ThemeMode.light,
+      // Screens without an app bar get the same status bar icons.
+      builder: (context, child) => AnnotatedRegion<SystemUiOverlayStyle>(
+        value: Theme.of(context).appBarTheme.systemOverlayStyle!,
+        child: child!,
       ),
       home: const HomeScreen(),
     );
@@ -482,7 +480,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                   );
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
-                  content: Text("Connection to $name timed out"),
+                  content: Text(
+                    "Connection to $name timed out",
+                    style: const TextStyle(color: Colors.black),
+                  ),
                   backgroundColor: Colors.amber,
                 ),
               );
@@ -923,21 +924,21 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
           children: [
             const Icon(Icons.error_outline, size: 80, color: Colors.redAccent),
             const SizedBox(height: 24),
-            const Text(
+            Text(
               "Unsupported Device",
               style: TextStyle(
                 fontSize: 24,
                 fontWeight: FontWeight.bold,
-                color: Colors.white,
+                color: context.palette.ink,
               ),
             ),
             const SizedBox(height: 16),
-            const Text(
+            Text(
               "CouchMouse requires Android 9 (API Level 28) or higher for native Bluetooth HID Device Emulation.\n\nYour device's Android version does not support this profile.",
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 16,
-                color: Colors.white54,
+                color: context.palette.ink.withValues(alpha: 0.54),
                 height: 1.5,
               ),
             ),
@@ -960,21 +961,21 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
               color: Color(0xFF00E5FF),
             ),
             const SizedBox(height: 24),
-            const Text(
+            Text(
               "Bluetooth Access Required",
               style: TextStyle(
                 fontSize: 24,
                 fontWeight: FontWeight.bold,
-                color: Colors.white,
+                color: context.palette.ink,
               ),
             ),
             const SizedBox(height: 16),
-            const Text(
+            Text(
               "CouchMouse emulates a standard Bluetooth mouse and keyboard. To register this hardware profile, the app requires Bluetooth permission to advertise to hosts.",
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 16,
-                color: Colors.white70,
+                color: context.palette.ink.withValues(alpha: 0.7),
                 height: 1.5,
               ),
             ),
@@ -1005,7 +1006,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
               child: Text(
                 "Open System Settings",
                 style: TextStyle(
-                  color: Colors.black.withValues(alpha: 0.6),
+                  color: context.palette.ink.withValues(alpha: 0.6),
                   fontSize: 15,
                 ),
               ),
@@ -1043,12 +1044,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
           vertical: compact ? 4 : 6,
         ),
         decoration: BoxDecoration(
-          color: _holdLockActive ? Colors.black : const Color(0xFFF4F4F6),
+          color: _holdLockActive
+              ? context.palette.ink
+              : context.palette.surface,
           borderRadius: BorderRadius.circular(compact ? 6 : 8),
           border: Border.all(
             color: _holdLockActive
-                ? Colors.black
-                : Colors.black.withValues(alpha: 0.08),
+                ? context.palette.ink
+                : context.palette.ink.withValues(alpha: 0.08),
             width: 1,
           ),
         ),
@@ -1058,8 +1061,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
               _holdLockActive ? Icons.lock : Icons.lock_open,
               size: compact ? 11 : 13,
               color: _holdLockActive
-                  ? Colors.white
-                  : Colors.black.withValues(alpha: 0.4),
+                  ? context.palette.paper
+                  : context.palette.ink.withValues(alpha: 0.4),
             ),
             SizedBox(width: compact ? 4 : 6),
             Text(
@@ -1068,8 +1071,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                 fontSize: compact ? 10 : 11,
                 fontWeight: FontWeight.bold,
                 color: _holdLockActive
-                    ? Colors.white
-                    : Colors.black.withValues(alpha: 0.6),
+                    ? context.palette.paper
+                    : context.palette.ink.withValues(alpha: 0.6),
               ),
             ),
           ],
@@ -1087,10 +1090,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
           vertical: compact ? 4 : 6,
         ),
         decoration: BoxDecoration(
-          color: const Color(0xFFF4F4F6),
+          color: context.palette.surface,
           borderRadius: BorderRadius.circular(compact ? 6 : 8),
           border: Border.all(
-            color: Colors.black.withValues(alpha: 0.08),
+            color: context.palette.ink.withValues(alpha: 0.08),
             width: 1,
           ),
         ),
@@ -1099,7 +1102,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
             Icon(
               Icons.refresh,
               size: compact ? 11 : 13,
-              color: Colors.black.withValues(alpha: 0.4),
+              color: context.palette.ink.withValues(alpha: 0.4),
             ),
             SizedBox(width: compact ? 4 : 6),
             Text(
@@ -1107,7 +1110,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
               style: TextStyle(
                 fontSize: compact ? 10 : 11,
                 fontWeight: FontWeight.bold,
-                color: Colors.black.withValues(alpha: 0.6),
+                color: context.palette.ink.withValues(alpha: 0.6),
               ),
             ),
           ],
@@ -1352,12 +1355,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
         decoration: BoxDecoration(
           color: _typingText
               ? const Color(0xFFD32F2F)
-              : const Color(0xFFF4F4F6),
+              : context.palette.surface,
           borderRadius: BorderRadius.circular(compact ? 6 : 8),
           border: Border.all(
             color: _typingText
                 ? const Color(0xFFD32F2F)
-                : Colors.black.withValues(alpha: 0.08),
+                : context.palette.ink.withValues(alpha: 0.08),
             width: 1,
           ),
         ),
@@ -1369,7 +1372,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
               size: compact ? 11 : 13,
               color: _typingText
                   ? Colors.white
-                  : Colors.black.withValues(alpha: 0.4),
+                  : context.palette.ink.withValues(alpha: 0.4),
             ),
             SizedBox(width: compact ? 4 : 6),
             Text(
@@ -1379,7 +1382,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                 fontWeight: FontWeight.bold,
                 color: _typingText
                     ? Colors.white
-                    : Colors.black.withValues(alpha: 0.6),
+                    : context.palette.ink.withValues(alpha: 0.6),
               ),
             ),
           ],
@@ -1392,9 +1395,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
-        color: const Color(0xFFFFFFFF),
+        color: context.palette.paper,
         border: Border(
-          bottom: BorderSide(color: Colors.black.withValues(alpha: 0.08)),
+          bottom: BorderSide(
+            color: context.palette.ink.withValues(alpha: 0.08),
+          ),
         ),
       ),
       child: Row(
@@ -1416,8 +1421,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
               fontWeight: FontWeight.w800,
               letterSpacing: 1.0,
               color: _fnActive
-                  ? Colors.black
-                  : Colors.black.withValues(alpha: 0.3),
+                  ? context.palette.ink
+                  : context.palette.ink.withValues(alpha: 0.3),
             ),
           ),
         ],
@@ -1429,10 +1434,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     return Container(
       height: 50,
       decoration: BoxDecoration(
-        color: const Color(0xFFFFFFFF),
+        color: context.palette.paper,
         border: Border(
-          top: BorderSide(color: Colors.black.withValues(alpha: 0.08)),
-          bottom: BorderSide(color: Colors.black.withValues(alpha: 0.08)),
+          top: BorderSide(color: context.palette.ink.withValues(alpha: 0.08)),
+          bottom: BorderSide(
+            color: context.palette.ink.withValues(alpha: 0.08),
+          ),
         ),
       ),
       child: ListView(
@@ -1450,20 +1457,20 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
           _buildAccessoryButton(
             icon: _typingText ? Icons.close : Icons.paste_rounded,
             onTap: _typingText ? _cancelTyping : _pasteClipboard,
-            color: _typingText ? Colors.white : Colors.black,
+            color: _typingText ? Colors.white : context.palette.ink,
             backgroundColor: _typingText
                 ? const Color(0xFFD32F2F)
-                : const Color(0xFFF4F4F6),
-            borderColor: Colors.black.withValues(alpha: 0.08),
+                : context.palette.surface,
+            borderColor: context.palette.ink.withValues(alpha: 0.08),
           ),
           _buildAccessoryDivider(),
           _buildAccessoryKey("Esc", 0x29),
           _buildAccessoryKey("Tab", 0x2B),
           _buildAccessoryDivider(),
-          _buildAccessoryModifier("Ctrl", 0x01, Colors.black),
-          _buildAccessoryModifier("Shift", 0x02, Colors.black),
-          _buildAccessoryModifier("Alt", 0x04, Colors.black),
-          _buildAccessoryModifier("Win", 0x08, Colors.black),
+          _buildAccessoryModifier("Ctrl", 0x01, context.palette.ink),
+          _buildAccessoryModifier("Shift", 0x02, context.palette.ink),
+          _buildAccessoryModifier("Alt", 0x04, context.palette.ink),
+          _buildAccessoryModifier("Win", 0x08, context.palette.ink),
           _buildAccessoryDivider(),
           _buildAccessoryKey("◀", 0x50),
           _buildAccessoryKey("▲", 0x52),
@@ -1488,15 +1495,17 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 12),
           decoration: BoxDecoration(
-            color: const Color(0xFFF4F4F6),
+            color: context.palette.surface,
             borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: Colors.black.withValues(alpha: 0.08)),
+            border: Border.all(
+              color: context.palette.ink.withValues(alpha: 0.08),
+            ),
           ),
           alignment: Alignment.center,
           child: Text(
             label,
-            style: const TextStyle(
-              color: Colors.black,
+            style: TextStyle(
+              color: context.palette.ink,
               fontWeight: FontWeight.bold,
               fontSize: 12,
             ),
@@ -1516,12 +1525,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
           duration: const Duration(milliseconds: 100),
           padding: const EdgeInsets.symmetric(horizontal: 12),
           decoration: BoxDecoration(
-            color: isActive ? Colors.black : const Color(0xFFF4F4F6),
+            color: isActive ? context.palette.ink : context.palette.surface,
             borderRadius: BorderRadius.circular(8),
             border: Border.all(
               color: isActive
-                  ? Colors.black
-                  : Colors.black.withValues(alpha: 0.08),
+                  ? context.palette.ink
+                  : context.palette.ink.withValues(alpha: 0.08),
               width: 1.0,
             ),
           ),
@@ -1529,7 +1538,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
           child: Text(
             label,
             style: TextStyle(
-              color: isActive ? Colors.white : Colors.black,
+              color: isActive ? context.palette.paper : context.palette.ink,
               fontWeight: FontWeight.bold,
               fontSize: 12,
             ),
@@ -1542,7 +1551,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   Widget _buildAccessoryButton({
     required IconData icon,
     required VoidCallback onTap,
-    Color color = Colors.black,
+    Color? color,
     Color? backgroundColor,
     Color? borderColor,
   }) {
@@ -1553,14 +1562,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 10),
           decoration: BoxDecoration(
-            color: backgroundColor ?? const Color(0xFFF4F4F6),
+            color: backgroundColor ?? context.palette.surface,
             borderRadius: BorderRadius.circular(8),
             border: Border.all(
-              color: borderColor ?? Colors.black.withValues(alpha: 0.08),
+              color: borderColor ?? context.palette.ink.withValues(alpha: 0.08),
             ),
           ),
           alignment: Alignment.center,
-          child: Icon(icon, color: color, size: 16),
+          child: Icon(icon, color: color ?? context.palette.ink, size: 16),
         ),
       ),
     );
@@ -1570,7 +1579,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     return Container(
       width: 1.5,
       height: 24,
-      color: Colors.black.withValues(alpha: 0.08),
+      color: context.palette.ink.withValues(alpha: 0.08),
       margin: const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
     );
   }
@@ -1826,7 +1835,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
 
     final divider = Container(
       width: 1.5,
-      color: Colors.black.withValues(alpha: 0.08),
+      color: context.palette.ink.withValues(alpha: 0.08),
       margin: const EdgeInsets.symmetric(vertical: 12),
     );
 
@@ -1875,9 +1884,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
       decoration: BoxDecoration(
-        color: const Color(0xFFF4F4F6),
+        color: context.palette.surface,
         border: Border(
-          bottom: BorderSide(color: Colors.black.withValues(alpha: 0.08)),
+          bottom: BorderSide(
+            color: context.palette.ink.withValues(alpha: 0.08),
+          ),
         ),
       ),
       child: Row(
@@ -1887,12 +1898,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
             children: [
               _buildStatusDot(),
               const SizedBox(width: 8),
-              const Text(
+              Text(
                 "CouchMouse",
                 style: TextStyle(
                   fontWeight: FontWeight.w900,
                   fontSize: 13,
-                  color: Colors.black,
+                  color: context.palette.ink,
                   letterSpacing: 0.5,
                 ),
               ),
@@ -1913,14 +1924,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                   fontWeight: FontWeight.w800,
                   letterSpacing: 0.8,
                   color: _fnActive
-                      ? Colors.black
-                      : Colors.black.withValues(alpha: 0.3),
+                      ? context.palette.ink
+                      : context.palette.ink.withValues(alpha: 0.3),
                 ),
               ),
               const SizedBox(width: 12),
               IconButton(
                 onPressed: _toggleKeyboardMode,
-                icon: const Icon(CupertinoIcons.keyboard, color: Colors.black),
+                icon: Icon(CupertinoIcons.keyboard, color: context.palette.ink),
                 tooltip: "Split Keyboard Layout",
               ),
             ],
@@ -1936,7 +1947,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
         _buildForcedLandscapeHeader(),
         Expanded(
           child: Container(
-            color: const Color(0xFFFFFFFF),
+            color: context.palette.paper,
             alignment: Alignment.center,
             child: SingleChildScrollView(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
@@ -2051,7 +2062,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
           : AppBar(
               leading: Builder(
                 builder: (context) => IconButton(
-                  icon: const Icon(CupertinoIcons.bars, color: Colors.black),
+                  icon: Icon(CupertinoIcons.bars, color: context.palette.ink),
                   onPressed: () => Scaffold.of(context).openDrawer(),
                 ),
               ),
@@ -2065,16 +2076,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                         : orientation == Orientation.portrait
                         ? Icons.mouse_outlined
                         : CupertinoIcons.keyboard,
-                    color: Colors.black,
+                    color: context.palette.ink,
                     size: 20,
                   ),
                   const SizedBox(width: 12),
-                  const Text(
+                  Text(
                     "CouchMouse",
                     style: TextStyle(
                       fontWeight: FontWeight.w900,
                       letterSpacing: 0.8,
-                      color: Colors.black,
+                      color: context.palette.ink,
                     ),
                   ),
                 ],
@@ -2091,16 +2102,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                       _builtInKeyboardActive
                           ? CupertinoIcons.keyboard_chevron_compact_down
                           : CupertinoIcons.keyboard,
-                      color: Colors.black,
+                      color: context.palette.ink,
                     ),
                     onPressed: _toggleKeyboardMode,
                     tooltip: "Built-in Keyboard",
                   )
                 else if (orientation == Orientation.landscape)
                   IconButton(
-                    icon: const Icon(
+                    icon: Icon(
                       CupertinoIcons.keyboard,
-                      color: Colors.black54,
+                      color: context.palette.ink.withValues(alpha: 0.54),
                     ),
                     onPressed: _toggleKeyboardMode,
                     tooltip: "Full Keyboard Mode",

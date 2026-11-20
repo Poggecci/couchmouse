@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import '../app_theme.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../settings_providers.dart';
@@ -40,7 +41,7 @@ class _ControlDrawerState extends ConsumerState<ControlDrawer> {
         style: TextStyle(
           fontSize: 10,
           fontWeight: FontWeight.w700,
-          color: Colors.black.withValues(alpha: 0.35),
+          color: context.palette.ink.withValues(alpha: 0.35),
           letterSpacing: 1.0,
         ),
       ),
@@ -62,10 +63,10 @@ class _ControlDrawerState extends ConsumerState<ControlDrawer> {
               children: [
                 Text(
                   title,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontWeight: FontWeight.w600,
                     fontSize: 14,
-                    color: Colors.black,
+                    color: context.palette.ink,
                   ),
                 ),
                 const SizedBox(height: 2),
@@ -73,7 +74,7 @@ class _ControlDrawerState extends ConsumerState<ControlDrawer> {
                   subtitle,
                   style: TextStyle(
                     fontSize: 11,
-                    color: Colors.black.withValues(alpha: 0.5),
+                    color: context.palette.ink.withValues(alpha: 0.5),
                   ),
                 ),
               ],
@@ -95,7 +96,7 @@ class _ControlDrawerState extends ConsumerState<ControlDrawer> {
     return Divider(
       height: 1,
       thickness: 0.5,
-      color: Colors.black.withValues(alpha: 0.08),
+      color: context.palette.ink.withValues(alpha: 0.08),
       indent: 16,
       endIndent: 16,
     );
@@ -111,8 +112,8 @@ class _ControlDrawerState extends ConsumerState<ControlDrawer> {
   void _showSnackBar(String message, Duration duration) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(message, style: const TextStyle(color: Colors.black)),
-        backgroundColor: const Color(0xFFF4F4F6),
+        content: Text(message, style: TextStyle(color: context.palette.ink)),
+        backgroundColor: context.palette.surface,
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         duration: duration,
@@ -131,7 +132,7 @@ class _ControlDrawerState extends ConsumerState<ControlDrawer> {
     return Drawer(
       width: MediaQuery.sizeOf(context).width,
       shape: const RoundedRectangleBorder(),
-      backgroundColor: const Color(0xFFFFFFFF),
+      backgroundColor: context.palette.paper,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -143,24 +144,27 @@ class _ControlDrawerState extends ConsumerState<ControlDrawer> {
                 children: [
                   Icon(
                     CupertinoIcons.settings,
-                    color: Colors.black.withValues(alpha: 0.8),
+                    color: context.palette.ink.withValues(alpha: 0.8),
                     size: 24,
                   ),
                   const SizedBox(width: 12),
-                  const Expanded(
+                  Expanded(
                     child: Text(
                       "Settings",
                       style: TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.w800,
-                        color: Colors.black,
+                        color: context.palette.ink,
                         letterSpacing: 0.5,
                       ),
                     ),
                   ),
                   IconButton(
                     key: const Key('closeSettingsButton'),
-                    icon: const Icon(CupertinoIcons.xmark, color: Colors.black),
+                    icon: Icon(
+                      CupertinoIcons.xmark,
+                      color: context.palette.ink,
+                    ),
                     tooltip: "Close",
                     onPressed: () => Navigator.pop(context),
                   ),
@@ -224,7 +228,7 @@ class _ControlDrawerState extends ConsumerState<ControlDrawer> {
                     title: "Mouse Acceleration",
                     subtitle: "Speeds cursor dynamically with motion",
                     control: Switch.adaptive(
-                      activeThumbColor: Colors.black,
+                      activeThumbColor: context.palette.ink,
                       value: settings.mouseAcceleration,
                       onChanged: notifier.updateMouseAcceleration,
                     ),
@@ -236,7 +240,7 @@ class _ControlDrawerState extends ConsumerState<ControlDrawer> {
                     title: "Trackball",
                     subtitle: "Flick to keep the cursor gliding",
                     control: Switch.adaptive(
-                      activeThumbColor: Colors.black,
+                      activeThumbColor: context.palette.ink,
                       value: settings.trackball,
                       onChanged: notifier.updateTrackball,
                     ),
@@ -260,7 +264,7 @@ class _ControlDrawerState extends ConsumerState<ControlDrawer> {
                     title: "Invert Scroll",
                     subtitle: "Reverse direction of two-finger swipe",
                     control: Switch.adaptive(
-                      activeThumbColor: Colors.black,
+                      activeThumbColor: context.palette.ink,
                       value: settings.invertTwoFingerScroll,
                       onChanged: notifier.updateInvertTwoFingerScroll,
                     ),
@@ -272,7 +276,7 @@ class _ControlDrawerState extends ConsumerState<ControlDrawer> {
                     title: "Trackpad Left-Side",
                     subtitle: "Positions trackpad on the left",
                     control: Switch.adaptive(
-                      activeThumbColor: Colors.black,
+                      activeThumbColor: context.palette.ink,
                       value: settings.trackpadOnLeft,
                       onChanged: notifier.updateTrackpadOnLeft,
                     ),
@@ -291,10 +295,10 @@ class _ControlDrawerState extends ConsumerState<ControlDrawer> {
                           vertical: 0,
                         ),
                         decoration: BoxDecoration(
-                          color: const Color(0xFFF4F4F6),
+                          color: context.palette.surface,
                           borderRadius: BorderRadius.circular(8),
                           border: Border.all(
-                            color: Colors.black.withValues(alpha: 0.08),
+                            color: context.palette.ink.withValues(alpha: 0.08),
                           ),
                         ),
                         child: DropdownButton<KeyboardKind>(
@@ -302,16 +306,16 @@ class _ControlDrawerState extends ConsumerState<ControlDrawer> {
                           isDense: true,
                           value: settings.keyboardKind,
                           menuWidth: 220,
-                          dropdownColor: const Color(0xFFFFFFFF),
+                          dropdownColor: context.palette.paper,
                           underline: const SizedBox(),
-                          icon: const Icon(
+                          icon: Icon(
                             CupertinoIcons.chevron_down,
                             size: 12,
-                            color: Colors.black54,
+                            color: context.palette.ink.withValues(alpha: 0.54),
                           ),
                           style: Theme.of(context).textTheme.bodyMedium!
                               .copyWith(
-                                color: Colors.black,
+                                color: context.palette.ink,
                                 fontWeight: FontWeight.w600,
                                 fontSize: 12,
                               ),
@@ -346,7 +350,7 @@ class _ControlDrawerState extends ConsumerState<ControlDrawer> {
                     title: "HoldLock Mode",
                     subtitle: "Locks modifier and layout keys",
                     control: Switch.adaptive(
-                      activeThumbColor: Colors.black,
+                      activeThumbColor: context.palette.ink,
                       value: widget.holdLockActive,
                       onChanged: widget.onHoldLockChanged,
                     ),
@@ -360,7 +364,7 @@ class _ControlDrawerState extends ConsumerState<ControlDrawer> {
                         "Send this device's physical controls as a gamepad",
                     control: Switch.adaptive(
                       key: const Key('gamepadModeSwitch'),
-                      activeThumbColor: Colors.black,
+                      activeThumbColor: context.palette.ink,
                       value: gamepadMode,
                       onChanged: (value) => ref
                           .read(gamepadModeProvider.notifier)
@@ -374,22 +378,22 @@ class _ControlDrawerState extends ConsumerState<ControlDrawer> {
                     contentPadding: const EdgeInsets.symmetric(horizontal: 16),
                     leading: Icon(
                       CupertinoIcons.play_circle,
-                      color: Colors.black.withValues(alpha: 0.8),
+                      color: context.palette.ink.withValues(alpha: 0.8),
                       size: 20,
                     ),
-                    title: const Text(
+                    title: Text(
                       "App Walkthrough Tutorial",
                       style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w600,
-                        color: Colors.black,
+                        color: context.palette.ink,
                       ),
                     ),
                     subtitle: Text(
                       "Guide on connection and gestures",
                       style: TextStyle(
                         fontSize: 11,
-                        color: Colors.black.withValues(alpha: 0.4),
+                        color: context.palette.ink.withValues(alpha: 0.4),
                       ),
                     ),
                     onTap: () {
@@ -415,7 +419,7 @@ class _ControlDrawerState extends ConsumerState<ControlDrawer> {
                       "5. Go through the pairing flow. After pairing, you should be connected. On subsequent app opens you can simply connect using the in-app paired devices menu.",
                       style: TextStyle(
                         fontSize: 11,
-                        color: Colors.black.withValues(alpha: 0.65),
+                        color: context.palette.ink.withValues(alpha: 0.65),
                         height: 1.5,
                       ),
                     ),
@@ -427,22 +431,22 @@ class _ControlDrawerState extends ConsumerState<ControlDrawer> {
                     contentPadding: const EdgeInsets.symmetric(horizontal: 16),
                     leading: Icon(
                       Icons.file_upload_outlined,
-                      color: Colors.black.withValues(alpha: 0.8),
+                      color: context.palette.ink.withValues(alpha: 0.8),
                       size: 20,
                     ),
-                    title: const Text(
+                    title: Text(
                       "Export Settings",
                       style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w600,
-                        color: Colors.black,
+                        color: context.palette.ink,
                       ),
                     ),
                     subtitle: Text(
                       "Save your settings to a backup file",
                       style: TextStyle(
                         fontSize: 11,
-                        color: Colors.black.withValues(alpha: 0.4),
+                        color: context.palette.ink.withValues(alpha: 0.4),
                       ),
                     ),
                     onTap: widget.onExportSettings,
@@ -451,22 +455,22 @@ class _ControlDrawerState extends ConsumerState<ControlDrawer> {
                     contentPadding: const EdgeInsets.symmetric(horizontal: 16),
                     leading: Icon(
                       Icons.file_download_outlined,
-                      color: Colors.black.withValues(alpha: 0.8),
+                      color: context.palette.ink.withValues(alpha: 0.8),
                       size: 20,
                     ),
-                    title: const Text(
+                    title: Text(
                       "Import Settings",
                       style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w600,
-                        color: Colors.black,
+                        color: context.palette.ink,
                       ),
                     ),
                     subtitle: Text(
                       "Replace current settings from a backup file",
                       style: TextStyle(
                         fontSize: 11,
-                        color: Colors.black.withValues(alpha: 0.4),
+                        color: context.palette.ink.withValues(alpha: 0.4),
                       ),
                     ),
                     onTap: widget.onImportSettings,
@@ -479,7 +483,7 @@ class _ControlDrawerState extends ConsumerState<ControlDrawer> {
                     subtitle: "Show extra options",
                     control: Switch.adaptive(
                       key: const Key('advancedSettingsSwitch'),
-                      activeThumbColor: Colors.black,
+                      activeThumbColor: context.palette.ink,
                       value: _showAdvanced,
                       onChanged: (val) => setState(() => _showAdvanced = val),
                     ),
@@ -493,9 +497,21 @@ class _ControlDrawerState extends ConsumerState<ControlDrawer> {
                       subtitle:
                           "Adds a text box for full native system keyboard functionality",
                       control: Switch.adaptive(
-                        activeThumbColor: Colors.black,
+                        activeThumbColor: context.palette.ink,
                         value: settings.typingBox,
                         onChanged: notifier.updateTypingBox,
+                      ),
+                    ),
+
+                    _buildDivider(),
+
+                    _buildSettingsRow(
+                      title: "Dark Mode",
+                      subtitle: "Follows the system's light or dark theme",
+                      control: Switch.adaptive(
+                        activeThumbColor: context.palette.ink,
+                        value: settings.darkMode,
+                        onChanged: notifier.updateDarkMode,
                       ),
                     ),
 
@@ -506,12 +522,12 @@ class _ControlDrawerState extends ConsumerState<ControlDrawer> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text(
+                          Text(
                             "Gamepad Report Rate",
                             style: TextStyle(
                               fontWeight: FontWeight.w600,
                               fontSize: 14,
-                              color: Colors.black,
+                              color: context.palette.ink,
                             ),
                           ),
                           const SizedBox(height: 2),
@@ -519,7 +535,7 @@ class _ControlDrawerState extends ConsumerState<ControlDrawer> {
                             "Lower it if inputs lag or drop; raise it for smoother sticks",
                             style: TextStyle(
                               fontSize: 11,
-                              color: Colors.black.withValues(alpha: 0.5),
+                              color: context.palette.ink.withValues(alpha: 0.5),
                             ),
                           ),
                           const SizedBox(height: 8),
@@ -598,7 +614,7 @@ class _ControlDrawerState extends ConsumerState<ControlDrawer> {
                             : "Reset settings to defaults",
                         style: TextStyle(
                           fontSize: 11,
-                          color: Colors.black.withValues(alpha: 0.4),
+                          color: context.palette.ink.withValues(alpha: 0.4),
                         ),
                       ),
                       onTap: () async {
@@ -665,10 +681,10 @@ class BlockSlider extends StatelessWidget {
       child: Container(
         height: 48,
         decoration: BoxDecoration(
-          color: const Color(0xFFF4F4F6),
+          color: context.palette.surface,
           borderRadius: BorderRadius.circular(10),
           border: Border.all(
-            color: Colors.black.withValues(alpha: 0.06),
+            color: context.palette.ink.withValues(alpha: 0.06),
             width: 0.5,
           ),
         ),
@@ -683,7 +699,7 @@ class BlockSlider extends StatelessWidget {
                   width: fillWidth,
                   height: double.infinity,
                   decoration: BoxDecoration(
-                    color: Colors.black.withValues(alpha: 0.06),
+                    color: context.palette.ink.withValues(alpha: 0.06),
                     borderRadius: BorderRadius.only(
                       topLeft: const Radius.circular(9),
                       bottomLeft: const Radius.circular(9),
@@ -707,15 +723,15 @@ class BlockSlider extends StatelessWidget {
                         Text(
                           label,
                           style: TextStyle(
-                            color: Colors.black.withValues(alpha: 0.8),
+                            color: context.palette.ink.withValues(alpha: 0.8),
                             fontWeight: FontWeight.w600,
                             fontSize: 13,
                           ),
                         ),
                         Text(
                           valueText,
-                          style: const TextStyle(
-                            color: Colors.black,
+                          style: TextStyle(
+                            color: context.palette.ink,
                             fontWeight: FontWeight.w700,
                             fontSize: 13,
                           ),
@@ -773,16 +789,20 @@ class _RateOption extends StatelessWidget {
         height: 32,
         alignment: Alignment.center,
         decoration: BoxDecoration(
-          color: selected ? Colors.black : const Color(0xFFF4F4F6),
+          color: selected ? context.palette.ink : context.palette.surface,
           borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: Colors.black.withValues(alpha: 0.08)),
+          border: Border.all(
+            color: context.palette.ink.withValues(alpha: 0.08),
+          ),
         ),
         child: Text(
           "$hz Hz",
           style: TextStyle(
             fontSize: 12,
             fontWeight: FontWeight.w700,
-            color: selected ? Colors.white : Colors.black87,
+            color: selected
+                ? context.palette.paper
+                : context.palette.ink.withValues(alpha: 0.87),
           ),
         ),
       ),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../app_theme.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -56,7 +57,7 @@ class GamepadModeView extends ConsumerWidget {
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 12,
-                color: Colors.black.withValues(alpha: 0.45),
+                color: context.palette.ink.withValues(alpha: 0.45),
               ),
             ),
           ),
@@ -66,7 +67,9 @@ class GamepadModeView extends ConsumerWidget {
               onPressed: onExit,
               icon: const Icon(CupertinoIcons.xmark_circle, size: 18),
               label: const Text("Exit Gamepad Mode"),
-              style: TextButton.styleFrom(foregroundColor: Colors.black87),
+              style: TextButton.styleFrom(
+                foregroundColor: context.palette.ink.withValues(alpha: 0.87),
+              ),
             ),
           ),
         ],
@@ -88,9 +91,11 @@ class _ControllerStatus extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         decoration: BoxDecoration(
-          color: found ? const Color(0xFFF4F4F6) : const Color(0xFFFFF4E5),
+          color: found ? context.palette.surface : context.palette.warning,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.black.withValues(alpha: 0.08)),
+          border: Border.all(
+            color: context.palette.ink.withValues(alpha: 0.08),
+          ),
         ),
         child: Row(
           children: [
@@ -99,7 +104,9 @@ class _ControllerStatus extends StatelessWidget {
                   ? CupertinoIcons.game_controller_solid
                   : CupertinoIcons.exclamationmark_triangle,
               size: 20,
-              color: found ? Colors.black87 : const Color(0xFFFF9500),
+              color: found
+                  ? context.palette.ink.withValues(alpha: 0.87)
+                  : const Color(0xFFFF9500),
             ),
             const SizedBox(width: 12),
             Expanded(
@@ -109,10 +116,10 @@ class _ControllerStatus extends StatelessWidget {
                     : "No physical controller detected",
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w600,
-                  color: Colors.black87,
+                  color: context.palette.ink.withValues(alpha: 0.87),
                 ),
               ),
             ),
@@ -210,9 +217,6 @@ class GamepadVisualizer extends StatelessWidget {
   }
 }
 
-const _onColor = Colors.black;
-const _offColor = Color(0xFFE5E5EA);
-
 class _ShoulderRow extends StatelessWidget {
   final String bumperLabel;
   final bool bumper;
@@ -250,8 +254,8 @@ class _ShoulderRow extends StatelessWidget {
                   child: LinearProgressIndicator(
                     value: trigger.clamp(0.0, 1.0),
                     minHeight: 8,
-                    backgroundColor: _offColor,
-                    color: _onColor,
+                    backgroundColor: context.palette.idle,
+                    color: context.palette.ink,
                   ),
                 ),
               ),
@@ -280,7 +284,7 @@ class _Pill extends StatelessWidget {
       height: 20,
       alignment: Alignment.center,
       decoration: BoxDecoration(
-        color: on ? _onColor : _offColor,
+        color: on ? context.palette.ink : context.palette.idle,
         borderRadius: BorderRadius.circular(10),
       ),
       child: Text(
@@ -289,7 +293,9 @@ class _Pill extends StatelessWidget {
           fontSize: 9,
           fontWeight: FontWeight.w700,
           letterSpacing: 0.5,
-          color: on ? Colors.white : Colors.black54,
+          color: on
+              ? context.palette.paper
+              : context.palette.ink.withValues(alpha: 0.54),
         ),
       ),
     );
@@ -320,8 +326,10 @@ class _Stick extends StatelessWidget {
       height: _size,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        color: _offColor,
-        border: Border.all(color: pressed ? _onColor : Colors.transparent),
+        color: context.palette.idle,
+        border: Border.all(
+          color: pressed ? context.palette.ink : Colors.transparent,
+        ),
       ),
       child: Stack(
         children: [
@@ -334,13 +342,15 @@ class _Stick extends StatelessWidget {
               alignment: Alignment.center,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: pressed ? _onColor : Colors.black54,
+                color: pressed
+                    ? context.palette.ink
+                    : context.palette.ink.withValues(alpha: 0.54),
               ),
               child: Text(
                 label,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 7,
-                  color: Colors.white,
+                  color: context.palette.paper,
                   fontWeight: FontWeight.w700,
                 ),
               ),
@@ -363,10 +373,16 @@ class _Dpad extends StatelessWidget {
       width: 22,
       height: 22,
       decoration: BoxDecoration(
-        color: on ? _onColor : _offColor,
+        color: on ? context.palette.ink : context.palette.idle,
         borderRadius: BorderRadius.circular(4),
       ),
-      child: Icon(icon, size: 14, color: on ? Colors.white : Colors.black45),
+      child: Icon(
+        icon,
+        size: 14,
+        color: on
+            ? context.palette.paper
+            : context.palette.ink.withValues(alpha: 0.45),
+      ),
     );
     const gap = SizedBox(width: 22, height: 22);
     return Column(
@@ -416,14 +432,16 @@ class _FaceButtons extends StatelessWidget {
         alignment: Alignment.center,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          color: on ? _onColor : _offColor,
+          color: on ? context.palette.ink : context.palette.idle,
         ),
         child: Text(
           label,
           style: TextStyle(
             fontSize: 10,
             fontWeight: FontWeight.w800,
-            color: on ? Colors.white : Colors.black54,
+            color: on
+                ? context.palette.paper
+                : context.palette.ink.withValues(alpha: 0.54),
           ),
         ),
       );

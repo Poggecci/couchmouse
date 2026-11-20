@@ -53,6 +53,28 @@ void main() {
     expect(destination.read(gamepadReportRateProvider), 125);
   });
 
+  test('Dark mode is global and survives a backup', () async {
+    final source = await _settingsContainer({});
+    expect(source.read(settingsProvider).darkMode, isFalse);
+    await source.read(settingsProvider.notifier).updateDarkMode(true);
+    final backup = await source
+        .read(settingsProvider.notifier)
+        .exportSettings();
+
+    final destination = await _settingsContainer({});
+    await destination.read(settingsProvider.notifier).importSettings(backup);
+    expect(destination.read(settingsProvider).darkMode, isTrue);
+
+    await destination
+        .read(connectionStateProvider.notifier)
+        .updateConnectionState(
+          isConnected: true,
+          connectedDeviceName: 'Host',
+          connectedDeviceAddress: _hostAddress,
+        );
+    expect(destination.read(settingsProvider).darkMode, isTrue);
+  });
+
   test(
     'Restores legacy global and per-computer settings on a new install',
     () async {
@@ -107,6 +129,7 @@ void main() {
       _backup({'global_sensitivity': 1500, 'global_keyboard_kind': -1}),
       _backup({'global_gamepad_mode': 1}),
       _backup({'global_gamepad_report_rate_hz': 144}),
+      _backup({'global_dark_mode': 'yes'}),
       _backup({'last_connected_device_address': _hostAddress}),
     ]) {
       await expectLater(
