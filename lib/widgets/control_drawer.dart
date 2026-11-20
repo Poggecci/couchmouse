@@ -7,7 +7,7 @@ import '../gamepad_state.dart';
 import '../keyboard_layouts.dart';
 import 'walkthrough_dialog.dart';
 
-class ControlDrawer extends ConsumerWidget {
+class ControlDrawer extends ConsumerStatefulWidget {
   final bool holdLockActive;
   final void Function(bool) onHoldLockChanged;
   final VoidCallback onResetHidState;
@@ -25,9 +25,16 @@ class ControlDrawer extends ConsumerWidget {
     required this.onKeyboardKindChanged,
   });
 
+  @override
+  ConsumerState<ControlDrawer> createState() => _ControlDrawerState();
+}
+
+class _ControlDrawerState extends ConsumerState<ControlDrawer> {
+  bool _showAdvanced = false;
+
   Widget _buildSectionHeader(String title) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 24, 16, 8),
+      padding: const EdgeInsets.fromLTRB(16, 40, 16, 8),
       child: Text(
         title,
         style: TextStyle(
@@ -73,7 +80,12 @@ class ControlDrawer extends ConsumerWidget {
             ),
           ),
           const SizedBox(width: 16),
-          control,
+          control is Switch
+              ? SizedBox(
+                  height: 30,
+                  child: FittedBox(fit: BoxFit.contain, child: control),
+                )
+              : control,
         ],
       ),
     );
@@ -89,21 +101,44 @@ class ControlDrawer extends ConsumerWidget {
     );
   }
 
+  Widget _buildSlider(BlockSlider slider) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: slider,
+    );
+  }
+
+  void _showSnackBar(String message, Duration duration) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message, style: const TextStyle(color: Colors.black)),
+        backgroundColor: const Color(0xFFF4F4F6),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        duration: duration,
+      ),
+    );
+  }
+
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final connection = ref.watch(connectionStateProvider);
     final settings = ref.watch(settingsProvider);
     final gamepadMode = ref.watch(gamepadModeProvider);
     final gamepadRate = ref.watch(gamepadReportRateProvider);
+    final notifier = ref.read(settingsProvider.notifier);
 
     return Drawer(
+      width: MediaQuery.sizeOf(context).width,
+      shape: const RoundedRectangleBorder(),
       backgroundColor: const Color(0xFFFFFFFF),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           SafeArea(
+            bottom: false,
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 24, 20, 8),
+              padding: const EdgeInsets.fromLTRB(20, 16, 8, 8),
               child: Row(
                 children: [
                   Icon(
@@ -112,14 +147,22 @@ class ControlDrawer extends ConsumerWidget {
                     size: 24,
                   ),
                   const SizedBox(width: 12),
-                  const Text(
-                    "Settings",
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.w800,
-                      color: Colors.black,
-                      letterSpacing: 0.5,
+                  const Expanded(
+                    child: Text(
+                      "Settings",
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w800,
+                        color: Colors.black,
+                        letterSpacing: 0.5,
+                      ),
                     ),
+                  ),
+                  IconButton(
+                    key: const Key('closeSettingsButton'),
+                    icon: const Icon(CupertinoIcons.xmark, color: Colors.black),
+                    tooltip: "Close",
+                    onPressed: () => Navigator.pop(context),
                   ),
                 ],
               ),
@@ -127,452 +170,398 @@ class ControlDrawer extends ConsumerWidget {
           ),
           _buildDivider(),
           Expanded(
-            child: ListView(
-              padding: EdgeInsets.zero,
-              children: [
-                _buildSectionHeader("MOUSE CONTROLS"),
+            child: SafeArea(
+              top: false,
+              child: ListView(
+                padding: const EdgeInsets.only(bottom: 32),
+                children: [
+                  _buildSectionHeader("MOUSE CONTROLS"),
 
-                // Sensitivity Custom Block Slider
-                Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 8,
-                  ),
-                  child: Builder(
+                  Builder(
                     builder: (context) {
                       final double sensDpi = settings.sensitivity;
-                      final double sensSliderVal = _dpiToSlider(sensDpi);
-                      return BlockSlider(
-                        value: sensSliderVal,
-                        min: 0.0,
-                        max: 1.0,
-                        label: "Sensitivity: ${_getDpiLabel(sensDpi)}",
-                        valueText: "${sensDpi.toInt()} DPI",
-                        onChanged: (val) {
-                          final targetDpi = _sliderToDpi(val);
-                          ref
-                              .read(settingsProvider.notifier)
-                              .updateSensitivity(targetDpi);
-                        },
+                      return _buildSlider(
+                        BlockSlider(
+                          value: _dpiToSlider(sensDpi),
+                          min: 0.0,
+                          max: 1.0,
+                          label: "Sensitivity: ${_getDpiLabel(sensDpi)}",
+                          valueText: "${sensDpi.toInt()} DPI",
+                          onChanged: (val) =>
+                              notifier.updateSensitivity(_sliderToDpi(val)),
+                        ),
                       );
                     },
                   ),
-                ),
 
-                // Scroll Sensitivity Custom Block Slider
-                Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 8,
-                  ),
-                  child: BlockSlider(
-                    value: settings.scrollSensitivity,
-                    min: 1.0,
-                    max: 5.0,
-                    label: "Scroll Sensitivity",
-                    valueText: settings.scrollSensitivity.toStringAsFixed(1),
-                    onChanged: (val) {
-                      ref
-                          .read(settingsProvider.notifier)
-                          .updateScrollSensitivity(val);
-                    },
-                  ),
-                ),
-
-                // Scroll Momentum Custom Block Slider
-                Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 8,
-                  ),
-                  child: BlockSlider(
-                    value: settings.scrollMomentum,
-                    min: 0.0,
-                    max: 1.0,
-                    label: "Scroll Momentum",
-                    valueText: settings.scrollMomentum == 0.0
-                        ? "Off"
-                        : "${(settings.scrollMomentum * 100).toStringAsFixed(0)}%",
-                    onChanged: (val) {
-                      ref
-                          .read(settingsProvider.notifier)
-                          .updateScrollMomentum(val);
-                    },
-                  ),
-                ),
-
-                _buildDivider(),
-
-                // Mouse Acceleration Toggle
-                _buildSettingsRow(
-                  title: "Mouse Acceleration",
-                  subtitle: "Speeds cursor dynamically with motion",
-                  control: Switch.adaptive(
-                    activeThumbColor: Colors.black,
-                    value: settings.mouseAcceleration,
-                    onChanged: (val) {
-                      ref
-                          .read(settingsProvider.notifier)
-                          .updateMouseAcceleration(val);
-                    },
-                  ),
-                ),
-
-                _buildDivider(),
-
-                _buildSettingsRow(
-                  title: "Trackball",
-                  subtitle: "Flick to keep the cursor gliding",
-                  control: Switch.adaptive(
-                    activeThumbColor: Colors.black,
-                    value: settings.trackball,
-                    onChanged: (val) {
-                      ref.read(settingsProvider.notifier).updateTrackball(val);
-                    },
-                  ),
-                ),
-                if (settings.trackball)
-                  Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 8,
+                  _buildSlider(
+                    BlockSlider(
+                      value: settings.scrollSensitivity,
+                      min: 1.0,
+                      max: 5.0,
+                      label: "Scroll Sensitivity",
+                      valueText: settings.scrollSensitivity.toStringAsFixed(1),
+                      onChanged: notifier.updateScrollSensitivity,
                     ),
-                    child: BlockSlider(
-                      value: settings.trackballFriction,
+                  ),
+
+                  _buildSlider(
+                    BlockSlider(
+                      value: settings.scrollMomentum,
                       min: 0.0,
                       max: 1.0,
-                      label: "Trackball Friction",
-                      valueText:
-                          "${(settings.trackballFriction * 100).toStringAsFixed(0)}%",
-                      onChanged: (val) {
-                        ref
-                            .read(settingsProvider.notifier)
-                            .updateTrackballFriction(val);
-                      },
+                      label: "Scroll Momentum",
+                      valueText: settings.scrollMomentum == 0.0
+                          ? "Off"
+                          : "${(settings.scrollMomentum * 100).toStringAsFixed(0)}%",
+                      onChanged: notifier.updateScrollMomentum,
                     ),
                   ),
 
-                _buildDivider(),
+                  _buildDivider(),
 
-                // Trackpad Left-Side Configuration
-                _buildSettingsRow(
-                  title: "Trackpad Left-Side",
-                  subtitle: "Positions trackpad on the left",
-                  control: Switch.adaptive(
-                    activeThumbColor: Colors.black,
-                    value: settings.trackpadOnLeft,
-                    onChanged: (val) {
-                      ref
-                          .read(settingsProvider.notifier)
-                          .updateTrackpadOnLeft(val);
-                    },
-                  ),
-                ),
-
-                _buildDivider(),
-
-                // Invert Two Finger Scroll Toggle
-                _buildSettingsRow(
-                  title: "Invert Scroll",
-                  subtitle: "Reverse direction of two-finger swipe",
-                  control: Switch.adaptive(
-                    activeThumbColor: Colors.black,
-                    value: settings.invertTwoFingerScroll,
-                    onChanged: (val) {
-                      ref
-                          .read(settingsProvider.notifier)
-                          .updateInvertTwoFingerScroll(val);
-                    },
-                  ),
-                ),
-
-                _buildDivider(),
-                _buildSectionHeader("KEYBOARD SETTINGS"),
-
-                // Keyboard layout style selector
-                _buildSettingsRow(
-                  title: "Layout Style",
-                  subtitle: "Select keyboard key layout",
-                  control: SizedBox(
-                    width: 130,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 2,
-                      ),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFF4F4F6),
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(
-                          color: Colors.black.withValues(alpha: 0.08),
-                        ),
-                      ),
-                      child: DropdownButton<KeyboardKind>(
-                        isExpanded: true,
-                        value: settings.keyboardKind,
-                        dropdownColor: const Color(0xFFFFFFFF),
-                        underline: const SizedBox(),
-                        icon: const Icon(
-                          CupertinoIcons.chevron_down,
-                          size: 14,
-                          color: Colors.black54,
-                        ),
-                        style: const TextStyle(
-                          color: Colors.black,
-                          fontWeight: FontWeight.w600,
-                          fontSize: 13,
-                        ),
-                        onChanged: (val) {
-                          if (val != null) {
-                            onKeyboardKindChanged(val);
-                          }
-                        },
-                        items: KeyboardKind.values.map((kind) {
-                          return DropdownMenuItem<KeyboardKind>(
-                            value: kind,
-                            child: Padding(
-                              padding: const EdgeInsets.only(right: 8.0),
-                              child: Text(kind.name),
-                            ),
-                          );
-                        }).toList(),
-                      ),
+                  _buildSettingsRow(
+                    title: "Mouse Acceleration",
+                    subtitle: "Speeds cursor dynamically with motion",
+                    control: Switch.adaptive(
+                      activeThumbColor: Colors.black,
+                      value: settings.mouseAcceleration,
+                      onChanged: notifier.updateMouseAcceleration,
                     ),
                   ),
-                ),
 
-                _buildDivider(),
-                _buildSectionHeader("GAMEPAD"),
+                  _buildDivider(),
 
-                _buildSettingsRow(
-                  title: "Gamepad Mode",
-                  subtitle: "Send this device's physical controls as a gamepad",
-                  control: Switch.adaptive(
-                    key: const Key('gamepadModeSwitch'),
-                    activeThumbColor: Colors.black,
-                    value: gamepadMode,
-                    onChanged: (value) => ref
-                        .read(gamepadModeProvider.notifier)
-                        .setEnabled(value),
+                  _buildSettingsRow(
+                    title: "Trackball",
+                    subtitle: "Flick to keep the cursor gliding",
+                    control: Switch.adaptive(
+                      activeThumbColor: Colors.black,
+                      value: settings.trackball,
+                      onChanged: notifier.updateTrackball,
+                    ),
                   ),
-                ),
+                  if (settings.trackball)
+                    _buildSlider(
+                      BlockSlider(
+                        value: settings.trackballFriction,
+                        min: 0.0,
+                        max: 1.0,
+                        label: "Trackball Friction",
+                        valueText:
+                            "${(settings.trackballFriction * 100).toStringAsFixed(0)}%",
+                        onChanged: notifier.updateTrackballFriction,
+                      ),
+                    ),
 
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 4, 16, 12),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        "Report Rate",
-                        style: TextStyle(
-                          fontWeight: FontWeight.w600,
-                          fontSize: 14,
-                          color: Colors.black,
+                  _buildDivider(),
+
+                  _buildSettingsRow(
+                    title: "Invert Scroll",
+                    subtitle: "Reverse direction of two-finger swipe",
+                    control: Switch.adaptive(
+                      activeThumbColor: Colors.black,
+                      value: settings.invertTwoFingerScroll,
+                      onChanged: notifier.updateInvertTwoFingerScroll,
+                    ),
+                  ),
+
+                  _buildSectionHeader("LANDSCAPE"),
+
+                  _buildSettingsRow(
+                    title: "Trackpad Left-Side",
+                    subtitle: "Positions trackpad on the left",
+                    control: Switch.adaptive(
+                      activeThumbColor: Colors.black,
+                      value: settings.trackpadOnLeft,
+                      onChanged: notifier.updateTrackpadOnLeft,
+                    ),
+                  ),
+
+                  _buildDivider(),
+
+                  _buildSettingsRow(
+                    title: "Keyboard Layout",
+                    subtitle: "Select keyboard key layout",
+                    control: SizedBox(
+                      width: 112,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 0,
                         ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        "Lower it if inputs lag or drop; raise it for smoother sticks",
-                        style: TextStyle(
-                          fontSize: 11,
-                          color: Colors.black.withValues(alpha: 0.5),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF4F4F6),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(
+                            color: Colors.black.withValues(alpha: 0.08),
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 8),
-                      Row(
-                        children: [
-                          for (final hz in SettingsNotifier.gamepadReportRates)
-                            Expanded(
-                              child: _RateOption(
-                                key: Key('gamepadRate_$hz'),
-                                hz: hz,
-                                selected: hz == gamepadRate,
-                                onTap: () => ref
-                                    .read(gamepadReportRateProvider.notifier)
-                                    .setRate(hz),
+                        child: DropdownButton<KeyboardKind>(
+                          isExpanded: true,
+                          isDense: true,
+                          value: settings.keyboardKind,
+                          dropdownColor: const Color(0xFFFFFFFF),
+                          underline: const SizedBox(),
+                          icon: const Icon(
+                            CupertinoIcons.chevron_down,
+                            size: 12,
+                            color: Colors.black54,
+                          ),
+                          style: const TextStyle(
+                            color: Colors.black,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 12,
+                          ),
+                          onChanged: (val) {
+                            if (val != null) {
+                              widget.onKeyboardKindChanged(val);
+                            }
+                          },
+                          items: KeyboardKind.values.map((kind) {
+                            return DropdownMenuItem<KeyboardKind>(
+                              value: kind,
+                              child: Padding(
+                                padding: const EdgeInsets.only(right: 8.0),
+                                child: Text(kind.name),
                               ),
+                            );
+                          }).toList(),
+                        ),
+                      ),
+                    ),
+                  ),
+
+                  _buildDivider(),
+
+                  _buildSettingsRow(
+                    title: "HoldLock Mode",
+                    subtitle: "Locks modifier and layout keys",
+                    control: Switch.adaptive(
+                      activeThumbColor: Colors.black,
+                      value: widget.holdLockActive,
+                      onChanged: widget.onHoldLockChanged,
+                    ),
+                  ),
+
+                  _buildSectionHeader("GAMEPAD"),
+
+                  _buildSettingsRow(
+                    title: "Gamepad Mode",
+                    subtitle:
+                        "Send this device's physical controls as a gamepad",
+                    control: Switch.adaptive(
+                      key: const Key('gamepadModeSwitch'),
+                      activeThumbColor: Colors.black,
+                      value: gamepadMode,
+                      onChanged: (value) => ref
+                          .read(gamepadModeProvider.notifier)
+                          .setEnabled(value),
+                    ),
+                  ),
+
+                  _buildSectionHeader("HELP"),
+
+                  ListTile(
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+                    leading: Icon(
+                      CupertinoIcons.play_circle,
+                      color: Colors.black.withValues(alpha: 0.8),
+                      size: 20,
+                    ),
+                    title: const Text(
+                      "App Walkthrough Tutorial",
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.black,
+                      ),
+                    ),
+                    subtitle: Text(
+                      "Guide on connection and gestures",
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: Colors.black.withValues(alpha: 0.4),
+                      ),
+                    ),
+                    onTap: () {
+                      Navigator.pop(context);
+                      WidgetsBinding.instance.addPostFrameCallback((_) {
+                        WalkthroughDialog.show(
+                          context,
+                          isFirstStart: false,
+                          ref: ref,
+                        );
+                      });
+                    },
+                  ),
+
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                    child: Text(
+                      "Connecting to a computer\n\n"
+                      "1. Open your host device's (PC, Mac, Linux) standard Bluetooth (BT) settings.\n\n"
+                      "2. Unpair your phone from the host and unpair the host from your phone.\n\n"
+                      "3. Open the connection tab on the app (the bar with the Bluetooth ᛒ icon at its right) and press \"Make Discoverable\".\n\n"
+                      "4. Ensure host Bluetooth is ON and look for your phone name in the available devices list.\n\n"
+                      "5. Go through the pairing flow. After pairing, you should be connected. On subsequent app opens you can simply connect using the in-app paired devices menu.",
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: Colors.black.withValues(alpha: 0.65),
+                        height: 1.5,
+                      ),
+                    ),
+                  ),
+
+                  _buildSectionHeader("SETTINGS BACKUP"),
+
+                  ListTile(
+                    leading: const Icon(Icons.file_upload_outlined, size: 20),
+                    title: const Text("Export Settings"),
+                    onTap: widget.onExportSettings,
+                  ),
+                  ListTile(
+                    leading: const Icon(Icons.file_download_outlined, size: 20),
+                    title: const Text("Import Settings"),
+                    subtitle: const Text(
+                      "Replace current settings from a backup file",
+                    ),
+                    onTap: widget.onImportSettings,
+                  ),
+
+                  _buildSectionHeader("ADVANCED"),
+
+                  _buildSettingsRow(
+                    title: "Advanced Settings",
+                    subtitle: "Show report rate and reset options",
+                    control: Switch.adaptive(
+                      key: const Key('advancedSettingsSwitch'),
+                      activeThumbColor: Colors.black,
+                      value: _showAdvanced,
+                      onChanged: (val) => setState(() => _showAdvanced = val),
+                    ),
+                  ),
+
+                  if (_showAdvanced) ...[
+                    _buildDivider(),
+
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            "Gamepad Report Rate",
+                            style: TextStyle(
+                              fontWeight: FontWeight.w600,
+                              fontSize: 14,
+                              color: Colors.black,
                             ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            "Lower it if inputs lag or drop; raise it for smoother sticks",
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: Colors.black.withValues(alpha: 0.5),
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Row(
+                            children: [
+                              for (final hz
+                                  in SettingsNotifier.gamepadReportRates)
+                                Expanded(
+                                  child: _RateOption(
+                                    key: Key('gamepadRate_$hz'),
+                                    hz: hz,
+                                    selected: hz == gamepadRate,
+                                    onTap: () => ref
+                                        .read(
+                                          gamepadReportRateProvider.notifier,
+                                        )
+                                        .setRate(hz),
+                                  ),
+                                ),
+                            ],
+                          ),
                         ],
                       ),
-                    ],
-                  ),
-                ),
-
-                _buildDivider(),
-                _buildSectionHeader("UTILITIES"),
-
-                // HoldLock Toggle (Drawer duplicate)
-                _buildSettingsRow(
-                  title: "HoldLock Mode",
-                  subtitle: "Locks modifier and layout keys",
-                  control: Switch.adaptive(
-                    activeThumbColor: Colors.black,
-                    value: holdLockActive,
-                    onChanged: onHoldLockChanged,
-                  ),
-                ),
-
-                _buildDivider(),
-
-                // Replay Onboarding Walkthrough Tutorial
-                ListTile(
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 16),
-                  leading: Icon(
-                    CupertinoIcons.play_circle,
-                    color: Colors.black.withValues(alpha: 0.8),
-                    size: 20,
-                  ),
-                  title: const Text(
-                    "App Walkthrough Tutorial",
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.black,
                     ),
-                  ),
-                  subtitle: Text(
-                    "Guide on connection and gestures",
-                    style: TextStyle(
-                      fontSize: 11,
-                      color: Colors.black.withValues(alpha: 0.4),
-                    ),
-                  ),
-                  onTap: () {
-                    Navigator.pop(context);
-                    WidgetsBinding.instance.addPostFrameCallback((_) {
-                      WalkthroughDialog.show(
-                        context,
-                        isFirstStart: false,
-                        ref: ref,
-                      );
-                    });
-                  },
-                ),
 
-                _buildDivider(),
+                    _buildDivider(),
 
-                // Reset HID Profile State Utility
-                ListTile(
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 16),
-                  leading: Icon(
-                    CupertinoIcons.refresh_thin,
-                    color: Colors.redAccent.withValues(alpha: 0.8),
-                    size: 20,
-                  ),
-                  title: const Text(
-                    "Reset HID Profile State",
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.redAccent,
-                    ),
-                  ),
-                  onTap: () {
-                    onResetHidState();
-                    Navigator.pop(context);
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: const Text(
-                          "Bluetooth Keyboard/Mouse State Reset",
-                          style: TextStyle(color: Colors.black),
-                        ),
-                        backgroundColor: const Color(0xFFF4F4F6),
-                        behavior: SnackBarBehavior.floating,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        duration: const Duration(seconds: 1),
+                    ListTile(
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 16,
                       ),
-                    );
-                  },
-                ),
-
-                _buildDivider(),
-                _buildSectionHeader("SETTINGS BACKUP"),
-                ListTile(
-                  leading: const Icon(Icons.file_upload_outlined, size: 20),
-                  title: const Text("Export Settings"),
-                  onTap: onExportSettings,
-                ),
-                ListTile(
-                  leading: const Icon(Icons.file_download_outlined, size: 20),
-                  title: const Text("Import Settings"),
-                  subtitle: const Text(
-                    "Replace current settings from a backup file",
-                  ),
-                  onTap: onImportSettings,
-                ),
-
-                // Reset Application Settings
-                ListTile(
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 16),
-                  leading: Icon(
-                    CupertinoIcons.trash_slash,
-                    color: Colors.redAccent.withValues(alpha: 0.8),
-                    size: 20,
-                  ),
-                  title: const Text(
-                    "Reset Settings",
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.redAccent,
+                      leading: Icon(
+                        CupertinoIcons.refresh_thin,
+                        color: Colors.redAccent.withValues(alpha: 0.8),
+                        size: 20,
+                      ),
+                      title: const Text(
+                        "Reset HID Profile State",
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.redAccent,
+                        ),
+                      ),
+                      onTap: () {
+                        widget.onResetHidState();
+                        Navigator.pop(context);
+                        _showSnackBar(
+                          "Bluetooth Keyboard/Mouse State Reset",
+                          const Duration(seconds: 1),
+                        );
+                      },
                     ),
-                  ),
-                  subtitle: Text(
-                    connection.isConnected &&
-                            connection.connectedDeviceAddress != null
-                        ? "Clear configurations for this device"
-                        : "Reset settings to defaults",
-                    style: TextStyle(
-                      fontSize: 11,
-                      color: Colors.black.withValues(alpha: 0.4),
-                    ),
-                  ),
-                  onTap: () async {
-                    final address = connection.connectedDeviceAddress;
-                    await ref.read(settingsProvider.notifier).resetSettings();
-                    if (context.mounted) {
-                      Navigator.pop(context);
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(
+
+                    ListTile(
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                      ),
+                      leading: Icon(
+                        CupertinoIcons.trash_slash,
+                        color: Colors.redAccent.withValues(alpha: 0.8),
+                        size: 20,
+                      ),
+                      title: const Text(
+                        "Reset Settings",
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.redAccent,
+                        ),
+                      ),
+                      subtitle: Text(
+                        connection.isConnected &&
+                                connection.connectedDeviceAddress != null
+                            ? "Clear configurations for this device"
+                            : "Reset settings to defaults",
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: Colors.black.withValues(alpha: 0.4),
+                        ),
+                      ),
+                      onTap: () async {
+                        final address = connection.connectedDeviceAddress;
+                        await notifier.resetSettings();
+                        if (context.mounted) {
+                          Navigator.pop(context);
+                          _showSnackBar(
                             connection.isConnected && address != null
                                 ? "Cleared settings for this device."
                                 : "Reset global settings to defaults.",
-                            style: const TextStyle(color: Colors.black),
-                          ),
-                          backgroundColor: const Color(0xFFF4F4F6),
-                          behavior: SnackBarBehavior.floating,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          duration: const Duration(seconds: 2),
-                        ),
-                      );
-                    }
-                  },
-                ),
-
-                _buildDivider(),
-                _buildSectionHeader("CONNECTION INSTRUCTIONS"),
-
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
-                  child: Text(
-                    "1. Open your host device's (PC, Mac, Linux) standard Bluetooth (BT) settings.\n\n"
-                    "2. Unpair your phone from the host and unpair the host from your phone.\n\n"
-                    "3. Open the connection tab on the app (the bar with the Bluetooth ᛒ icon at its right) and press \"Make Discoverable\".\n\n"
-                    "4. Ensure host Bluetooth is ON and look for your phone name in the available devices list.\n\n"
-                    "5. Go through the pairing flow. After pairing, you should be connected. On subsequent app opens you can simply connect using the in-app paired devices menu.",
-                    style: TextStyle(
-                      fontSize: 11,
-                      color: Colors.black.withValues(alpha: 0.65),
-                      height: 1.5,
+                            const Duration(seconds: 2),
+                          );
+                        }
+                      },
                     ),
-                  ),
-                ),
-              ],
+                  ],
+                ],
+              ),
             ),
           ),
         ],
