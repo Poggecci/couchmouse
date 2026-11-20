@@ -301,6 +301,7 @@ class _ControlDrawerState extends ConsumerState<ControlDrawer> {
                           isExpanded: true,
                           isDense: true,
                           value: settings.keyboardKind,
+                          menuWidth: 220,
                           dropdownColor: const Color(0xFFFFFFFF),
                           underline: const SizedBox(),
                           icon: const Icon(
@@ -308,16 +309,23 @@ class _ControlDrawerState extends ConsumerState<ControlDrawer> {
                             size: 12,
                             color: Colors.black54,
                           ),
-                          style: const TextStyle(
-                            color: Colors.black,
-                            fontWeight: FontWeight.w600,
-                            fontSize: 12,
-                          ),
+                          style: Theme.of(context).textTheme.bodyMedium!
+                              .copyWith(
+                                color: Colors.black,
+                                fontWeight: FontWeight.w600,
+                                fontSize: 12,
+                              ),
                           onChanged: (val) {
                             if (val != null) {
                               widget.onKeyboardKindChanged(val);
                             }
                           },
+                          // Full names don't fit here, so the closed button
+                          // shows only the size; the menu lists full names.
+                          selectedItemBuilder: (context) => [
+                            for (final kind in KeyboardKind.values)
+                              Text(RegExp(r'\d+%').firstMatch(kind.name)![0]!),
+                          ],
                           items: KeyboardKind.values.map((kind) {
                             return DropdownMenuItem<KeyboardKind>(
                               value: kind,
@@ -416,15 +424,50 @@ class _ControlDrawerState extends ConsumerState<ControlDrawer> {
                   _buildSectionHeader("SETTINGS BACKUP"),
 
                   ListTile(
-                    leading: const Icon(Icons.file_upload_outlined, size: 20),
-                    title: const Text("Export Settings"),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+                    leading: Icon(
+                      Icons.file_upload_outlined,
+                      color: Colors.black.withValues(alpha: 0.8),
+                      size: 20,
+                    ),
+                    title: const Text(
+                      "Export Settings",
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.black,
+                      ),
+                    ),
+                    subtitle: Text(
+                      "Save your settings to a backup file",
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: Colors.black.withValues(alpha: 0.4),
+                      ),
+                    ),
                     onTap: widget.onExportSettings,
                   ),
                   ListTile(
-                    leading: const Icon(Icons.file_download_outlined, size: 20),
-                    title: const Text("Import Settings"),
-                    subtitle: const Text(
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+                    leading: Icon(
+                      Icons.file_download_outlined,
+                      color: Colors.black.withValues(alpha: 0.8),
+                      size: 20,
+                    ),
+                    title: const Text(
+                      "Import Settings",
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.black,
+                      ),
+                    ),
+                    subtitle: Text(
                       "Replace current settings from a backup file",
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: Colors.black.withValues(alpha: 0.4),
+                      ),
                     ),
                     onTap: widget.onImportSettings,
                   ),
