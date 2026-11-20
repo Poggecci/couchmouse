@@ -316,15 +316,17 @@ void main() {
       for (var i = 0; i < 10; i++) {
         await tester.pump(const Duration(milliseconds: 50));
       }
-      final option = find.byKey(const Key('gamepadRate_30'));
-      await tester.scrollUntilVisible(
-        option,
-        250,
-        scrollable: find.descendant(
-          of: find.byType(Drawer),
-          matching: find.byType(Scrollable),
-        ),
+      final drawerList = find.descendant(
+        of: find.byType(Drawer),
+        matching: find.byType(Scrollable),
       );
+      final advanced = find.byKey(const Key('advancedSettingsSwitch'));
+      await tester.scrollUntilVisible(advanced, 250, scrollable: drawerList);
+      await tester.pump(const Duration(milliseconds: 50));
+      await tester.tap(advanced);
+      await tester.pump(const Duration(milliseconds: 50));
+      final option = find.byKey(const Key('gamepadRate_30'));
+      await tester.scrollUntilVisible(option, 250, scrollable: drawerList);
       await tester.pump(const Duration(milliseconds: 50));
       await tester.tap(option);
       for (var i = 0; i < 5; i++) {
