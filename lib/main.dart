@@ -8,6 +8,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'app_theme.dart';
 import 'settings_providers.dart';
+import 'settings_store.dart';
 import 'gamepad_state.dart';
 import 'keyboard_layouts.dart';
 import 'widgets/trackpad.dart';
@@ -24,6 +25,28 @@ import 'widgets/typing_box.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   final prefs = await SharedPreferences.getInstance();
+  final SettingsStore settings;
+  try {
+    settings = await SettingsStore.open();
+  } catch (error) {
+    debugPrint('Could not load settings: ${error.runtimeType}');
+    runApp(
+      MaterialApp(
+        home: Scaffold(
+          body: Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text('Could not load CouchMouse settings.'),
+                TextButton(onPressed: main, child: const Text('Retry')),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+    return;
+  }
   SystemChrome.setPreferredOrientations([
     DeviceOrientation.portraitUp,
     DeviceOrientation.portraitDown,
@@ -32,7 +55,10 @@ void main() async {
   ]);
   runApp(
     ProviderScope(
-      overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
+      overrides: [
+        sharedPreferencesProvider.overrideWithValue(prefs),
+        settingsStoreProvider.overrideWithValue(settings),
+      ],
       child: const CouchMouseApp(),
     ),
   );
@@ -80,9 +106,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     with WidgetsBindingObserver {
   static const _channel = MethodChannel('com.example.couchmouse/hid');
   static const _mouseChannel = MethodChannel('com.example.couchmouse/mouse');
-  static const _settingsChannel = MethodChannel(
-    'com.example.couchmouse/settings',
-  );
 
   bool _isSupported = true;
   bool _permissionsGranted = false;
@@ -358,14 +381,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
             .read(settingsProvider.notifier)
             .exportSettings();
         if (!mounted) return;
-        final saved = await _settingsChannel.invokeMethod<bool>(
+        final saved = await SettingsStore.channel.invokeMethod<bool>(
           'exportSettings',
           {'contents': backup},
         );
         if (saved != true) return;
         message = 'Settings backup saved.';
       } else {
-        final backup = await _settingsChannel.invokeMethod<String>(
+        final backup = await SettingsStore.channel.invokeMethod<Uint8List>(
           'importSettings',
         );
         if (!mounted || backup == null) return;

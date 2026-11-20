@@ -7,6 +7,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:couchmouse/settings_providers.dart';
 import 'package:couchmouse/main.dart';
 
+import 'settings_test_support.dart';
+
 void main() {
   group('Device Sorting & Connection History Tests', () {
     late SharedPreferences prefs;
@@ -77,7 +79,6 @@ void main() {
           tester.view.resetDevicePixelRatio();
         });
 
-        await prefs.setString('global_tutorial_status', 'completed');
         // Device B was connected most recently, followed by Device C.
         await prefs.setStringList('connected_device_addresses_history', [
           'AA:BB:CC:DD:EE:02', // Device B
@@ -132,7 +133,12 @@ void main() {
         // Build our app and trigger a frame.
         await tester.pumpWidget(
           ProviderScope(
-            overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
+            overrides: [
+              sharedPreferencesProvider.overrideWithValue(prefs),
+              settingsStoreProvider.overrideWithValue(
+                memorySettings(PortableSettings(tutorialStatusId: 1)),
+              ),
+            ],
             child: const CouchMouseApp(),
           ),
         );

@@ -62,6 +62,7 @@ flutter {
 }
 
 dependencies {
+    implementation("androidx.datastore:datastore:1.1.7")
     // JVM unit tests for the pure-Kotlin HID report code (./gradlew test)
     testImplementation("junit:junit:4.13.2")
 }

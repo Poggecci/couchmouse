@@ -9,13 +9,13 @@ import 'connected_home_screen.dart';
 
 Future<List<List<int>>> _openPortraitKeyboard(
   WidgetTester tester, {
-  required bool typingBox,
+  bool? typingBox,
 }) async {
   final reports = await pumpConnectedHomeScreen(
     tester,
     size: const Size(1080, 1920),
     devicePixelRatio: 2,
-    prefs: {'global_typing_box': typingBox},
+    typingBox: typingBox,
   );
   await tester.pump();
   await tester.pump();
@@ -37,7 +37,7 @@ bool _inputBlocked(WidgetTester tester) => tester
 
 void main() {
   testWidgets('The typing box is off by default', (tester) async {
-    await _openPortraitKeyboard(tester, typingBox: false);
+    await _openPortraitKeyboard(tester);
     expect(find.byIcon(Icons.keyboard_hide), findsOneWidget);
     expect(find.byType(TypingBox), findsNothing);
   });

@@ -3,15 +3,16 @@ package com.example.couchmouse
 import android.app.Activity
 import android.content.Intent
 import io.flutter.plugin.common.MethodChannel
+import java.io.ByteArrayOutputStream
 import java.io.IOException
 
 internal class SettingsDocuments(private val activity: Activity) {
-    private data class Request(val result: MethodChannel.Result, val contents: String?)
+    private data class Request(val result: MethodChannel.Result, val contents: ByteArray?)
 
     private var pending: Request? = null
 
     @Suppress("DEPRECATION")
-    fun open(result: MethodChannel.Result, contents: String? = null) {
+    fun open(result: MethodChannel.Result, contents: ByteArray? = null) {
         if (pending != null) {
             result.error("BUSY", "A settings file is already open.", null)
             return
@@ -21,8 +22,8 @@ internal class SettingsDocuments(private val activity: Activity) {
         val action = if (contents == null) Intent.ACTION_OPEN_DOCUMENT else Intent.ACTION_CREATE_DOCUMENT
         val intent = Intent(action).apply {
             addCategory(Intent.CATEGORY_OPENABLE)
-            type = "application/json"
-            if (contents != null) putExtra(Intent.EXTRA_TITLE, "couchmouse-settings.json")
+            type = if (contents == null) "*/*" else "application/octet-stream"
+            if (contents != null) putExtra(Intent.EXTRA_TITLE, "couchmouse-settings.pb")
         }
         try {
             activity.startActivityForResult(intent, REQUEST_CODE)
@@ -48,22 +49,22 @@ internal class SettingsDocuments(private val activity: Activity) {
                 val contents = request.contents
                 if (contents == null) {
                     val input = resolver.openInputStream(uri) ?: throw IOException("Cannot open backup")
-                    input.bufferedReader().use { reader ->
-                        val buffer = CharArray(4096)
-                        val text = StringBuilder()
+                    input.use { stream ->
+                        val buffer = ByteArray(4096)
+                        val bytes = ByteArrayOutputStream()
                         while (true) {
-                            val count = reader.read(buffer)
+                            val count = stream.read(buffer)
                             if (count == -1) break
-                            if (text.length + count > MAX_BACKUP_LENGTH) {
+                            if (bytes.size() + count > MAX_BACKUP_LENGTH) {
                                 throw IOException("Settings backup is too large")
                             }
-                            text.append(buffer, 0, count)
+                            bytes.write(buffer, 0, count)
                         }
-                        text.toString()
+                        bytes.toByteArray()
                     }
                 } else {
                     val output = resolver.openOutputStream(uri) ?: throw IOException("Cannot save backup")
-                    output.bufferedWriter().use { it.write(contents) }
+                    output.use { it.write(contents) }
                     true
                 }
             }

@@ -1,5 +1,3 @@
-import 'dart:convert';
-
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -11,6 +9,8 @@ import 'package:couchmouse/gamepad_state.dart';
 import 'package:couchmouse/main.dart';
 import 'package:couchmouse/settings_providers.dart';
 import 'package:couchmouse/widgets/gamepad_view.dart';
+
+import 'settings_test_support.dart';
 
 const _hidChannel = MethodChannel('com.example.couchmouse/hid');
 const _mouseChannel = MethodChannel('com.example.couchmouse/mouse');
@@ -72,49 +72,51 @@ void main() {
     SharedPreferences.setMockInitialValues({});
     final prefs = await SharedPreferences.getInstance();
     final container = ProviderContainer(
-      overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
+      overrides: [
+        sharedPreferencesProvider.overrideWithValue(prefs),
+        settingsStoreProvider.overrideWithValue(memorySettings()),
+      ],
     );
     addTearDown(container.dispose);
 
     expect(container.read(gamepadModeProvider), isFalse);
     await container.read(gamepadModeProvider.notifier).setEnabled(true);
     expect(container.read(gamepadModeProvider), isTrue);
-    expect(
-      await container.read(settingsProvider.notifier).exportSettings(),
-      contains('"global_gamepad_mode": true'),
-    );
+    expect(container.read(settingsStoreProvider).snapshot.gamepadMode, isTrue);
   });
 
   group('GamepadReportRateNotifier', () {
-    Future<ProviderContainer> containerWith(Map<String, Object> prefs) async {
-      SharedPreferences.setMockInitialValues(prefs);
+    Future<ProviderContainer> containerWith({int? rateHz}) async {
+      SharedPreferences.setMockInitialValues({});
       final sp = await SharedPreferences.getInstance();
       final c = ProviderContainer(
-        overrides: [sharedPreferencesProvider.overrideWithValue(sp)],
+        overrides: [
+          sharedPreferencesProvider.overrideWithValue(sp),
+          settingsStoreProvider.overrideWithValue(
+            memorySettings(PortableSettings(gamepadReportRateHz: rateHz)),
+          ),
+        ],
       );
       addTearDown(c.dispose);
       return c;
     }
 
     test('defaults to 125 Hz and persists a new rate', () async {
-      final c = await containerWith({});
+      final c = await containerWith();
       expect(c.read(gamepadReportRateProvider), 125);
       await c.read(gamepadReportRateProvider.notifier).setRate(90);
       expect(c.read(gamepadReportRateProvider), 90);
-      expect(
-        await c.read(settingsProvider.notifier).exportSettings(),
-        contains('"global_gamepad_report_rate_hz": 90'),
-      );
+      expect(c.read(settingsStoreProvider).snapshot.gamepadReportRateHz, 90);
     });
 
     test('ignores rates that are not offered', () async {
-      final c = await containerWith({});
+      final c = await containerWith();
       await c.read(gamepadReportRateProvider.notifier).setRate(1000);
       expect(c.read(gamepadReportRateProvider), 125);
     });
 
     test('falls back to the default for an invalid saved value', () async {
-      final c = await containerWith({'global_gamepad_report_rate_hz': 7});
+      final c = await containerWith(rateHz: 7);
       expect(c.read(gamepadReportRateProvider), 125);
     });
   });
@@ -159,7 +161,7 @@ void main() {
     late List<MethodCall> calls;
     late List<MethodCall> mouseCalls;
 
-    Future<SharedPreferences> setUpApp(
+    Future<SettingsStore> setUpApp(
       WidgetTester tester, {
       required bool gamepadMode,
       int? rateHz,
@@ -171,12 +173,15 @@ void main() {
         tester.view.resetDevicePixelRatio();
       });
 
-      SharedPreferences.setMockInitialValues({
-        'global_tutorial_status': 'completed',
-        'global_gamepad_mode': gamepadMode,
-        'global_gamepad_report_rate_hz': ?rateHz,
-      });
+      SharedPreferences.setMockInitialValues({});
       final prefs = await SharedPreferences.getInstance();
+      final store = memorySettings(
+        PortableSettings(
+          tutorialStatusId: 1,
+          gamepadMode: gamepadMode,
+          gamepadReportRateHz: rateHz,
+        ),
+      );
 
       calls = [];
       mouseCalls = [];
@@ -211,7 +216,10 @@ void main() {
 
       await tester.pumpWidget(
         ProviderScope(
-          overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
+          overrides: [
+            sharedPreferencesProvider.overrideWithValue(prefs),
+            settingsStoreProvider.overrideWithValue(store),
+          ],
           child: const CouchMouseApp(),
         ),
       );
@@ -219,17 +227,13 @@ void main() {
       for (var i = 0; i < 10; i++) {
         await tester.pump(const Duration(milliseconds: 50));
       }
-      return prefs;
+      return store;
     }
 
     List<bool> gamepadModeCalls() => calls
         .where((c) => c.method == 'setGamepadMode')
         .map((c) => c.arguments['enabled'] as bool)
         .toList();
-
-    Map<String, dynamic> savedSettings(SharedPreferences prefs) =>
-        jsonDecode(prefs.getString('portable_settings')!)
-            as Map<String, dynamic>;
 
     testWidgets('persisted gamepad mode shows the gamepad screen and syncs '
         'native', (tester) async {
@@ -276,7 +280,7 @@ void main() {
     testWidgets('exit button turns gamepad mode off and restores trackpad', (
       tester,
     ) async {
-      final prefs = await setUpApp(tester, gamepadMode: true);
+      final store = await setUpApp(tester, gamepadMode: true);
 
       await tester.ensureVisible(find.byKey(const Key('exitGamepadMode')));
       await tester.tap(find.byKey(const Key('exitGamepadMode')));
@@ -285,7 +289,7 @@ void main() {
       }
 
       expect(find.byType(GamepadModeView), findsNothing);
-      expect(savedSettings(prefs)['global_gamepad_mode'], isFalse);
+      expect(store.snapshot.gamepadMode, isFalse);
       expect(gamepadModeCalls(), [true, false]);
     });
 
@@ -304,7 +308,7 @@ void main() {
     testWidgets('choosing a rate in the drawer saves it and updates native', (
       tester,
     ) async {
-      final prefs = await setUpApp(tester, gamepadMode: true);
+      final store = await setUpApp(tester, gamepadMode: true);
       expect(rateCalls(), [125]);
 
       // The drawer's existing BlockSlider label rows overflow under the test
@@ -345,7 +349,7 @@ void main() {
 
       FlutterError.onError = originalOnError;
 
-      expect(savedSettings(prefs)['global_gamepad_report_rate_hz'], 30);
+      expect(store.snapshot.gamepadReportRateHz, 30);
       expect(rateCalls(), [125, 30]);
       // Only the known slider overflow was tolerated, nothing from the new UI.
       for (final t in tolerated) {
@@ -363,15 +367,13 @@ void main() {
       await container
           .read(settingsProvider.notifier)
           .importSettings(
-            jsonEncode({
-              'format': 'couchmouse-settings',
-              'version': 1,
-              'settings': {
-                'global_tutorial_status': 'completed',
-                'global_gamepad_mode': true,
-                'global_gamepad_report_rate_hz': 60,
-              },
-            }),
+            await backupFor(
+              PortableSettings(
+                tutorialStatusId: 1,
+                gamepadMode: true,
+                gamepadReportRateHz: 60,
+              ),
+            ),
           );
       await tester.pump();
 

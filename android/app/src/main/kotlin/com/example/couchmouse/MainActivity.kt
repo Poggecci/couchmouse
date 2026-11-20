@@ -39,6 +39,7 @@ class MainActivity : FlutterActivity() {
     private val MOUSE_CHANNEL = "com.example.couchmouse/mouse"
     private val TAG = "RemoteMouseHID"
     private val settingsDocuments = SettingsDocuments(this)
+    private val settingsStorage = SettingsStorage()
 
     private var bluetoothAdapter: BluetoothAdapter? = null
     // Volatile: also read by the gamepad sender thread (see sendReport).
@@ -340,8 +341,17 @@ class MainActivity : FlutterActivity() {
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "com.example.couchmouse/settings")
             .setMethodCallHandler { call, result ->
                 when (call.method) {
+                    "readSettings" -> settingsStorage.read(applicationContext, result)
+                    "writeSettings" -> {
+                        val bytes = call.arguments as? ByteArray
+                        if (bytes == null) {
+                            result.error("INVALID_SETTINGS", "No settings to save.", null)
+                        } else {
+                            settingsStorage.write(applicationContext, bytes, result)
+                        }
+                    }
                     "exportSettings" -> {
-                        val contents = call.argument<String>("contents")
+                        val contents = call.argument<ByteArray>("contents")
                         if (contents == null) {
                             result.error("INVALID_BACKUP", "No settings backup to save.", null)
                         } else {
@@ -978,6 +988,7 @@ class MainActivity : FlutterActivity() {
             ?.unregisterInputDeviceListener(inputDeviceListener)
         HidConnectionService.stop(this)
         settingsDocuments.close()
+        settingsStorage.close()
         cachedFlutterEngine = null
         try {
             unregisterReceiver(bluetoothReceiver)

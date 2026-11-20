@@ -7,6 +7,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:couchmouse/main.dart';
 import 'package:couchmouse/settings_providers.dart';
 
+import 'settings_test_support.dart';
+
 /// Pumps [HomeScreen] connected to a mock host and returns the list that
 /// collects every keyboard report sent. [onKeyboardReport] runs after each
 /// report is recorded and may throw to simulate a failed send.
@@ -14,17 +16,14 @@ Future<List<List<int>>> pumpConnectedHomeScreen(
   WidgetTester tester, {
   required Size size,
   double devicePixelRatio = 1,
-  Map<String, Object> prefs = const {},
+  bool? typingBox,
   void Function(List<List<int>> reports)? onKeyboardReport,
 }) async {
   tester.view.physicalSize = size;
   tester.view.devicePixelRatio = devicePixelRatio;
   addTearDown(tester.view.resetPhysicalSize);
   addTearDown(tester.view.resetDevicePixelRatio);
-  SharedPreferences.setMockInitialValues({
-    'global_tutorial_status': 'completed',
-    ...prefs,
-  });
+  SharedPreferences.setMockInitialValues({});
   final preferences = await SharedPreferences.getInstance();
 
   final reports = <List<int>>[];
@@ -52,7 +51,19 @@ Future<List<List<int>>> pumpConnectedHomeScreen(
   );
   await tester.pumpWidget(
     ProviderScope(
-      overrides: [sharedPreferencesProvider.overrideWithValue(preferences)],
+      overrides: [
+        sharedPreferencesProvider.overrideWithValue(preferences),
+        settingsStoreProvider.overrideWithValue(
+          memorySettings(
+            PortableSettings(
+              tutorialStatusId: 1,
+              globalProfile: typingBox == null
+                  ? null
+                  : InputProfile(typingBox: typingBox),
+            ),
+          ),
+        ),
+      ],
       child: const MaterialApp(home: HomeScreen()),
     ),
   );

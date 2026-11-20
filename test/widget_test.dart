@@ -15,6 +15,8 @@ import 'package:couchmouse/settings_providers.dart';
 
 import 'package:couchmouse/main.dart';
 
+import 'settings_test_support.dart';
+
 void main() {
   testWidgets('CouchMouse App smoke test', (WidgetTester tester) async {
     // Set a portrait mobile screen size (540x960 logical pixels)
@@ -25,9 +27,7 @@ void main() {
       tester.view.resetDevicePixelRatio();
     });
 
-    SharedPreferences.setMockInitialValues({
-      'global_tutorial_status': 'completed',
-    });
+    SharedPreferences.setMockInitialValues({});
     final prefs = await SharedPreferences.getInstance();
 
     // Mock Bluetooth/HID channel
@@ -58,7 +58,12 @@ void main() {
     // Build our app and trigger a frame.
     await tester.pumpWidget(
       ProviderScope(
-        overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
+        overrides: [
+          sharedPreferencesProvider.overrideWithValue(prefs),
+          settingsStoreProvider.overrideWithValue(
+            memorySettings(PortableSettings(tutorialStatusId: 1)),
+          ),
+        ],
         child: const CouchMouseApp(),
       ),
     );
@@ -81,9 +86,7 @@ void main() {
         tester.view.resetDevicePixelRatio();
       });
 
-      SharedPreferences.setMockInitialValues({
-        'global_tutorial_status': 'completed',
-      });
+      SharedPreferences.setMockInitialValues({});
       final prefs = await SharedPreferences.getInstance();
 
       // Mock Bluetooth/HID channel
@@ -114,7 +117,12 @@ void main() {
       // Build our app and trigger a frame.
       await tester.pumpWidget(
         ProviderScope(
-          overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
+          overrides: [
+            sharedPreferencesProvider.overrideWithValue(prefs),
+            settingsStoreProvider.overrideWithValue(
+              memorySettings(PortableSettings(tutorialStatusId: 1)),
+            ),
+          ],
           child: const CouchMouseApp(),
         ),
       );
@@ -151,9 +159,7 @@ void main() {
         tester.view.resetDevicePixelRatio();
       });
 
-      SharedPreferences.setMockInitialValues({
-        'global_tutorial_status': 'completed',
-      });
+      SharedPreferences.setMockInitialValues({});
       final prefs = await SharedPreferences.getInstance();
 
       // Mock Bluetooth/HID channel
@@ -177,7 +183,12 @@ void main() {
 
       await tester.pumpWidget(
         ProviderScope(
-          overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
+          overrides: [
+            sharedPreferencesProvider.overrideWithValue(prefs),
+            settingsStoreProvider.overrideWithValue(
+              memorySettings(PortableSettings(tutorialStatusId: 1)),
+            ),
+          ],
           child: const CouchMouseApp(),
         ),
       );
@@ -220,9 +231,7 @@ void main() {
         tester.view.resetDevicePixelRatio();
       });
 
-      SharedPreferences.setMockInitialValues({
-        'global_tutorial_status': 'completed',
-      });
+      SharedPreferences.setMockInitialValues({});
       final prefs = await SharedPreferences.getInstance();
 
       // Mock Bluetooth/HID channel
@@ -246,7 +255,12 @@ void main() {
 
       await tester.pumpWidget(
         ProviderScope(
-          overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
+          overrides: [
+            sharedPreferencesProvider.overrideWithValue(prefs),
+            settingsStoreProvider.overrideWithValue(
+              memorySettings(PortableSettings(tutorialStatusId: 1)),
+            ),
+          ],
           child: const CouchMouseApp(),
         ),
       );
@@ -289,9 +303,7 @@ void main() {
         tester.view.resetDevicePixelRatio();
       });
 
-      SharedPreferences.setMockInitialValues({
-        'global_tutorial_status': 'completed',
-      });
+      SharedPreferences.setMockInitialValues({});
       final prefs = await SharedPreferences.getInstance();
 
       tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
@@ -313,7 +325,12 @@ void main() {
 
       await tester.pumpWidget(
         ProviderScope(
-          overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
+          overrides: [
+            sharedPreferencesProvider.overrideWithValue(prefs),
+            settingsStoreProvider.overrideWithValue(
+              memorySettings(PortableSettings(tutorialStatusId: 1)),
+            ),
+          ],
           child: const CouchMouseApp(),
         ),
       );
@@ -351,9 +368,7 @@ void main() {
         tester.view.resetDevicePixelRatio();
       });
 
-      SharedPreferences.setMockInitialValues({
-        'global_tutorial_status': 'completed',
-      });
+      SharedPreferences.setMockInitialValues({});
       final prefs = await SharedPreferences.getInstance();
 
       int permissionCheckCount = 0;
@@ -389,7 +404,12 @@ void main() {
       // Build app (will trigger initial check and request)
       await tester.pumpWidget(
         ProviderScope(
-          overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
+          overrides: [
+            sharedPreferencesProvider.overrideWithValue(prefs),
+            settingsStoreProvider.overrideWithValue(
+              memorySettings(PortableSettings(tutorialStatusId: 1)),
+            ),
+          ],
           child: const CouchMouseApp(),
         ),
       );

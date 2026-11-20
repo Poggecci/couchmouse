@@ -1,9 +1,10 @@
 import 'dart:async';
-import 'dart:convert';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'generated/couchmouse_settings.pb.dart';
 import 'keyboard_layouts.dart' show KeyboardKind;
+import 'settings_store.dart';
 
 class CouchMouseSettings {
   final double sensitivity;
@@ -166,291 +167,251 @@ final connectionStateProvider =
       ConnectionStateNotifier.new,
     );
 
+final settingsStoreProvider = Provider<SettingsStore>((ref) {
+  throw UnimplementedError('settingsStoreProvider must be overridden');
+});
+
 class SettingsNotifier extends Notifier<CouchMouseSettings> {
   static const gamepadReportRates = [30, 60, 90, 125];
   static const _defaultGamepadReportRate = 125;
-  static const _gamepadModeKey = 'global_gamepad_mode';
-  static const _gamepadRateKey = 'global_gamepad_report_rate_hz';
-  static const _darkModeKey = 'global_dark_mode';
-  static const _storageKey = 'portable_settings';
-  static const _backupFormat = 'couchmouse-settings';
-  static const _globalPrefix = 'global_';
-  static const _tutorialKey = 'global_tutorial_status';
-  static final _deviceKeyPattern = RegExp(
-    r'^device_(?:[0-9a-fA-F]{2}:){5}[0-9a-fA-F]{2}_(.+)$',
-  );
+  static const _tutorialStatuses = ['none', 'completed', 'dismissed'];
+  static const _keyboardLayouts = [
+    KeyboardKind.fullSize,
+    KeyboardKind.compactFullSize,
+    KeyboardKind.tenkeyless,
+    KeyboardKind.seventyFive,
+    KeyboardKind.sixtyFive,
+    KeyboardKind.sixtyPercent,
+  ];
 
-  Future<void> _pendingWrites = Future.value();
   int _writeRevision = 0;
 
   @override
   CouchMouseSettings build() {
     final connection = ref.watch(connectionStateProvider);
-    final stored = _readSettings(ref.watch(sharedPreferencesProvider));
-    final address = connection.isConnected
-        ? connection.connectedDeviceAddress
-        : null;
-    return _settingsFor(stored, address);
+    final store = ref.watch(settingsStoreProvider);
+    return _settingsFor(store.snapshot, _addressFor(connection));
   }
 
-  CouchMouseSettings _settingsFor(Map<String, Object> stored, String? address) {
-    final devicePrefix = _prefix(address);
-    final prefix = stored.containsKey('${devicePrefix}sensitivity')
-        ? devicePrefix
-        : _globalPrefix;
-    final values = _profileValues(stored, prefix);
+  String? _addressFor(DeviceConnectionState connection) =>
+      connection.isConnected
+      ? connection.connectedDeviceAddress?.toUpperCase()
+      : null;
+
+  DeviceProfile? _deviceFor(PortableSettings stored, String? address) => stored
+      .deviceProfiles
+      .where((device) => device.bluetoothAddress == address)
+      .firstOrNull;
+
+  bool _hasKnownSettings(InputProfile profile) =>
+      profile.info_.fieldInfo.keys.any(profile.hasField);
+
+  double _inRange(double value, double min, double max, double fallback) =>
+      value >= min && value <= max ? value : fallback;
+
+  CouchMouseSettings _settingsFor(PortableSettings stored, String? address) {
+    final device = _deviceFor(stored, address);
+    final deviceInputs = device?.inputProfile;
+    final profile = deviceInputs != null && _hasKnownSettings(deviceInputs)
+        ? deviceInputs
+        : stored.globalProfile;
+    final keyboardId = profile.keyboardLayoutId;
+    final tutorialId = stored.tutorialStatusId;
+    final reportRate = stored.gamepadReportRateHz;
 
     return CouchMouseSettings(
-      sensitivity: values['sensitivity']! as double,
-      mouseAcceleration: values['mouse_acceleration']! as bool,
-      trackpadOnLeft: values['trackpad_on_left']! as bool,
-      keyboardKind: KeyboardKind.values[values['keyboard_kind']! as int],
-      invertTwoFingerScroll: values['invert_two_finger_scroll']! as bool,
-      scrollSensitivity: values['scroll_sensitivity']! as double,
-      scrollMomentum: values['scroll_momentum']! as double,
-      trackball: values['trackball']! as bool,
-      trackballFriction: values['trackball_friction']! as double,
-      typingBox: values['typing_box']! as bool,
-      tutorialStatus: stored[_tutorialKey] as String? ?? 'none',
-      gamepadMode: stored[_gamepadModeKey] as bool? ?? false,
-      gamepadReportRate:
-          stored[_gamepadRateKey] as int? ?? _defaultGamepadReportRate,
-      darkMode: stored[_darkModeKey] as bool? ?? false,
+      sensitivity: profile.hasSensitivity()
+          ? _inRange(profile.sensitivity, 0, 8000, 800)
+          : 800,
+      mouseAcceleration: profile.mouseAcceleration,
+      trackpadOnLeft: profile.trackpadOnLeft,
+      keyboardKind:
+          profile.hasKeyboardLayoutId() &&
+              keyboardId >= 0 &&
+              keyboardId < _keyboardLayouts.length
+          ? _keyboardLayouts[keyboardId]
+          : KeyboardKind.seventyFive,
+      invertTwoFingerScroll: profile.invertTwoFingerScroll,
+      scrollSensitivity: _inRange(profile.scrollSensitivity, 1, 5, 2),
+      scrollMomentum: profile.hasScrollMomentum()
+          ? _inRange(profile.scrollMomentum, 0, 1, 0.05)
+          : 0.05,
+      trackball: profile.trackballEnabled,
+      trackballFriction: profile.hasTrackballFriction()
+          ? _inRange(profile.trackballFriction, 0, 1, 0.7)
+          : 0.7,
+      typingBox: profile.typingBox,
+      tutorialStatus: tutorialId >= 0 && tutorialId < _tutorialStatuses.length
+          ? _tutorialStatuses[tutorialId]
+          : _tutorialStatuses.first,
+      gamepadMode: stored.gamepadMode,
+      gamepadReportRate: gamepadReportRates.contains(reportRate)
+          ? reportRate
+          : _defaultGamepadReportRate,
+      darkMode: stored.darkMode,
     );
   }
 
-  Map<String, Object> _profileValues(
-    Map<String, Object> stored,
-    String prefix,
-  ) {
-    var sensitivity =
-        (stored['${prefix}sensitivity'] as num?)?.toDouble() ?? 800.0;
-    if (sensitivity < 150.0) {
-      sensitivity = (sensitivity * 160.0).clamp(200.0, 8000.0);
-    }
-    return {
-      'sensitivity': sensitivity,
-      'mouse_acceleration': stored['${prefix}mouse_acceleration'] ?? false,
-      'trackpad_on_left': stored['${prefix}trackpad_on_left'] ?? false,
-      'keyboard_kind':
-          stored['${prefix}keyboard_kind'] ?? KeyboardKind.seventyFive.index,
-      'invert_two_finger_scroll':
-          stored['${prefix}invert_two_finger_scroll'] ?? false,
-      'scroll_sensitivity':
-          (stored['${prefix}scroll_sensitivity'] as num?)?.toDouble() ?? 2.0,
-      'scroll_momentum':
-          (stored['${prefix}scroll_momentum'] as num?)?.toDouble() ?? 0.05,
-      'trackball': stored['${prefix}trackball'] ?? false,
-      'trackball_friction':
-          (stored['${prefix}trackball_friction'] as num?)?.toDouble() ?? 0.7,
-      'typing_box': stored['${prefix}typing_box'] ?? false,
-    };
-  }
-
-  String _prefix(String? address) =>
-      address == null ? _globalPrefix : 'device_${address}_';
-
-  String? get _connectedAddress {
-    final connection = ref.read(connectionStateProvider);
-    return connection.isConnected ? connection.connectedDeviceAddress : null;
-  }
-
-  bool _validSetting(String key, Object? value) {
-    if (key == _tutorialKey) {
-      return value == 'none' || value == 'completed' || value == 'dismissed';
-    }
-    if (key == _gamepadModeKey) return value is bool;
-    if (key == _darkModeKey) return value is bool;
-    if (key == _gamepadRateKey) {
-      return value is int && gamepadReportRates.contains(value);
-    }
-    final name = key.startsWith(_globalPrefix)
-        ? key.substring(_globalPrefix.length)
-        : _deviceKeyPattern.firstMatch(key)?.group(1);
-    return switch (name) {
-      'sensitivity' => value is num && value >= 0 && value <= 8000,
-      'scroll_sensitivity' => value is num && value >= 1 && value <= 5,
-      'scroll_momentum' ||
-      'trackball_friction' => value is num && value >= 0 && value <= 1,
-      'keyboard_kind' =>
-        value is int && value >= 0 && value < KeyboardKind.values.length,
-      'mouse_acceleration' ||
-      'trackpad_on_left' ||
-      'invert_two_finger_scroll' ||
-      'trackball' ||
-      'typing_box' => value is bool,
-      _ => false,
-    };
-  }
-
-  Map<String, Object> _readSettings(SharedPreferences prefs) {
-    final saved = prefs.getString(_storageKey);
-    if (saved != null) {
-      return Map<String, Object>.from(jsonDecode(saved) as Map);
-    }
-
-    // Older installations stored each setting separately.
-    final legacy = <String, Object>{};
-    for (final key in prefs.getKeys()) {
-      final value = prefs.get(key);
-      if (_validSetting(key, value)) legacy[key] = value!;
-    }
-    return legacy;
-  }
-
-  // Store one snapshot so a backup can be restored as a single preference write.
-  Future<void> _writeSettings(void Function(Map<String, Object>) edit) {
-    final prefs = ref.read(sharedPreferencesProvider);
+  Future<void> _refreshAfter(
+    SettingsStore store,
+    Future<void> Function() write,
+  ) async {
     final revision = ++_writeRevision;
-    final write = _pendingWrites.then((_) async {
-      final stored = _readSettings(prefs);
-      edit(stored);
-      try {
-        if (!await prefs.setString(_storageKey, jsonEncode(stored))) {
-          throw StateError('Could not save settings');
-        }
-      } catch (_) {
-        // SharedPreferences updates its cache before the platform write finishes.
-        await prefs.reload();
-        rethrow;
-      } finally {
-        if (ref.mounted && revision == _writeRevision) {
-          state = _settingsFor(_readSettings(prefs), _connectedAddress);
-        }
+    try {
+      await write();
+    } finally {
+      if (ref.mounted && revision == _writeRevision) {
+        final connection = ref.read(connectionStateProvider);
+        state = _settingsFor(store.snapshot, _addressFor(connection));
       }
-    });
-    _pendingWrites = write.then<void>((_) {}, onError: (Object _) {});
-    return write;
-  }
-
-  Future<String> exportSettings() async {
-    final prefs = ref.read(sharedPreferencesProvider);
-    await _pendingWrites;
-    return const JsonEncoder.withIndent('  ').convert({
-      'format': _backupFormat,
-      'version': 1,
-      'settings': _readSettings(prefs),
-    });
-  }
-
-  Future<void> importSettings(String backup) async {
-    final decoded = jsonDecode(backup);
-    if (decoded is! Map ||
-        decoded['format'] != _backupFormat ||
-        decoded['version'] != 1 ||
-        decoded['settings'] is! Map<String, dynamic>) {
-      throw const FormatException('Choose a Couch Mouse settings backup.');
     }
-
-    final imported = <String, Object>{};
-    final settings = decoded['settings'] as Map<String, dynamic>;
-    for (final entry in settings.entries) {
-      if (!_validSetting(entry.key, entry.value)) {
-        throw const FormatException('The backup contains invalid settings.');
-      }
-      imported[entry.key] = entry.value as Object;
-    }
-
-    await _writeSettings(
-      (stored) => stored
-        ..clear()
-        ..addAll(imported),
-    );
   }
 
-  Future<void> _saveSetting(String name, Object value) {
-    final address = _connectedAddress;
-    final prefix = _prefix(address);
+  Future<void> _writeSettings(void Function(PortableSettings) edit) {
+    final store = ref.read(settingsStoreProvider);
+    return _refreshAfter(store, () => store.edit(edit));
+  }
+
+  Future<Uint8List> exportSettings() =>
+      ref.read(settingsStoreProvider).exportBackup();
+
+  Future<void> importSettings(Uint8List backup) {
+    final store = ref.read(settingsStoreProvider);
+    return _refreshAfter(store, () => store.importBackup(backup));
+  }
+
+  Future<void> _saveInput(void Function(InputProfile) edit) {
+    final address = _addressFor(ref.read(connectionStateProvider));
     return _writeSettings((stored) {
-      if (address != null && !stored.containsKey('${prefix}sensitivity')) {
-        final global = _profileValues(stored, _globalPrefix);
-        stored.addAll(
-          global.map((key, value) => MapEntry('$prefix$key', value)),
-        );
+      if (address == null) {
+        edit(stored.ensureGlobalProfile());
+        return;
       }
-      stored['$prefix$name'] = value;
+
+      var device = _deviceFor(stored, address);
+      if (device == null) {
+        device = DeviceProfile(bluetoothAddress: address);
+        stored.deviceProfiles.add(device);
+      }
+      final profile = device.ensureInputProfile();
+      if (!_hasKnownSettings(profile)) {
+        // Start a device profile from the currently configured global settings.
+        final global = stored.globalProfile.deepCopy();
+        for (final tag in global.info_.fieldInfo.keys.where(global.hasField)) {
+          profile.setField(tag, global.getField(tag) as Object);
+        }
+      }
+      edit(profile);
     });
   }
 
   Future<void> updateSensitivity(double value) {
     state = state.copyWith(sensitivity: value);
-    return _saveSetting('sensitivity', value);
+    return _saveInput((profile) => profile.sensitivity = value);
   }
 
   Future<void> updateMouseAcceleration(bool value) {
     state = state.copyWith(mouseAcceleration: value);
-    return _saveSetting('mouse_acceleration', value);
+    return _saveInput((profile) => profile.mouseAcceleration = value);
   }
 
   Future<void> updateTrackpadOnLeft(bool value) {
     state = state.copyWith(trackpadOnLeft: value);
-    return _saveSetting('trackpad_on_left', value);
+    return _saveInput((profile) => profile.trackpadOnLeft = value);
   }
 
   Future<void> updateKeyboardKind(KeyboardKind value) {
     state = state.copyWith(keyboardKind: value);
-    return _saveSetting('keyboard_kind', value.index);
+    return _saveInput(
+      (profile) => profile.keyboardLayoutId = _keyboardLayouts.indexOf(value),
+    );
   }
 
   Future<void> updateInvertTwoFingerScroll(bool value) {
     state = state.copyWith(invertTwoFingerScroll: value);
-    return _saveSetting('invert_two_finger_scroll', value);
+    return _saveInput((profile) => profile.invertTwoFingerScroll = value);
   }
 
   Future<void> updateScrollSensitivity(double value) {
     final rounded = (value * 10).roundToDouble() / 10.0;
     state = state.copyWith(scrollSensitivity: rounded);
-    return _saveSetting('scroll_sensitivity', rounded);
+    return _saveInput((profile) => profile.scrollSensitivity = rounded);
   }
 
   Future<void> updateScrollMomentum(double value) {
     final rounded = (value * 10).roundToDouble() / 10.0;
     state = state.copyWith(scrollMomentum: rounded);
-    return _saveSetting('scroll_momentum', rounded);
+    return _saveInput((profile) => profile.scrollMomentum = rounded);
   }
 
   Future<void> updateTrackball(bool value) {
     state = state.copyWith(trackball: value);
-    return _saveSetting('trackball', value);
+    return _saveInput((profile) => profile.trackballEnabled = value);
   }
 
   Future<void> updateTrackballFriction(double value) {
     final rounded = (value * 10).roundToDouble() / 10.0;
     state = state.copyWith(trackballFriction: rounded);
-    return _saveSetting('trackball_friction', rounded);
+    return _saveInput((profile) => profile.trackballFriction = rounded);
   }
 
   Future<void> updateTypingBox(bool value) {
     state = state.copyWith(typingBox: value);
-    return _saveSetting('typing_box', value);
+    return _saveInput((profile) => profile.typingBox = value);
   }
 
-  Future<void> updateTutorialStatus(String status) {
+  Future<void> updateTutorialStatus(String status) async {
+    final id = _tutorialStatuses.indexOf(status);
+    if (id < 0) return;
     state = state.copyWith(tutorialStatus: status);
-    return _writeSettings((stored) => stored[_tutorialKey] = status);
+    await _writeSettings((stored) => stored.tutorialStatusId = id);
   }
 
   Future<void> updateGamepadMode(bool enabled) {
     state = state.copyWith(gamepadMode: enabled);
-    return _writeSettings((stored) => stored[_gamepadModeKey] = enabled);
+    return _writeSettings((stored) => stored.gamepadMode = enabled);
   }
 
   Future<void> updateGamepadReportRate(int hz) async {
     if (!gamepadReportRates.contains(hz)) return;
     state = state.copyWith(gamepadReportRate: hz);
-    await _writeSettings((stored) => stored[_gamepadRateKey] = hz);
+    await _writeSettings((stored) => stored.gamepadReportRateHz = hz);
   }
 
   Future<void> updateDarkMode(bool enabled) {
     state = state.copyWith(darkMode: enabled);
-    return _writeSettings((stored) => stored[_darkModeKey] = enabled);
+    return _writeSettings((stored) => stored.darkMode = enabled);
   }
 
-  Future<void> resetSettings() async {
-    final prefix = _prefix(_connectedAddress);
-    await _writeSettings(
-      (stored) => stored.removeWhere((key, _) => key.startsWith(prefix)),
-    );
+  Future<void> resetSettings() {
+    final address = _addressFor(ref.read(connectionStateProvider));
+    return _writeSettings((stored) {
+      if (address == null) {
+        stored
+          ..clearTutorialStatusId()
+          ..clearGamepadMode()
+          ..clearGamepadReportRateHz()
+          ..clearDarkMode();
+      }
+      final device = _deviceFor(stored, address);
+      final profile = address == null
+          ? stored.globalProfile
+          : device?.inputProfile;
+      if (profile == null || !_hasKnownSettings(profile)) return;
+
+      // An older app can reset the fields it knows while preserving newer ones.
+      for (final tag in profile.info_.fieldInfo.keys) {
+        profile.clearField(tag);
+      }
+      if (profile.unknownFields.isNotEmpty) return;
+      if (address == null) {
+        stored.clearGlobalProfile();
+      } else if (device!.unknownFields.isEmpty) {
+        stored.deviceProfiles.remove(device);
+      } else {
+        device.clearInputProfile();
+      }
+    });
   }
 }
 

@@ -1,0 +1,42 @@
+syntax = "proto3";
+
+package couchmouse.settings;
+
+// Keep field numbers and value IDs stable. Reserve the name and number of any
+// removed field. Add a new field when the type, units, or meaning changes.
+message PortableSettings {
+  InputProfile global_profile = 1;
+  repeated DeviceProfile device_profiles = 2;
+
+  // 0 = none, 1 = completed, 2 = dismissed. An absent value means none.
+  optional uint32 tutorial_status_id = 3;
+  optional bool gamepad_mode = 4;
+  optional uint32 gamepad_report_rate_hz = 5;
+  optional bool dark_mode = 6;
+}
+
+message DeviceProfile {
+  // Unique within the document. Use uppercase colon-separated Bluetooth MAC
+  // addresses. This identifies a profile independently of Android pairing.
+  string bluetooth_address = 1;
+  InputProfile input_profile = 2;
+}
+
+message InputProfile {
+  // Uses CouchMouse sensitivity units.
+  optional double sensitivity = 1;
+  optional bool mouse_acceleration = 2;
+  optional bool trackpad_on_left = 3;
+
+  // Stable IDs: 0 = full size,
+  // 1 = compact full size, 2 = tenkeyless, 3 = 75%, 4 = 65%, 5 = 60%.
+  // Keep unfamiliar IDs when displaying a fallback layout.
+  optional uint32 keyboard_layout_id = 4;
+
+  optional bool invert_two_finger_scroll = 5;
+  optional double scroll_sensitivity = 6;
+  optional double scroll_momentum = 7;
+  optional bool trackball_enabled = 8;
+  optional double trackball_friction = 9;
+  optional bool typing_box = 10;
+}

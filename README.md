@@ -163,7 +163,7 @@ The app requests the following permissions at runtime:
 
 ### Back Up or Move Your Settings
 
-Open **Settings → Export Settings** to save a JSON backup with Android’s file picker. On the new installation, choose **Settings → Import Settings** and select that file. Import replaces your global and per-computer Couch Mouse preferences, including Trackball, Trackball Friction, Gamepad Mode, and the gamepad report rate. Pair your computer in Android’s Bluetooth settings on the new phone.
+Open **Settings → Export Settings** to save a binary CouchMouse backup (.pb) with Android’s file picker. On the new installation, choose **Settings → Import Settings** and select that file. Import replaces your global and per-computer Couch Mouse preferences, including Trackball, Trackball Friction, Gamepad Mode, and the gamepad report rate. Pair your computer in Android’s Bluetooth settings on the new phone.
 
 ### Linux: Cursor Lags or Stutters
 
