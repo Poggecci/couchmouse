@@ -19,6 +19,7 @@ class CouchMouseSettings {
   final String tutorialStatus;
   final bool gamepadMode;
   final int gamepadReportRate;
+  final bool darkMode;
 
   CouchMouseSettings({
     required this.sensitivity,
@@ -34,6 +35,7 @@ class CouchMouseSettings {
     required this.tutorialStatus,
     required this.gamepadMode,
     required this.gamepadReportRate,
+    required this.darkMode,
   });
 
   CouchMouseSettings copyWith({
@@ -50,6 +52,7 @@ class CouchMouseSettings {
     String? tutorialStatus,
     bool? gamepadMode,
     int? gamepadReportRate,
+    bool? darkMode,
   }) {
     return CouchMouseSettings(
       sensitivity: sensitivity ?? this.sensitivity,
@@ -66,6 +69,7 @@ class CouchMouseSettings {
       tutorialStatus: tutorialStatus ?? this.tutorialStatus,
       gamepadMode: gamepadMode ?? this.gamepadMode,
       gamepadReportRate: gamepadReportRate ?? this.gamepadReportRate,
+      darkMode: darkMode ?? this.darkMode,
     );
   }
 }
@@ -167,6 +171,7 @@ class SettingsNotifier extends Notifier<CouchMouseSettings> {
   static const _defaultGamepadReportRate = 125;
   static const _gamepadModeKey = 'global_gamepad_mode';
   static const _gamepadRateKey = 'global_gamepad_report_rate_hz';
+  static const _darkModeKey = 'global_dark_mode';
   static const _storageKey = 'portable_settings';
   static const _backupFormat = 'couchmouse-settings';
   static const _globalPrefix = 'global_';
@@ -210,6 +215,7 @@ class SettingsNotifier extends Notifier<CouchMouseSettings> {
       gamepadMode: stored[_gamepadModeKey] as bool? ?? false,
       gamepadReportRate:
           stored[_gamepadRateKey] as int? ?? _defaultGamepadReportRate,
+      darkMode: stored[_darkModeKey] as bool? ?? false,
     );
   }
 
@@ -254,6 +260,7 @@ class SettingsNotifier extends Notifier<CouchMouseSettings> {
       return value == 'none' || value == 'completed' || value == 'dismissed';
     }
     if (key == _gamepadModeKey) return value is bool;
+    if (key == _darkModeKey) return value is bool;
     if (key == _gamepadRateKey) {
       return value is int && gamepadReportRates.contains(value);
     }
@@ -432,6 +439,11 @@ class SettingsNotifier extends Notifier<CouchMouseSettings> {
     if (!gamepadReportRates.contains(hz)) return;
     state = state.copyWith(gamepadReportRate: hz);
     await _writeSettings((stored) => stored[_gamepadRateKey] = hz);
+  }
+
+  Future<void> updateDarkMode(bool enabled) {
+    state = state.copyWith(darkMode: enabled);
+    return _writeSettings((stored) => stored[_darkModeKey] = enabled);
   }
 
   Future<void> resetSettings() async {

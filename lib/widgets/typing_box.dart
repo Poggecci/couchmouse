@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../app_theme.dart';
 
 /// A text field for the phone's own keyboard, so autocorrect, suggestions and
 /// voice typing work. Nothing reaches the host until [onSend].
@@ -18,10 +19,12 @@ class TypingBox extends StatelessWidget {
   Widget build(BuildContext context) {
     final border = OutlineInputBorder(
       borderRadius: BorderRadius.circular(12),
-      borderSide: BorderSide(color: Colors.black.withValues(alpha: 0.08)),
+      borderSide: BorderSide(
+        color: context.palette.ink.withValues(alpha: 0.08),
+      ),
     );
     return Container(
-      color: const Color(0xFFFFFFFF),
+      color: context.palette.paper,
       padding: const EdgeInsets.fromLTRB(12, 6, 8, 6),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.end,
@@ -35,19 +38,22 @@ class TypingBox extends StatelessWidget {
               textCapitalization: TextCapitalization.sentences,
               minLines: 1,
               maxLines: 4,
-              style: const TextStyle(fontSize: 15, color: Colors.black),
+              style: TextStyle(fontSize: 15, color: context.palette.ink),
               decoration: InputDecoration(
                 hintText: "Type a message for the host",
+                hintStyle: TextStyle(
+                  color: context.palette.ink.withValues(alpha: 0.4),
+                ),
                 isDense: true,
                 filled: true,
-                fillColor: const Color(0xFFF4F4F6),
+                fillColor: context.palette.surface,
                 contentPadding: const EdgeInsets.symmetric(
                   horizontal: 14,
                   vertical: 10,
                 ),
                 enabledBorder: border,
                 focusedBorder: border.copyWith(
-                  borderSide: const BorderSide(color: Colors.black),
+                  borderSide: BorderSide(color: context.palette.ink),
                 ),
               ),
             ),
@@ -59,9 +65,9 @@ class TypingBox extends StatelessWidget {
               onPressed: value.text.isEmpty ? null : onSend,
               tooltip: "Send to host",
               style: IconButton.styleFrom(
-                backgroundColor: Colors.black,
-                foregroundColor: Colors.white,
-                disabledBackgroundColor: const Color(0xFFF4F4F6),
+                backgroundColor: context.palette.ink,
+                foregroundColor: context.palette.paper,
+                disabledBackgroundColor: context.palette.surface,
               ),
               icon: const Icon(Icons.send_rounded, size: 20),
             ),

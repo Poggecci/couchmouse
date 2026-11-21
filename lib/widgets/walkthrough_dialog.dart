@@ -1,5 +1,6 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import '../app_theme.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../settings_providers.dart';
@@ -107,7 +108,7 @@ class _WalkthroughDialogState extends ConsumerState<WalkthroughDialog>
             bottom: 20 + keyboardHeight,
           ),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: context.palette.paper,
             borderRadius: BorderRadius.circular(24),
             boxShadow: [
               BoxShadow(
@@ -118,7 +119,7 @@ class _WalkthroughDialogState extends ConsumerState<WalkthroughDialog>
               ),
             ],
             border: Border.all(
-              color: Colors.black.withValues(alpha: 0.05),
+              color: context.palette.ink.withValues(alpha: 0.05),
               width: 1,
             ),
           ),
@@ -150,26 +151,26 @@ class _WalkthroughDialogState extends ConsumerState<WalkthroughDialog>
                     width: 72,
                     height: 72,
                     decoration: BoxDecoration(
-                      color: const Color(0xFFF4F4F6),
+                      color: context.palette.surface,
                       shape: BoxShape.circle,
                       border: Border.all(
-                        color: Colors.black.withValues(alpha: 0.06),
+                        color: context.palette.ink.withValues(alpha: 0.06),
                         width: 1.5,
                       ),
                     ),
-                    child: const Icon(
+                    child: Icon(
                       Icons.mouse_outlined,
                       size: 36,
-                      color: Colors.black87,
+                      color: context.palette.ink.withValues(alpha: 0.87),
                     ),
                   ),
                   const SizedBox(height: 24),
-                  const Text(
+                  Text(
                     "Welcome to CouchMouse",
                     style: TextStyle(
                       fontSize: 22,
                       fontWeight: FontWeight.w800,
-                      color: Colors.black,
+                      color: context.palette.ink,
                       letterSpacing: 0.5,
                     ),
                   ),
@@ -179,7 +180,7 @@ class _WalkthroughDialogState extends ConsumerState<WalkthroughDialog>
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       fontSize: 14,
-                      color: Colors.black.withValues(alpha: 0.6),
+                      color: context.palette.ink.withValues(alpha: 0.6),
                       height: 1.5,
                     ),
                   ),
@@ -201,8 +202,8 @@ class _WalkthroughDialogState extends ConsumerState<WalkthroughDialog>
                   });
                 },
                 style: ElevatedButton.styleFrom(
-                  foregroundColor: Colors.white,
-                  backgroundColor: Colors.black,
+                  foregroundColor: context.palette.paper,
+                  backgroundColor: context.palette.ink,
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
@@ -222,9 +223,11 @@ class _WalkthroughDialogState extends ConsumerState<WalkthroughDialog>
                     child: OutlinedButton(
                       onPressed: _showLater,
                       style: OutlinedButton.styleFrom(
-                        foregroundColor: Colors.black87,
+                        foregroundColor: context.palette.ink.withValues(
+                          alpha: 0.87,
+                        ),
                         side: BorderSide(
-                          color: Colors.black.withValues(alpha: 0.12),
+                          color: context.palette.ink.withValues(alpha: 0.12),
                         ),
                         padding: const EdgeInsets.symmetric(vertical: 14),
                         shape: RoundedRectangleBorder(
@@ -246,9 +249,11 @@ class _WalkthroughDialogState extends ConsumerState<WalkthroughDialog>
                     child: OutlinedButton(
                       onPressed: _dismissTutorial,
                       style: OutlinedButton.styleFrom(
-                        foregroundColor: Colors.black54,
+                        foregroundColor: context.palette.ink.withValues(
+                          alpha: 0.54,
+                        ),
                         side: BorderSide(
-                          color: Colors.black.withValues(alpha: 0.12),
+                          color: context.palette.ink.withValues(alpha: 0.12),
                         ),
                         padding: const EdgeInsets.symmetric(vertical: 14),
                         shape: RoundedRectangleBorder(
@@ -329,13 +334,13 @@ class _WalkthroughDialogState extends ConsumerState<WalkthroughDialog>
                 style: TextStyle(
                   fontSize: 10,
                   fontWeight: FontWeight.w800,
-                  color: Colors.black.withValues(alpha: 0.35),
+                  color: context.palette.ink.withValues(alpha: 0.35),
                   letterSpacing: 1.2,
                 ),
               ),
               IconButton(
                 icon: const Icon(CupertinoIcons.xmark, size: 18),
-                color: Colors.black54,
+                color: context.palette.ink.withValues(alpha: 0.54),
                 onPressed: _completeTutorial,
                 padding: EdgeInsets.zero,
                 constraints: const BoxConstraints(),
@@ -374,10 +379,10 @@ class _WalkthroughDialogState extends ConsumerState<WalkthroughDialog>
                                       height: 140,
                                       width: double.infinity,
                                       decoration: BoxDecoration(
-                                        color: const Color(0xFFF4F4F6),
+                                        color: context.palette.surface,
                                         borderRadius: BorderRadius.circular(16),
                                         border: Border.all(
-                                          color: Colors.black.withValues(
+                                          color: context.palette.ink.withValues(
                                             alpha: 0.04,
                                           ),
                                           width: 1,
@@ -390,10 +395,10 @@ class _WalkthroughDialogState extends ConsumerState<WalkthroughDialog>
                                     // Title
                                     Text(
                                       step['title'],
-                                      style: const TextStyle(
+                                      style: TextStyle(
                                         fontSize: 18,
                                         fontWeight: FontWeight.w800,
-                                        color: Colors.black,
+                                        color: context.palette.ink,
                                       ),
                                     ),
                                     const SizedBox(height: 12),
@@ -402,7 +407,7 @@ class _WalkthroughDialogState extends ConsumerState<WalkthroughDialog>
                                       step['desc'],
                                       style: TextStyle(
                                         fontSize: 13,
-                                        color: Colors.black.withValues(
+                                        color: context.palette.ink.withValues(
                                           alpha: 0.6,
                                         ),
                                         height: 1.5,
@@ -422,10 +427,12 @@ class _WalkthroughDialogState extends ConsumerState<WalkthroughDialog>
                               height: double.infinity,
                               margin: const EdgeInsets.symmetric(vertical: 8),
                               decoration: BoxDecoration(
-                                color: const Color(0xFFF4F4F6),
+                                color: context.palette.surface,
                                 borderRadius: BorderRadius.circular(16),
                                 border: Border.all(
-                                  color: Colors.black.withValues(alpha: 0.04),
+                                  color: context.palette.ink.withValues(
+                                    alpha: 0.04,
+                                  ),
                                   width: 1,
                                 ),
                               ),
@@ -444,10 +451,10 @@ class _WalkthroughDialogState extends ConsumerState<WalkthroughDialog>
                                 children: [
                                   Text(
                                     step['title'],
-                                    style: const TextStyle(
+                                    style: TextStyle(
                                       fontSize: 16,
                                       fontWeight: FontWeight.w800,
-                                      color: Colors.black,
+                                      color: context.palette.ink,
                                     ),
                                   ),
                                   const SizedBox(height: 6),
@@ -455,7 +462,7 @@ class _WalkthroughDialogState extends ConsumerState<WalkthroughDialog>
                                     step['desc'],
                                     style: TextStyle(
                                       fontSize: 12,
-                                      color: Colors.black.withValues(
+                                      color: context.palette.ink.withValues(
                                         alpha: 0.6,
                                       ),
                                       height: 1.4,
@@ -489,8 +496,8 @@ class _WalkthroughDialogState extends ConsumerState<WalkthroughDialog>
                     width: _currentPage == index ? 20 : 8,
                     decoration: BoxDecoration(
                       color: _currentPage == index
-                          ? Colors.black
-                          : Colors.black.withValues(alpha: 0.15),
+                          ? context.palette.ink
+                          : context.palette.ink.withValues(alpha: 0.15),
                       borderRadius: BorderRadius.circular(4),
                     ),
                   ),
@@ -504,7 +511,9 @@ class _WalkthroughDialogState extends ConsumerState<WalkthroughDialog>
                     TextButton(
                       onPressed: _completeTutorial,
                       style: TextButton.styleFrom(
-                        foregroundColor: Colors.black54,
+                        foregroundColor: context.palette.ink.withValues(
+                          alpha: 0.54,
+                        ),
                       ),
                       child: const Text(
                         "Skip",
@@ -524,8 +533,8 @@ class _WalkthroughDialogState extends ConsumerState<WalkthroughDialog>
                       }
                     },
                     style: ElevatedButton.styleFrom(
-                      foregroundColor: Colors.white,
-                      backgroundColor: Colors.black,
+                      foregroundColor: context.palette.paper,
+                      backgroundColor: context.palette.ink,
                       padding: const EdgeInsets.symmetric(
                         horizontal: 20,
                         vertical: 12,
@@ -562,10 +571,10 @@ class _WalkthroughDialogState extends ConsumerState<WalkthroughDialog>
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             // Phone Icon
-            const Icon(
+            Icon(
               CupertinoIcons.device_phone_portrait,
               size: 48,
-              color: Colors.black87,
+              color: context.palette.ink.withValues(alpha: 0.87),
             ),
             const SizedBox(width: 8),
             // Pulsing dot signals
@@ -609,10 +618,10 @@ class _WalkthroughDialogState extends ConsumerState<WalkthroughDialog>
             ),
             const SizedBox(width: 8),
             // Laptop Icon
-            const Icon(
+            Icon(
               CupertinoIcons.device_laptop,
               size: 54,
-              color: Colors.black87,
+              color: context.palette.ink.withValues(alpha: 0.87),
             ),
           ],
         );
@@ -668,10 +677,10 @@ class _WalkthroughDialogState extends ConsumerState<WalkthroughDialog>
               width: 160,
               height: 100,
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: context.palette.paper,
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
-                  color: Colors.black.withValues(alpha: 0.12),
+                  color: context.palette.ink.withValues(alpha: 0.12),
                   width: 1.5,
                 ),
               ),
@@ -681,34 +690,38 @@ class _WalkthroughDialogState extends ConsumerState<WalkthroughDialog>
                   // Dividing line for mouse buttons
                   Container(
                     height: 1,
-                    color: Colors.black.withValues(alpha: 0.08),
+                    color: context.palette.ink.withValues(alpha: 0.08),
                   ),
                   SizedBox(
                     height: 24,
                     child: Row(
                       children: [
-                        const Expanded(
+                        Expanded(
                           child: Center(
                             child: Text(
                               "Left",
                               style: TextStyle(
                                 fontSize: 9,
-                                color: Colors.black38,
+                                color: context.palette.ink.withValues(
+                                  alpha: 0.38,
+                                ),
                               ),
                             ),
                           ),
                         ),
                         Container(
                           width: 1,
-                          color: Colors.black.withValues(alpha: 0.08),
+                          color: context.palette.ink.withValues(alpha: 0.08),
                         ),
-                        const Expanded(
+                        Expanded(
                           child: Center(
                             child: Text(
                               "Right",
                               style: TextStyle(
                                 fontSize: 9,
-                                color: Colors.black38,
+                                color: context.palette.ink.withValues(
+                                  alpha: 0.38,
+                                ),
                               ),
                             ),
                           ),
@@ -730,7 +743,10 @@ class _WalkthroughDialogState extends ConsumerState<WalkthroughDialog>
                     height: 24 * rippleScale,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      border: Border.all(color: Colors.black54, width: 1.5),
+                      border: Border.all(
+                        color: context.palette.ink.withValues(alpha: 0.54),
+                        width: 1.5,
+                      ),
                     ),
                   ),
                 ),
@@ -744,7 +760,7 @@ class _WalkthroughDialogState extends ConsumerState<WalkthroughDialog>
                   width: 16,
                   height: 16,
                   decoration: BoxDecoration(
-                    color: Colors.black.withValues(alpha: 0.7),
+                    color: context.palette.ink.withValues(alpha: 0.7),
                     shape: BoxShape.circle,
                     boxShadow: [
                       BoxShadow(
@@ -794,10 +810,10 @@ class _WalkthroughDialogState extends ConsumerState<WalkthroughDialog>
               width: 180,
               height: 100,
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: context.palette.paper,
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
-                  color: Colors.black.withValues(alpha: 0.12),
+                  color: context.palette.ink.withValues(alpha: 0.12),
                   width: 1.5,
                 ),
               ),
@@ -812,22 +828,22 @@ class _WalkthroughDialogState extends ConsumerState<WalkthroughDialog>
                 child: Container(
                   width: 40,
                   decoration: BoxDecoration(
-                    color: const Color(0xFFF4F4F6),
+                    color: context.palette.surface,
                     borderRadius: const BorderRadius.only(
                       topLeft: Radius.circular(11),
                       bottomLeft: Radius.circular(11),
                     ),
                     border: Border(
                       right: BorderSide(
-                        color: Colors.black.withValues(alpha: 0.08),
+                        color: context.palette.ink.withValues(alpha: 0.08),
                       ),
                     ),
                   ),
-                  child: const Center(
+                  child: Center(
                     child: Icon(
                       CupertinoIcons.settings,
                       size: 16,
-                      color: Colors.black54,
+                      color: context.palette.ink.withValues(alpha: 0.54),
                     ),
                   ),
                 ),
@@ -840,10 +856,10 @@ class _WalkthroughDialogState extends ConsumerState<WalkthroughDialog>
                 width: 20,
                 height: 70,
                 decoration: BoxDecoration(
-                  color: const Color(0xFFF4F4F6),
+                  color: context.palette.surface,
                   borderRadius: BorderRadius.circular(4),
                   border: Border.all(
-                    color: Colors.black.withValues(alpha: 0.08),
+                    color: context.palette.ink.withValues(alpha: 0.08),
                   ),
                 ),
                 child: Stack(
@@ -855,7 +871,7 @@ class _WalkthroughDialogState extends ConsumerState<WalkthroughDialog>
                       child: Container(
                         width: 16,
                         height: 3,
-                        color: Colors.black38,
+                        color: context.palette.ink.withValues(alpha: 0.38),
                       ),
                     ),
                     Positioned(
@@ -863,7 +879,7 @@ class _WalkthroughDialogState extends ConsumerState<WalkthroughDialog>
                       child: Container(
                         width: 16,
                         height: 3,
-                        color: Colors.black38,
+                        color: context.palette.ink.withValues(alpha: 0.38),
                       ),
                     ),
                     Positioned(
@@ -871,7 +887,7 @@ class _WalkthroughDialogState extends ConsumerState<WalkthroughDialog>
                       child: Container(
                         width: 16,
                         height: 3,
-                        color: Colors.black38,
+                        color: context.palette.ink.withValues(alpha: 0.38),
                       ),
                     ),
                   ],
@@ -884,7 +900,7 @@ class _WalkthroughDialogState extends ConsumerState<WalkthroughDialog>
               left: 45,
               child: Opacity(
                 opacity: t > 0.5 ? 0.9 : 0.2,
-                child: const Row(
+                child: Row(
                   children: [
                     Icon(
                       CupertinoIcons.arrow_right,
@@ -897,7 +913,7 @@ class _WalkthroughDialogState extends ConsumerState<WalkthroughDialog>
                       style: TextStyle(
                         fontSize: 7,
                         fontWeight: FontWeight.bold,
-                        color: Colors.black87,
+                        color: context.palette.ink.withValues(alpha: 0.87),
                       ),
                     ),
                   ],
@@ -909,7 +925,7 @@ class _WalkthroughDialogState extends ConsumerState<WalkthroughDialog>
               left: 45,
               child: Opacity(
                 opacity: t <= 0.5 ? 0.9 : 0.2,
-                child: const Row(
+                child: Row(
                   children: [
                     Icon(
                       CupertinoIcons.up_arrow,
@@ -927,7 +943,7 @@ class _WalkthroughDialogState extends ConsumerState<WalkthroughDialog>
                       style: TextStyle(
                         fontSize: 7,
                         fontWeight: FontWeight.bold,
-                        color: Colors.black87,
+                        color: context.palette.ink.withValues(alpha: 0.87),
                       ),
                     ),
                   ],
@@ -958,10 +974,10 @@ class _WalkthroughDialogState extends ConsumerState<WalkthroughDialog>
               height: 100,
               padding: const EdgeInsets.all(6),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: context.palette.paper,
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
-                  color: Colors.black.withValues(alpha: 0.12),
+                  color: context.palette.ink.withValues(alpha: 0.12),
                   width: 1.5,
                 ),
               ),
@@ -972,10 +988,10 @@ class _WalkthroughDialogState extends ConsumerState<WalkthroughDialog>
                     height: 18,
                     padding: const EdgeInsets.symmetric(horizontal: 4),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFF4F4F6),
+                      color: context.palette.surface,
                       borderRadius: BorderRadius.circular(4),
                       border: Border.all(
-                        color: Colors.black.withValues(alpha: 0.05),
+                        color: context.palette.ink.withValues(alpha: 0.05),
                       ),
                     ),
                     child: Row(
@@ -986,16 +1002,16 @@ class _WalkthroughDialogState extends ConsumerState<WalkthroughDialog>
                           height: 10,
                           decoration: BoxDecoration(
                             color: activeKeyIndex < 4
-                                ? Colors.black87
-                                : Colors.black12,
+                                ? context.palette.ink.withValues(alpha: 0.87)
+                                : context.palette.ink.withValues(alpha: 0.12),
                             borderRadius: BorderRadius.circular(2),
                           ),
                           alignment: Alignment.center,
-                          child: const Text(
+                          child: Text(
                             "Ctrl",
                             style: TextStyle(
                               fontSize: 5,
-                              color: Colors.white,
+                              color: context.palette.paper,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
@@ -1005,16 +1021,16 @@ class _WalkthroughDialogState extends ConsumerState<WalkthroughDialog>
                           height: 10,
                           decoration: BoxDecoration(
                             color: activeKeyIndex >= 4 && activeKeyIndex < 8
-                                ? Colors.black87
-                                : Colors.black12,
+                                ? context.palette.ink.withValues(alpha: 0.87)
+                                : context.palette.ink.withValues(alpha: 0.12),
                             borderRadius: BorderRadius.circular(2),
                           ),
                           alignment: Alignment.center,
-                          child: const Text(
+                          child: Text(
                             "Shift",
                             style: TextStyle(
                               fontSize: 5,
-                              color: Colors.white,
+                              color: context.palette.paper,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
@@ -1023,15 +1039,17 @@ class _WalkthroughDialogState extends ConsumerState<WalkthroughDialog>
                           width: 24,
                           height: 10,
                           decoration: BoxDecoration(
-                            color: Colors.black12,
+                            color: context.palette.ink.withValues(alpha: 0.12),
                             borderRadius: BorderRadius.circular(2),
                           ),
                           alignment: Alignment.center,
-                          child: const Text(
+                          child: Text(
                             "Alt",
                             style: TextStyle(
                               fontSize: 5,
-                              color: Colors.black54,
+                              color: context.palette.ink.withValues(
+                                alpha: 0.54,
+                              ),
                               fontWeight: FontWeight.bold,
                             ),
                           ),
@@ -1057,11 +1075,11 @@ class _WalkthroughDialogState extends ConsumerState<WalkthroughDialog>
                         return Container(
                           decoration: BoxDecoration(
                             color: isActive
-                                ? Colors.black87
-                                : const Color(0xFFF4F4F6),
+                                ? context.palette.ink.withValues(alpha: 0.87)
+                                : context.palette.surface,
                             borderRadius: BorderRadius.circular(3),
                             border: Border.all(
-                              color: Colors.black.withValues(
+                              color: context.palette.ink.withValues(
                                 alpha: isActive ? 0.0 : 0.06,
                               ),
                             ),
@@ -1071,7 +1089,9 @@ class _WalkthroughDialogState extends ConsumerState<WalkthroughDialog>
                             "A",
                             style: TextStyle(
                               fontSize: 8,
-                              color: isActive ? Colors.white : Colors.black54,
+                              color: isActive
+                                  ? context.palette.paper
+                                  : context.palette.ink.withValues(alpha: 0.54),
                               fontWeight: FontWeight.bold,
                             ),
                           ),

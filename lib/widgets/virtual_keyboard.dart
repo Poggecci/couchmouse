@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../app_theme.dart';
 import '../keyboard_layouts.dart';
 
 class VirtualKeyboard extends StatelessWidget {
@@ -28,7 +29,7 @@ class VirtualKeyboard extends StatelessWidget {
     final layout = KeyboardLayouts.getLayout(keyboardKind);
 
     return Container(
-      color: const Color(0xFFF4F4F6),
+      color: context.palette.surface,
       padding: const EdgeInsets.all(4),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -75,13 +76,13 @@ class VirtualKeyboard extends StatelessWidget {
                         height: rowHeight,
                         decoration: BoxDecoration(
                           color: isActive
-                              ? Colors.black
-                              : const Color(0xFFFFFFFF),
+                              ? context.palette.ink
+                              : context.palette.paper,
                           borderRadius: BorderRadius.circular(compact ? 4 : 6),
                           border: Border.all(
                             color: isActive
-                                ? Colors.black
-                                : Colors.black.withValues(alpha: 0.08),
+                                ? context.palette.ink
+                                : context.palette.ink.withValues(alpha: 0.08),
                             width: isActive ? 1.0 : 0.5,
                           ),
                         ),
@@ -94,8 +95,8 @@ class VirtualKeyboard extends StatelessWidget {
                                 ? FontWeight.w700
                                 : FontWeight.w500,
                             color: isActive
-                                ? Colors.white
-                                : Colors.black.withValues(alpha: 0.7),
+                                ? context.palette.paper
+                                : context.palette.ink.withValues(alpha: 0.7),
                           ),
                         ),
                       ),
