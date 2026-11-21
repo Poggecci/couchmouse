@@ -45,6 +45,7 @@ The trackpad provides precise cursor tracking and supports the following setting
 ### Interface Modes
 - Landscape Mode: Displays a side-by-side view pairing your selected keyboard layout with the trackpad. You can drag the boundaries or swap positions to suit left- or right-handed preferences.
 - Portrait Mode: Focuses on single-hand trackpad navigation. Tapping the keyboard button activates the soft keyboard, which opens your device's native system input method editor (IME) to type. The app translates character inputs into HID scan codes, and a quick-access toolbar provides access to modifier keys (Ctrl, Shift, Alt, Win/Cmd), arrow keys, Esc, Tab, and Enter.
+- Rich Typing Mode (Settings → Advanced, off by default): in portrait mode, the keyboard opens a visible text box instead, so autocorrect, suggestions and voice typing work. Nothing reaches the host until you tap Send, which types the whole message, with line breaks typed as Enter. Curly quotes, dashes and ellipses are converted to plain characters. The rest of the screen is greyed out while it types. Backspace in an empty box, or the ⌫ toolbar key, deletes on the host.
 
 ### Gamepad Mode (Android handhelds)
 On devices with built-in controls, such as the AYN Odin and Thor or Retroid handhelds, or on a phone with a controller attached, CouchMouse can forward the physical controls to the host as a standard Bluetooth HID gamepad.

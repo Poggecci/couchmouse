@@ -301,7 +301,7 @@ class _WalkthroughDialogState extends ConsumerState<WalkthroughDialog>
         'title': '3. Scrolling & Settings Swipe',
         'desc':
             '• Scroll by dragging on the right-side Scroll Wheel, or swipe with two fingers anywhere on the trackpad.\n'
-            '• Swipe from the left edge of the screen to open settings settings drawer.\n'
+            '• Swipe from the left edge of the screen to open the settings drawer.\n'
             '• You can control mouse sensitivity, keyboard layout, and many other bits in the settings.',
         'illustration': _buildScrollIllustration(),
       },
@@ -309,7 +309,8 @@ class _WalkthroughDialogState extends ConsumerState<WalkthroughDialog>
         'title': '4. Virtual Keyboard',
         'desc':
             '• Swipe up from the bottom of the screen or tap the keyboard icon to toggle the keyboard.\n'
-            '• Use the accessory toolbar to toggle Ctrl, Alt, Shift, and Lock modifier keys\n.'
+            '• Use the accessory toolbar to toggle Ctrl, Alt, Shift, and Lock modifier keys.\n'
+            '• Turn on Rich Typing Mode in Advanced settings to write a message with autocorrect, then send it.\n'
             '• Flip to landscape mode to view a wider emulated keyboard.',
         'illustration': _buildKeyboardIllustration(),
       },
@@ -358,45 +359,59 @@ class _WalkthroughDialogState extends ConsumerState<WalkthroughDialog>
               return Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 24.0),
                 child: orientation == Orientation.portrait
-                    ? Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          // Illustration card
-                          Container(
-                            height: 140,
-                            width: double.infinity,
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFF4F4F6),
-                              borderRadius: BorderRadius.circular(16),
-                              border: Border.all(
-                                color: Colors.black.withValues(alpha: 0.04),
-                                width: 1,
+                    ? LayoutBuilder(
+                        builder: (context, constraints) =>
+                            SingleChildScrollView(
+                              child: ConstrainedBox(
+                                constraints: BoxConstraints(
+                                  minHeight: constraints.maxHeight,
+                                ),
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    // Illustration card
+                                    Container(
+                                      height: 140,
+                                      width: double.infinity,
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFFF4F4F6),
+                                        borderRadius: BorderRadius.circular(16),
+                                        border: Border.all(
+                                          color: Colors.black.withValues(
+                                            alpha: 0.04,
+                                          ),
+                                          width: 1,
+                                        ),
+                                      ),
+                                      alignment: Alignment.center,
+                                      child: step['illustration'],
+                                    ),
+                                    const SizedBox(height: 20),
+                                    // Title
+                                    Text(
+                                      step['title'],
+                                      style: const TextStyle(
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.w800,
+                                        color: Colors.black,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 12),
+                                    // Description
+                                    Text(
+                                      step['desc'],
+                                      style: TextStyle(
+                                        fontSize: 13,
+                                        color: Colors.black.withValues(
+                                          alpha: 0.6,
+                                        ),
+                                        height: 1.5,
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
                             ),
-                            alignment: Alignment.center,
-                            child: step['illustration'],
-                          ),
-                          const SizedBox(height: 20),
-                          // Title
-                          Text(
-                            step['title'],
-                            style: const TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.w800,
-                              color: Colors.black,
-                            ),
-                          ),
-                          const SizedBox(height: 12),
-                          // Description
-                          Text(
-                            step['desc'],
-                            style: TextStyle(
-                              fontSize: 13,
-                              color: Colors.black.withValues(alpha: 0.6),
-                              height: 1.5,
-                            ),
-                          ),
-                        ],
                       )
                     : Row(
                         children: [

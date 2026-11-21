@@ -19,6 +19,7 @@ import 'widgets/control_drawer.dart';
 import 'widgets/bluetooth_devices_sheet.dart';
 import 'widgets/walkthrough_dialog.dart';
 import 'widgets/gamepad_view.dart';
+import 'widgets/typing_box.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -35,6 +36,15 @@ void main() async {
       child: const CouchMouseApp(),
     ),
   );
+}
+
+enum _TextSource {
+  clipboard('Paste', 'Pasting'),
+  typingBox('Send', 'Sending');
+
+  const _TextSource(this.noun, this.progress);
+  final String noun;
+  final String progress;
 }
 
 class CouchMouseApp extends StatelessWidget {
@@ -104,14 +114,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   int _modifiersBitmask = 0;
   bool _fnActive = false;
   bool _holdLockActive = false;
-  bool _isPasting = false;
-  bool _cancelPasteRequested = false;
+  bool _typingText = false;
+  bool _cancelTypingRequested = false;
 
   bool _keyboardMode = false;
   bool _keyboardDidOpen = false;
   late final FocusNode _builtInKeyboardFocusNode;
   late final TextEditingController _builtInKeyboardController;
   bool _builtInKeyboardActive = false;
+  bool _typingBox = false;
+  final TextEditingController _typingBoxController = TextEditingController();
   double _swipeDragDistance = 0.0;
   double _horizontalSwipeDragDistance = 0.0;
   Future<void> _keystrokeQueue = Future.value();
@@ -122,7 +134,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    _builtInKeyboardFocusNode = FocusNode();
+    _builtInKeyboardFocusNode = FocusNode(onKeyEvent: _handleTypingBoxKey);
     _builtInKeyboardFocusNode.addListener(() {
       if (!mounted) return;
       setState(() {
@@ -149,6 +161,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     WidgetsBinding.instance.removeObserver(this);
     _builtInKeyboardFocusNode.dispose();
     _builtInKeyboardController.dispose();
+    _typingBoxController.dispose();
     super.dispose();
   }
 
@@ -691,7 +704,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
 
   void _interruptKeyboardInput() {
     final shouldRelease =
-        _isPasting || _activeScancodes.isNotEmpty || _modifiersBitmask != 0;
+        _typingText || _activeScancodes.isNotEmpty || _modifiersBitmask != 0;
     _discardKeyboardInput();
     if (shouldRelease) unawaited(_sendKeyboardReport());
   }
@@ -839,6 +852,18 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     });
     await _sendKeyboardReport();
     await Future.delayed(const Duration(milliseconds: 10));
+  }
+
+  // The keyboard has nothing to delete in an empty box, so pass backspace on.
+  KeyEventResult _handleTypingBoxKey(FocusNode node, KeyEvent event) {
+    if (!_typingBox ||
+        _typingBoxController.text.isNotEmpty ||
+        event is KeyUpEvent ||
+        event.logicalKey != LogicalKeyboardKey.backspace) {
+      return KeyEventResult.ignored;
+    }
+    _queueKeyStroke(0x2A);
+    return KeyEventResult.handled;
   }
 
   Widget _buildHiddenTextField() {
@@ -1091,15 +1116,63 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     );
   }
 
-  void _cancelPaste() {
-    if (_isPasting) {
-      _cancelPasteRequested = true;
+  void _cancelTyping() {
+    if (_typingText) {
+      _cancelTypingRequested = true;
     }
   }
 
   Future<void> _pasteClipboard() async {
-    if (_isPasting || !_keyboardInputFocused) return;
+    if (_typingText || !_keyboardInputFocused) return;
 
+    final generation = _keyboardQueueGeneration;
+    final data = await Clipboard.getData(Clipboard.kTextPlain);
+    if (!mounted || _typingText || generation != _keyboardQueueGeneration) {
+      return;
+    }
+
+    final rawText = data?.text;
+    if (rawText == null || rawText.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Clipboard is empty"),
+          behavior: SnackBarBehavior.floating,
+          duration: Duration(seconds: 2),
+        ),
+      );
+      return;
+    }
+
+    await _typeText(
+      KeyboardLayouts.typableText(rawText),
+      _TextSource.clipboard,
+    );
+  }
+
+  Future<void> _sendTypingBox() async {
+    if (_typingText || !_keyboardInputFocused) return;
+    final text = KeyboardLayouts.typableText(_typingBoxController.text);
+    if (text.isEmpty) return;
+    _setTypingBoxText(text);
+
+    final typed = await _typeText(text, _TextSource.typingBox);
+    if (typed == null || !mounted) return;
+    final current = _typingBoxController.text;
+    if (current.startsWith(text.substring(0, typed))) {
+      _setTypingBoxText(current.substring(typed));
+    }
+  }
+
+  void _setTypingBoxText(String text) {
+    _typingBoxController.value = TextEditingValue(
+      text: text,
+      selection: TextSelection.collapsed(offset: text.length),
+    );
+  }
+
+  /// Types [text] as key presses and returns how many characters reached the
+  /// host, or null if nothing was attempted.
+  Future<int?> _typeText(String text, _TextSource source) async {
     final messenger = ScaffoldMessenger.of(context);
 
     final connection = ref.read(connectionStateProvider);
@@ -1112,31 +1185,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
           duration: Duration(seconds: 2),
         ),
       );
-      return;
+      return null;
     }
 
-    final generation = _keyboardQueueGeneration;
-    final data = await Clipboard.getData(Clipboard.kTextPlain);
-    if (!mounted || _isPasting || generation != _keyboardQueueGeneration) {
-      return;
-    }
-
-    final rawText = data?.text;
-    if (rawText == null || rawText.isEmpty) {
-      messenger.showSnackBar(
-        const SnackBar(
-          content: Text("Clipboard is empty"),
-          behavior: SnackBarBehavior.floating,
-          duration: Duration(seconds: 2),
-        ),
-      );
-      return;
-    }
-
-    // Normalize newlines (CRLF and CR -> LF)
-    final text = rawText.replaceAll('\r\n', '\n').replaceAll('\r', '\n');
-
-    // Pre-validate that all characters can be typed
     final chars = text.runes.map(String.fromCharCode).toList();
     final unsupported = <String>{};
     for (final char in chars) {
@@ -1151,23 +1202,24 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
       messenger.showSnackBar(
         SnackBar(
           content: Text(
-            "Cannot paste: contains characters that cannot be typed ($sample)",
+            "Cannot ${source.noun.toLowerCase()}: contains characters that cannot be typed ($sample)",
           ),
           backgroundColor: Colors.redAccent,
           behavior: SnackBarBehavior.floating,
           duration: const Duration(seconds: 4),
         ),
       );
-      return;
+      return null;
     }
 
+    final generation = _keyboardQueueGeneration;
     setState(() {
-      _isPasting = true;
-      _cancelPasteRequested = false;
+      _typingText = true;
+      _cancelTypingRequested = false;
     });
 
     final statusNotifier = ValueNotifier<String>(
-      "Pasting 0/${chars.length}...",
+      "${source.progress} 0/${chars.length}...",
     );
 
     messenger.clearSnackBars();
@@ -1202,7 +1254,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
         action: SnackBarAction(
           label: 'CANCEL',
           textColor: const Color(0xFF00E5FF),
-          onPressed: _cancelPaste,
+          onPressed: _cancelTyping,
         ),
         behavior: SnackBarBehavior.floating,
         persist: true,
@@ -1215,7 +1267,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     await _enqueueKeyboardOperation(() async {
       bool sessionIsCurrent() =>
           mounted && generation == _keyboardQueueGeneration;
-      if (_cancelPasteRequested) return;
+      if (_cancelTypingRequested) return;
 
       final releaseReport = List<int>.filled(8, 0);
       final restoreKeyboard =
@@ -1224,7 +1276,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
           restoreKeyboard && !await _sendKeyboardBytes(releaseReport);
 
       for (final char in chars) {
-        if (reportFailed || _cancelPasteRequested || !sessionIsCurrent()) break;
+        if (reportFailed || _cancelTypingRequested || !sessionIsCurrent()) {
+          break;
+        }
 
         final unshiftedScancode = KeyboardLayouts.charToScancode[char];
         final pressReport = List<int>.filled(8, 0)
@@ -1243,7 +1297,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
           break;
         }
         typedCount++;
-        statusNotifier.value = "Pasting $typedCount/${chars.length}...";
+        statusNotifier.value =
+            "${source.progress} $typedCount/${chars.length}...";
         await Future.delayed(const Duration(milliseconds: 10));
       }
 
@@ -1258,19 +1313,22 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     });
 
     unawaited(snackBarController.closed.then((_) => statusNotifier.dispose()));
-    if (!messenger.mounted) return;
+    if (!messenger.mounted) return typedCount;
     messenger.clearSnackBars();
-    if (!mounted) return;
-    setState(() => _isPasting = false);
+    if (!mounted) return typedCount;
+    setState(() => _typingText = false);
 
     final String message;
     if (reportFailed) {
-      message = "Paste stopped after $typedCount/${chars.length} characters";
-    } else if (typedCount == chars.length) {
+      message =
+          "${source.noun} stopped after $typedCount/${chars.length} characters";
+    } else if (typedCount < chars.length) {
+      message =
+          "${source.noun} cancelled ($typedCount/${chars.length} characters typed)";
+    } else if (source == _TextSource.clipboard) {
       message = "Pasted $typedCount characters";
     } else {
-      message =
-          "Paste cancelled ($typedCount/${chars.length} characters typed)";
+      return typedCount;
     }
     messenger.showSnackBar(
       SnackBar(
@@ -1279,11 +1337,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
         duration: const Duration(seconds: 2),
       ),
     );
+    return typedCount;
   }
 
   Widget _buildPasteButton({bool compact = false}) {
     return GestureDetector(
-      onTap: _isPasting ? _cancelPaste : _pasteClipboard,
+      onTap: _typingText ? _cancelTyping : _pasteClipboard,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 150),
         padding: EdgeInsets.symmetric(
@@ -1291,10 +1350,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
           vertical: compact ? 4 : 6,
         ),
         decoration: BoxDecoration(
-          color: _isPasting ? const Color(0xFFD32F2F) : const Color(0xFFF4F4F6),
+          color: _typingText
+              ? const Color(0xFFD32F2F)
+              : const Color(0xFFF4F4F6),
           borderRadius: BorderRadius.circular(compact ? 6 : 8),
           border: Border.all(
-            color: _isPasting
+            color: _typingText
                 ? const Color(0xFFD32F2F)
                 : Colors.black.withValues(alpha: 0.08),
             width: 1,
@@ -1304,19 +1365,19 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(
-              _isPasting ? Icons.close : Icons.paste_rounded,
+              _typingText ? Icons.close : Icons.paste_rounded,
               size: compact ? 11 : 13,
-              color: _isPasting
+              color: _typingText
                   ? Colors.white
                   : Colors.black.withValues(alpha: 0.4),
             ),
             SizedBox(width: compact ? 4 : 6),
             Text(
-              _isPasting ? "Cancel" : "Paste",
+              _typingText ? "Cancel" : "Paste",
               style: TextStyle(
                 fontSize: compact ? 10 : 11,
                 fontWeight: FontWeight.bold,
-                color: _isPasting
+                color: _typingText
                     ? Colors.white
                     : Colors.black.withValues(alpha: 0.6),
               ),
@@ -1387,10 +1448,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
           ),
           _buildAccessoryDivider(),
           _buildAccessoryButton(
-            icon: _isPasting ? Icons.close : Icons.paste_rounded,
-            onTap: _isPasting ? _cancelPaste : _pasteClipboard,
-            color: _isPasting ? Colors.white : Colors.black,
-            backgroundColor: _isPasting
+            icon: _typingText ? Icons.close : Icons.paste_rounded,
+            onTap: _typingText ? _cancelTyping : _pasteClipboard,
+            color: _typingText ? Colors.white : Colors.black,
+            backgroundColor: _typingText
                 ? const Color(0xFFD32F2F)
                 : const Color(0xFFF4F4F6),
             borderColor: Colors.black.withValues(alpha: 0.08),
@@ -1409,6 +1470,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
           _buildAccessoryKey("▼", 0x51),
           _buildAccessoryKey("▶", 0x4F),
           _buildAccessoryDivider(),
+          if (_typingBox) _buildAccessoryKey("⌫", 0x2A),
           _buildAccessoryKey("Del", 0x4C),
           _buildAccessoryKey("Enter", 0x28),
         ],
@@ -1589,9 +1651,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                 ),
               ),
             ),
-            if (_builtInKeyboardActive) ...[
+            if (_builtInKeyboardActive || (_typingBox && _keyboardMode)) ...[
               const SizedBox(height: 16),
               _buildKeyboardAccessoryBar(),
+              if (_typingBox)
+                TypingBox(
+                  controller: _typingBoxController,
+                  focusNode: _builtInKeyboardFocusNode,
+                  onSend: _sendTypingBox,
+                ),
             ] else
               GestureDetector(
                 behavior: HitTestBehavior.translucent,
@@ -1660,7 +1728,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
               ),
           ],
         ),
-        Positioned(left: 0, top: 0, child: _buildHiddenTextField()),
+        if (!_typingBox)
+          Positioned(left: 0, top: 0, child: _buildHiddenTextField()),
       ],
     );
   }
@@ -1917,6 +1986,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
       settings.scrollSensitivity,
     );
     _scrollMomentum = settings.scrollMomentum;
+    _typingBox = settings.typingBox;
 
     if (!_isSupported) {
       return Scaffold(body: SafeArea(child: _buildUnsupportedView()));
@@ -2063,11 +2133,21 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                 onExit: () =>
                     ref.read(gamepadModeProvider.notifier).setEnabled(false),
               )
-            : showFullKeyboard
-            ? _buildForcedLandscapeKeyboardLayout()
-            : (orientation == Orientation.portrait
-                  ? _buildPortraitLayout(settings, hostAddress)
-                  : _buildSplitLandscapeLayout(settings, hostAddress)),
+            : IgnorePointer(
+                ignoring: _typingText,
+                child: AnimatedOpacity(
+                  opacity: _typingText ? 0.4 : 1.0,
+                  duration: const Duration(milliseconds: 150),
+                  child: showFullKeyboard
+                      ? _buildForcedLandscapeKeyboardLayout()
+                      : (orientation == Orientation.portrait
+                            ? _buildPortraitLayout(settings, hostAddress)
+                            : _buildSplitLandscapeLayout(
+                                settings,
+                                hostAddress,
+                              )),
+                ),
+              ),
       ),
     );
   }
