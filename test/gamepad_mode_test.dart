@@ -13,6 +13,7 @@ import 'package:couchmouse/settings_providers.dart';
 import 'package:couchmouse/widgets/gamepad_view.dart';
 
 const _hidChannel = MethodChannel('com.example.couchmouse/hid');
+const _mouseChannel = MethodChannel('com.example.couchmouse/mouse');
 
 void main() {
   group('GamepadSnapshot', () {
@@ -156,6 +157,7 @@ void main() {
 
   group('Gamepad mode in HomeScreen', () {
     late List<MethodCall> calls;
+    late List<MethodCall> mouseCalls;
 
     Future<SharedPreferences> setUpApp(
       WidgetTester tester, {
@@ -177,6 +179,7 @@ void main() {
       final prefs = await SharedPreferences.getInstance();
 
       calls = [];
+      mouseCalls = [];
       tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
         _hidChannel,
         (call) async {
@@ -191,6 +194,13 @@ void main() {
             case 'getGamepadControllers':
               return ['AYN Odin Controller'];
           }
+          return null;
+        },
+      );
+      tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+        _mouseChannel,
+        (call) async {
+          mouseCalls.add(call);
           return null;
         },
       );
@@ -387,6 +397,7 @@ void main() {
         tester.element(find.byType(HomeScreen)),
       );
       calls.clear();
+      mouseCalls.clear();
 
       await container.read(gamepadModeProvider.notifier).setEnabled(true);
       for (var i = 0; i < 5; i++) {
@@ -396,7 +407,16 @@ void main() {
       expect(find.byType(GamepadModeView), findsOneWidget);
       final methods = calls.map((c) => c.method).toList();
       expect(methods, contains('sendKeyboardReport'));
-      expect(methods, contains('sendMouseReport'));
+      // A forced release goes to the native mouse pump.
+      expect(
+        mouseCalls.map((c) => [c.method, c.arguments]),
+        contains(
+          equals([
+            'buttons',
+            [0, true],
+          ]),
+        ),
+      );
       expect(gamepadModeCalls(), [true]);
     });
   });
