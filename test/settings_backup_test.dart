@@ -349,8 +349,18 @@ void main() {
         of: find.byType(Drawer),
         matching: find.byType(Scrollable),
       );
+      final advanced = find.byKey(const Key('advancedSettingsSwitch'));
+      final gamepad = find.byKey(const Key('gamepadModeSwitch'));
       scaffold.openDrawer();
       await tester.pumpAndSettle();
+      expect(find.text('Export Settings'), findsNothing);
+      expect(find.text('Import Settings'), findsNothing);
+      expect(gamepad, findsNothing);
+      await tester.scrollUntilVisible(advanced, 250, scrollable: drawerList);
+      await tester.tap(advanced);
+      await tester.pumpAndSettle();
+      await tester.scrollUntilVisible(gamepad, 250, scrollable: drawerList);
+      expect(gamepad.hitTestable(), findsOneWidget);
       await tester.scrollUntilVisible(
         find.text('Export Settings'),
         250,
@@ -365,6 +375,11 @@ void main() {
 
       scaffold.openDrawer();
       await tester.pumpAndSettle();
+      await tester.scrollUntilVisible(advanced, 250, scrollable: drawerList);
+      if (!tester.widget<Switch>(advanced).value) {
+        await tester.tap(advanced);
+        await tester.pumpAndSettle();
+      }
       await tester.scrollUntilVisible(
         find.text('Import Settings'),
         250,

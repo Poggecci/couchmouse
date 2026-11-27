@@ -50,7 +50,7 @@ The trackpad provides precise cursor tracking and supports the following setting
 
 ### Gamepad Mode (Android handhelds)
 On devices with built-in controls, such as the AYN Odin and Thor or Retroid handhelds, or on a phone with a controller attached, CouchMouse can forward the physical controls to the host as a standard Bluetooth HID gamepad.
-- Turn it on from the menu (**Gamepad Mode**). The trackpad and keyboard are replaced by a status screen showing the host connection, the detected controller and a live view of buttons, sticks and triggers.
+- In **Settings**, turn on **Advanced Settings**, then **Gamepad Mode**. The trackpad and keyboard are replaced by a status screen showing the host connection, the detected controller and a live view of buttons, sticks and triggers.
 - Forwards 15 buttons, the D-pad, both analog sticks and both analog triggers. Controllers without analog triggers send a full pull when L2/R2 is pressed.
 - Input is captured and sent natively. The Flutter UI is only a status display, so it adds no latency.
 - Changes are sent to the host immediately, capped at a report rate you choose in the menu (30, 60, 90 or 125 Hz; default 60). While nothing changes, the full state is still re-sent every 50 ms. That keeps the Bluetooth link from dropping into its slow power-saving mode, and repairs any report Android's Bluetooth stack silently dropped.
@@ -157,13 +157,13 @@ The app requests the following permissions at runtime:
 
 ### Using a handheld as a gamepad
 1. Pair and connect as above. If you paired before gamepad support existed, unpair and re-pair first.
-2. Open the menu and turn on **Gamepad Mode**.
+2. Open **Settings**, turn on **Advanced Settings**, then turn on **Gamepad Mode**.
 3. Check that your controller is listed and that pressing buttons lights up the on-screen diagram.
 4. Leave CouchMouse open and play. Use **Exit Gamepad Mode** or the menu toggle to return to the trackpad.
 
 ### Back Up or Move Your Settings
 
-Open **Settings → Export Settings** to save a binary CouchMouse backup (.pb) with Android’s file picker. On the new installation, choose **Settings → Import Settings** and select that file. Import replaces your global and per-computer Couch Mouse preferences, including Trackball, Trackball Friction, Gamepad Mode, and the gamepad report rate. Pair your computer in Android’s Bluetooth settings on the new phone.
+In **Settings**, turn on **Advanced Settings** and choose **Export Settings** to save a binary CouchMouse backup (.pb) with Android’s file picker. On the new installation, turn on **Advanced Settings**, choose **Import Settings**, and select that file. Import replaces your global and per-computer Couch Mouse preferences, including Trackball, Trackball Friction, Gamepad Mode, and the gamepad report rate. Pair your computer in Android’s Bluetooth settings on the new phone.
 
 ### Linux: Cursor Lags or Stutters
 

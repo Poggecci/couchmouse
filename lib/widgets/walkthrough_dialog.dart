@@ -10,11 +10,7 @@ class WalkthroughDialog extends ConsumerStatefulWidget {
 
   const WalkthroughDialog({super.key, required this.isFirstStart});
 
-  static void show(
-    BuildContext context, {
-    required bool isFirstStart,
-    required WidgetRef ref,
-  }) {
+  static void show(BuildContext context, {required bool isFirstStart}) {
     showGeneralDialog(
       context: context,
       barrierColor: Colors.black.withValues(alpha: 0.5),
@@ -90,42 +86,35 @@ class _WalkthroughDialogState extends ConsumerState<WalkthroughDialog>
 
   @override
   Widget build(BuildContext context) {
-    final double keyboardHeight = MediaQuery.of(context).viewInsets.bottom;
-    final orientation = MediaQuery.of(context).orientation;
-
+    final landscape =
+        MediaQuery.orientationOf(context) == Orientation.landscape;
     return Scaffold(
       backgroundColor: Colors.transparent,
-      body: Center(
-        child: Container(
-          width: 380,
-          constraints: BoxConstraints(
-            maxHeight: orientation == Orientation.portrait ? 560 : 340,
-          ),
-          margin: EdgeInsets.only(
-            left: 20,
-            right: 20,
-            top: 20,
-            bottom: 20 + keyboardHeight,
-          ),
-          decoration: BoxDecoration(
-            color: context.palette.paper,
-            borderRadius: BorderRadius.circular(24),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.15),
-                blurRadius: 24,
-                spreadRadius: 4,
-                offset: const Offset(0, 8),
+      body: SafeArea(
+        child: Center(
+          child: Container(
+            width: landscape ? 680 : 380,
+            constraints: BoxConstraints(maxHeight: landscape ? 400 : 560),
+            margin: EdgeInsets.all(landscape ? 12 : 20),
+            decoration: BoxDecoration(
+              color: context.palette.paper,
+              borderRadius: BorderRadius.circular(24),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.15),
+                  blurRadius: 24,
+                  spreadRadius: 4,
+                  offset: const Offset(0, 8),
+                ),
+              ],
+              border: Border.all(
+                color: context.palette.ink.withValues(alpha: 0.05),
               ),
-            ],
-            border: Border.all(
-              color: context.palette.ink.withValues(alpha: 0.05),
-              width: 1,
             ),
-          ),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(24),
-            child: _showWelcome ? _buildWelcomeView() : _buildWalkthroughView(),
+            clipBehavior: Clip.antiAlias,
+            child: _showWelcome
+                ? _buildWelcomeView(landscape)
+                : _buildWalkthroughView(landscape),
           ),
         ),
       ),
@@ -133,217 +122,219 @@ class _WalkthroughDialogState extends ConsumerState<WalkthroughDialog>
   }
 
   // Welcome page that prompts the user on startup
-  Widget _buildWelcomeView() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 28.0),
+  Widget _buildWelcomeView(bool landscape) {
+    final intro = SingleChildScrollView(
       child: Column(
-        mainAxisSize: MainAxisSize.min,
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          // Logo & Welcome Info
-          Expanded(
-            child: SingleChildScrollView(
-              child: Column(
-                children: [
-                  const SizedBox(height: 12),
-                  // Stylized Logo Circle
-                  Container(
-                    width: 72,
-                    height: 72,
-                    decoration: BoxDecoration(
-                      color: context.palette.surface,
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                        color: context.palette.ink.withValues(alpha: 0.06),
-                        width: 1.5,
-                      ),
-                    ),
-                    child: Icon(
-                      Icons.mouse_outlined,
-                      size: 36,
-                      color: context.palette.ink.withValues(alpha: 0.87),
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-                  Text(
-                    "Welcome to CouchMouse",
-                    style: TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.w800,
-                      color: context.palette.ink,
-                      letterSpacing: 0.5,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    "Turn your phone into a mouse and keyboard for your computer over Bluetooth.\n\nWould you like a quick walkthrough of how to pair and control your device?",
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: context.palette.ink.withValues(alpha: 0.6),
-                      height: 1.5,
-                    ),
-                  ),
-                ],
+          const SizedBox(height: 12),
+          // Stylized Logo Circle
+          Container(
+            width: 72,
+            height: 72,
+            decoration: BoxDecoration(
+              color: context.palette.surface,
+              shape: BoxShape.circle,
+              border: Border.all(
+                color: context.palette.ink.withValues(alpha: 0.06),
+                width: 1.5,
               ),
             ),
+            child: Icon(
+              Icons.mouse_outlined,
+              size: 36,
+              color: context.palette.ink.withValues(alpha: 0.87),
+            ),
           ),
-          const SizedBox(height: 20),
-          // Action Buttons
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            mainAxisSize: MainAxisSize.min,
+          const SizedBox(height: 24),
+          Text(
+            "Welcome to CouchMouse",
+            style: TextStyle(
+              fontSize: 22,
+              fontWeight: FontWeight.w800,
+              color: context.palette.ink,
+              letterSpacing: 0.5,
+            ),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            "Turn your phone into a mouse and keyboard for your computer over Bluetooth.\n\nWould you like a quick walkthrough of how to pair and control your device?",
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 14,
+              color: context.palette.ink.withValues(alpha: 0.6),
+              height: 1.5,
+            ),
+          ),
+        ],
+      ),
+    );
+    final actions = SingleChildScrollView(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Get Started (Start Walkthrough)
+          ElevatedButton(
+            onPressed: () {
+              setState(() {
+                _showWelcome = false;
+              });
+            },
+            style: ElevatedButton.styleFrom(
+              foregroundColor: context.palette.paper,
+              backgroundColor: context.palette.ink,
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              elevation: 0,
+            ),
+            child: const Text(
+              "Get Started",
+              style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Row(
             children: [
-              // Get Started (Start Walkthrough)
-              ElevatedButton(
-                onPressed: () {
-                  setState(() {
-                    _showWelcome = false;
-                  });
-                },
-                style: ElevatedButton.styleFrom(
-                  foregroundColor: context.palette.paper,
-                  backgroundColor: context.palette.ink,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
+              // Show Later
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: _showLater,
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: context.palette.ink.withValues(
+                      alpha: 0.87,
+                    ),
+                    side: BorderSide(
+                      color: context.palette.ink.withValues(alpha: 0.12),
+                    ),
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                   ),
-                  elevation: 0,
-                ),
-                child: const Text(
-                  "Get Started",
-                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+                  child: const Text(
+                    "Show Later",
+                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
+                  ),
                 ),
               ),
-              const SizedBox(height: 8),
-              Row(
-                children: [
-                  // Show Later
-                  Expanded(
-                    child: OutlinedButton(
-                      onPressed: _showLater,
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: context.palette.ink.withValues(
-                          alpha: 0.87,
-                        ),
-                        side: BorderSide(
-                          color: context.palette.ink.withValues(alpha: 0.12),
-                        ),
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      child: const Text(
-                        "Show Later",
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
+              const SizedBox(width: 8),
+              // Don't Show Again
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: _dismissTutorial,
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: context.palette.ink.withValues(
+                      alpha: 0.54,
+                    ),
+                    side: BorderSide(
+                      color: context.palette.ink.withValues(alpha: 0.12),
+                    ),
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
                     ),
                   ),
-                  const SizedBox(width: 8),
-                  // Don't Show Again
-                  Expanded(
-                    child: OutlinedButton(
-                      onPressed: _dismissTutorial,
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: context.palette.ink.withValues(
-                          alpha: 0.54,
-                        ),
-                        side: BorderSide(
-                          color: context.palette.ink.withValues(alpha: 0.12),
-                        ),
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      child: const Text(
-                        "Don't Show Again",
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
+                  child: const Text(
+                    "Don't Show Again",
+                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
                   ),
-                ],
+                ),
               ),
             ],
           ),
         ],
       ),
     );
+
+    return Padding(
+      padding: EdgeInsets.symmetric(
+        horizontal: 24,
+        vertical: landscape ? 16 : 28,
+      ),
+      child: landscape
+          ? Row(
+              children: [
+                Expanded(flex: 3, child: intro),
+                const SizedBox(width: 24),
+                Expanded(flex: 2, child: actions),
+              ],
+            )
+          : Column(
+              children: [
+                Expanded(child: intro),
+                const SizedBox(height: 20),
+                actions,
+              ],
+            ),
+    );
   }
 
-  // Walkthrough pages view
-  Widget _buildWalkthroughView() {
-    final orientation = MediaQuery.of(context).orientation;
-    final List<Map<String, dynamic>> steps = [
-      {
-        'title': '1. Bluetooth Connection',
-        'desc':
+  Widget _buildWalkthroughView(bool landscape) {
+    final steps = [
+      (
+        title: '1. Bluetooth Connection',
+        description:
             '• Unpair previous connections on both devices.\n'
             '• Tap the Bluetooth connection bar on the main screen.\n'
             '• Tap "Make Discoverable" on the app.\n'
             '• On your host computer, select your phone in the Bluetooth settings to pair.\n'
             '• After initial pairing, you can always connect/reconnect using the in-app connection menu.',
-        'illustration': _buildConnectionIllustration(),
-      },
-      {
-        'title': '2. Mouse Controls & Gestures',
-        'desc':
+        illustration: _buildConnectionIllustration(),
+      ),
+      (
+        title: '2. Mouse Controls & Gestures',
+        description:
             '• Slide one finger on the trackpad to move mouse cursor.\n'
             '• Single tap with one finger to Left-Click.\n'
             '• Tap the tactile buttons at the bottom to Left/Right Click.\n'
             '• Swipe up below the trackpad area to bring up the keyboard.\n'
             '• Swipe right below the trackpad area to bring up the settings.',
-        'illustration': _buildTrackpadIllustration(),
-      },
-      {
-        'title': '3. Scrolling & Settings Swipe',
-        'desc':
+        illustration: _buildTrackpadIllustration(),
+      ),
+      (
+        title: '3. Scrolling & Settings Swipe',
+        description:
             '• Scroll by dragging on the right-side Scroll Wheel, or swipe with two fingers anywhere on the trackpad.\n'
             '• Swipe from the left edge of the screen to open the settings drawer.\n'
             '• You can control mouse sensitivity, keyboard layout, and many other bits in the settings.',
-        'illustration': _buildScrollIllustration(),
-      },
-      {
-        'title': '4. Virtual Keyboard',
-        'desc':
+        illustration: _buildScrollIllustration(),
+      ),
+      (
+        title: '4. Virtual Keyboard',
+        description:
             '• Swipe up from the bottom of the screen or tap the keyboard icon to toggle the keyboard.\n'
             '• Use the accessory toolbar to toggle Ctrl, Alt, Shift, and Lock modifier keys.\n'
             '• Turn on Rich Typing Mode in Advanced settings to write a message with autocorrect, then send it.\n'
             '• Flip to landscape mode to view a wider emulated keyboard.',
-        'illustration': _buildKeyboardIllustration(),
-      },
+        illustration: _buildKeyboardIllustration(),
+      ),
     ];
 
     return Column(
       children: [
         // Header
         Padding(
-          padding: const EdgeInsets.fromLTRB(20, 16, 12, 4),
+          padding: EdgeInsets.fromLTRB(20, landscape ? 4 : 16, 12, 4),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                "TUTORIAL: STEP ${_currentPage + 1} OF ${steps.length}",
-                style: TextStyle(
-                  fontSize: 10,
-                  fontWeight: FontWeight.w800,
-                  color: context.palette.ink.withValues(alpha: 0.35),
-                  letterSpacing: 1.2,
+              Flexible(
+                child: Text(
+                  "TUTORIAL: STEP ${_currentPage + 1} OF ${steps.length}",
+                  style: TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w800,
+                    color: context.palette.ink.withValues(alpha: 0.35),
+                    letterSpacing: 1.2,
+                  ),
                 ),
               ),
               IconButton(
                 icon: const Icon(CupertinoIcons.xmark, size: 18),
                 color: context.palette.ink.withValues(alpha: 0.54),
                 onPressed: _completeTutorial,
-                padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(),
+                tooltip: "Close tutorial",
               ),
             ],
           ),
@@ -361,200 +352,159 @@ class _WalkthroughDialogState extends ConsumerState<WalkthroughDialog>
             itemCount: steps.length,
             itemBuilder: (context, index) {
               final step = steps[index];
+              final illustration = _illustrationCard(step.illustration);
+              final instructions = Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    step.title,
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w800,
+                      color: context.palette.ink,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    step.description,
+                    style: TextStyle(
+                      fontSize: 13,
+                      height: 1.45,
+                      color: context.palette.ink.withValues(alpha: 0.78),
+                    ),
+                  ),
+                ],
+              );
+
               return Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24.0),
-                child: orientation == Orientation.portrait
-                    ? LayoutBuilder(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                child: landscape
+                    ? Row(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Expanded(flex: 2, child: illustration),
+                          const SizedBox(width: 20),
+                          Expanded(
+                            flex: 3,
+                            child: SingleChildScrollView(
+                              key: PageStorageKey(index),
+                              primary: false,
+                              padding: const EdgeInsets.symmetric(vertical: 8),
+                              child: instructions,
+                            ),
+                          ),
+                        ],
+                      )
+                    : LayoutBuilder(
                         builder: (context, constraints) =>
                             SingleChildScrollView(
+                              key: PageStorageKey(index),
+                              primary: false,
                               child: ConstrainedBox(
                                 constraints: BoxConstraints(
                                   minHeight: constraints.maxHeight,
                                 ),
-                                child: Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    // Illustration card
-                                    Container(
-                                      height: 140,
-                                      width: double.infinity,
-                                      decoration: BoxDecoration(
-                                        color: context.palette.surface,
-                                        borderRadius: BorderRadius.circular(16),
-                                        border: Border.all(
-                                          color: context.palette.ink.withValues(
-                                            alpha: 0.04,
-                                          ),
-                                          width: 1,
-                                        ),
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 8,
+                                  ),
+                                  child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      SizedBox(
+                                        height: 140,
+                                        width: double.infinity,
+                                        child: illustration,
                                       ),
-                                      alignment: Alignment.center,
-                                      child: step['illustration'],
-                                    ),
-                                    const SizedBox(height: 20),
-                                    // Title
-                                    Text(
-                                      step['title'],
-                                      style: TextStyle(
-                                        fontSize: 18,
-                                        fontWeight: FontWeight.w800,
-                                        color: context.palette.ink,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 12),
-                                    // Description
-                                    Text(
-                                      step['desc'],
-                                      style: TextStyle(
-                                        fontSize: 13,
-                                        color: context.palette.ink.withValues(
-                                          alpha: 0.6,
-                                        ),
-                                        height: 1.5,
-                                      ),
-                                    ),
-                                  ],
+                                      const SizedBox(height: 16),
+                                      instructions,
+                                    ],
+                                  ),
                                 ),
                               ),
                             ),
-                      )
-                    : Row(
-                        children: [
-                          // Left column: Illustration
-                          Expanded(
-                            flex: 5,
-                            child: Container(
-                              height: double.infinity,
-                              margin: const EdgeInsets.symmetric(vertical: 8),
-                              decoration: BoxDecoration(
-                                color: context.palette.surface,
-                                borderRadius: BorderRadius.circular(16),
-                                border: Border.all(
-                                  color: context.palette.ink.withValues(
-                                    alpha: 0.04,
-                                  ),
-                                  width: 1,
-                                ),
-                              ),
-                              alignment: Alignment.center,
-                              child: step['illustration'],
-                            ),
-                          ),
-                          const SizedBox(width: 16),
-                          // Right column: Text content
-                          Expanded(
-                            flex: 6,
-                            child: SingleChildScrollView(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Text(
-                                    step['title'],
-                                    style: TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.w800,
-                                      color: context.palette.ink,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 6),
-                                  Text(
-                                    step['desc'],
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      color: context.palette.ink.withValues(
-                                        alpha: 0.6,
-                                      ),
-                                      height: 1.4,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ],
                       ),
               );
             },
           ),
         ),
 
-        // Dots & Action buttons footer
         Padding(
-          padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
+          padding: EdgeInsets.fromLTRB(24, 8, 24, landscape ? 10 : 24),
           child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            mainAxisAlignment: MainAxisAlignment.end,
             children: [
-              // Dots indicators
-              Row(
-                children: List.generate(
-                  steps.length,
-                  (index) => AnimatedContainer(
-                    duration: const Duration(milliseconds: 200),
-                    margin: const EdgeInsets.only(right: 6),
-                    height: 8,
-                    width: _currentPage == index ? 20 : 8,
-                    decoration: BoxDecoration(
-                      color: _currentPage == index
-                          ? context.palette.ink
-                          : context.palette.ink.withValues(alpha: 0.15),
-                      borderRadius: BorderRadius.circular(4),
+              if (_currentPage < steps.length - 1) ...[
+                Flexible(
+                  child: TextButton(
+                    onPressed: _completeTutorial,
+                    style: TextButton.styleFrom(
+                      foregroundColor: context.palette.ink.withValues(
+                        alpha: 0.68,
+                      ),
+                    ),
+                    child: const Text(
+                      "Skip",
+                      style: TextStyle(fontWeight: FontWeight.bold),
                     ),
                   ),
                 ),
-              ),
-
-              // Action buttons (Skip / Next / Finish)
-              Row(
-                children: [
-                  if (_currentPage < steps.length - 1)
-                    TextButton(
-                      onPressed: _completeTutorial,
-                      style: TextButton.styleFrom(
-                        foregroundColor: context.palette.ink.withValues(
-                          alpha: 0.54,
-                        ),
-                      ),
-                      child: const Text(
-                        "Skip",
-                        style: TextStyle(fontWeight: FontWeight.bold),
-                      ),
+                const SizedBox(width: 8),
+              ],
+              Flexible(
+                child: ElevatedButton(
+                  onPressed: () {
+                    if (_currentPage < steps.length - 1) {
+                      _pageController.nextPage(
+                        duration: const Duration(milliseconds: 300),
+                        curve: Curves.easeInOut,
+                      );
+                    } else {
+                      _completeTutorial();
+                    }
+                  },
+                  style: ElevatedButton.styleFrom(
+                    foregroundColor: context.palette.paper,
+                    backgroundColor: context.palette.ink,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 12,
                     ),
-                  const SizedBox(width: 8),
-                  ElevatedButton(
-                    onPressed: () {
-                      if (_currentPage < steps.length - 1) {
-                        _pageController.nextPage(
-                          duration: const Duration(milliseconds: 300),
-                          curve: Curves.easeInOut,
-                        );
-                      } else {
-                        _completeTutorial();
-                      }
-                    },
-                    style: ElevatedButton.styleFrom(
-                      foregroundColor: context.palette.paper,
-                      backgroundColor: context.palette.ink,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 20,
-                        vertical: 12,
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      elevation: 0,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
                     ),
-                    child: Text(
-                      _currentPage == steps.length - 1 ? "Finish" : "Next",
-                      style: const TextStyle(fontWeight: FontWeight.bold),
-                    ),
+                    elevation: 0,
                   ),
-                ],
+                  child: Text(
+                    _currentPage == steps.length - 1 ? "Finish" : "Next",
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                ),
               ),
             ],
           ),
         ),
       ],
+    );
+  }
+
+  Widget _illustrationCard(Widget illustration) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: context.palette.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: context.palette.ink.withValues(alpha: 0.04)),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: FittedBox(
+        fit: BoxFit.scaleDown,
+        child: SizedBox(
+          width: 220,
+          height: 112,
+          child: Center(child: illustration),
+        ),
+      ),
     );
   }
 

@@ -6,12 +6,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../settings_providers.dart';
 import '../gamepad_state.dart';
 import '../keyboard_layouts.dart';
-import 'walkthrough_dialog.dart';
 
 class ControlDrawer extends ConsumerStatefulWidget {
   final bool holdLockActive;
   final void Function(bool) onHoldLockChanged;
   final VoidCallback onResetHidState;
+  final VoidCallback onShowWalkthrough;
   final VoidCallback onExportSettings;
   final VoidCallback onImportSettings;
   final void Function(KeyboardKind) onKeyboardKindChanged;
@@ -21,6 +21,7 @@ class ControlDrawer extends ConsumerStatefulWidget {
     required this.holdLockActive,
     required this.onHoldLockChanged,
     required this.onResetHidState,
+    required this.onShowWalkthrough,
     required this.onExportSettings,
     required this.onImportSettings,
     required this.onKeyboardKindChanged,
@@ -356,22 +357,6 @@ class _ControlDrawerState extends ConsumerState<ControlDrawer> {
                     ),
                   ),
 
-                  _buildSectionHeader("GAMEPAD"),
-
-                  _buildSettingsRow(
-                    title: "Gamepad Mode",
-                    subtitle:
-                        "Send this device's physical controls as a gamepad",
-                    control: Switch.adaptive(
-                      key: const Key('gamepadModeSwitch'),
-                      activeThumbColor: context.palette.ink,
-                      value: gamepadMode,
-                      onChanged: (value) => ref
-                          .read(gamepadModeProvider.notifier)
-                          .setEnabled(value),
-                    ),
-                  ),
-
                   _buildSectionHeader("HELP"),
 
                   ListTile(
@@ -396,16 +381,7 @@ class _ControlDrawerState extends ConsumerState<ControlDrawer> {
                         color: context.palette.ink.withValues(alpha: 0.4),
                       ),
                     ),
-                    onTap: () {
-                      Navigator.pop(context);
-                      WidgetsBinding.instance.addPostFrameCallback((_) {
-                        WalkthroughDialog.show(
-                          context,
-                          isFirstStart: false,
-                          ref: ref,
-                        );
-                      });
-                    },
+                    onTap: widget.onShowWalkthrough,
                   ),
 
                   Padding(
@@ -423,57 +399,6 @@ class _ControlDrawerState extends ConsumerState<ControlDrawer> {
                         height: 1.5,
                       ),
                     ),
-                  ),
-
-                  _buildSectionHeader("SETTINGS BACKUP"),
-
-                  ListTile(
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 16),
-                    leading: Icon(
-                      Icons.file_upload_outlined,
-                      color: context.palette.ink.withValues(alpha: 0.8),
-                      size: 20,
-                    ),
-                    title: Text(
-                      "Export Settings",
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                        color: context.palette.ink,
-                      ),
-                    ),
-                    subtitle: Text(
-                      "Save your settings to a backup file",
-                      style: TextStyle(
-                        fontSize: 11,
-                        color: context.palette.ink.withValues(alpha: 0.4),
-                      ),
-                    ),
-                    onTap: widget.onExportSettings,
-                  ),
-                  ListTile(
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 16),
-                    leading: Icon(
-                      Icons.file_download_outlined,
-                      color: context.palette.ink.withValues(alpha: 0.8),
-                      size: 20,
-                    ),
-                    title: Text(
-                      "Import Settings",
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                        color: context.palette.ink,
-                      ),
-                    ),
-                    subtitle: Text(
-                      "Replace current settings from a backup file",
-                      style: TextStyle(
-                        fontSize: 11,
-                        color: context.palette.ink.withValues(alpha: 0.4),
-                      ),
-                    ),
-                    onTap: widget.onImportSettings,
                   ),
 
                   _buildSectionHeader("ADVANCED"),
@@ -516,6 +441,20 @@ class _ControlDrawerState extends ConsumerState<ControlDrawer> {
                     ),
 
                     _buildDivider(),
+
+                    _buildSettingsRow(
+                      title: "Gamepad Mode",
+                      subtitle:
+                          "Send this device's physical controls as a gamepad",
+                      control: Switch.adaptive(
+                        key: const Key('gamepadModeSwitch'),
+                        activeThumbColor: context.palette.ink,
+                        value: gamepadMode,
+                        onChanged: (value) => ref
+                            .read(gamepadModeProvider.notifier)
+                            .setEnabled(value),
+                      ),
+                    ),
 
                     Padding(
                       padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
@@ -630,6 +569,60 @@ class _ControlDrawerState extends ConsumerState<ControlDrawer> {
                           );
                         }
                       },
+                    ),
+                    _buildSectionHeader("SETTINGS BACKUP"),
+
+                    ListTile(
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                      ),
+                      leading: Icon(
+                        Icons.file_upload_outlined,
+                        color: context.palette.ink.withValues(alpha: 0.8),
+                        size: 20,
+                      ),
+                      title: Text(
+                        "Export Settings",
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: context.palette.ink,
+                        ),
+                      ),
+                      subtitle: Text(
+                        "Save your settings to a backup file",
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: context.palette.ink.withValues(alpha: 0.4),
+                        ),
+                      ),
+                      onTap: widget.onExportSettings,
+                    ),
+                    ListTile(
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                      ),
+                      leading: Icon(
+                        Icons.file_download_outlined,
+                        color: context.palette.ink.withValues(alpha: 0.8),
+                        size: 20,
+                      ),
+                      title: Text(
+                        "Import Settings",
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: context.palette.ink,
+                        ),
+                      ),
+                      subtitle: Text(
+                        "Replace current settings from a backup file",
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: context.palette.ink.withValues(alpha: 0.4),
+                        ),
+                      ),
+                      onTap: widget.onImportSettings,
                     ),
                   ],
                 ],

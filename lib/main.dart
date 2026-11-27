@@ -2030,7 +2030,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     if (!_walkthroughChecked && settings.tutorialStatus == 'none') {
       _walkthroughChecked = true;
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        WalkthroughDialog.show(context, isFirstStart: true, ref: ref);
+        WalkthroughDialog.show(context, isFirstStart: true);
       });
     }
 
@@ -2143,6 +2143,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
           ? null
           : ControlDrawer(
               holdLockActive: _holdLockActive,
+              onShowWalkthrough: () {
+                _scaffoldKey.currentState?.closeDrawer();
+                WalkthroughDialog.show(context, isFirstStart: false);
+              },
               onExportSettings: () => _transferSettings(export: true),
               onImportSettings: () => _transferSettings(export: false),
               onHoldLockChanged: (val) =>
